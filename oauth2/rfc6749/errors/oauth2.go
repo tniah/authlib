@@ -1,4 +1,4 @@
-package rfc6749
+package errors
 
 import (
 	"errors"
@@ -20,7 +20,9 @@ var (
 var Descriptions = map[error]string{
 	ErrInvalidRequest:          "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed",
 	ErrUnauthorizedClient:      "The client is not authorized to request an authorization code using this method",
+	ErrAccessDenied:            "The resource owner or authorization server denied the request",
 	ErrUnsupportedResponseType: "The authorization server does not support obtaining an authorization code using this method",
+	ErrServerError:             "The authorization server encountered an unexpected condition that prevented it from fulfilling the request",
 }
 
 // HttpCodes Http status code
@@ -109,4 +111,12 @@ func NewUnauthorizedClientError(opts ...ErrorOption) *OAuth2Error {
 
 func NewUnsupportedResponseTypeError(opts ...ErrorOption) *OAuth2Error {
 	return NewOAuth2Error(ErrUnsupportedResponseType, opts...)
+}
+
+func NewAccessDeniedError(opts ...ErrorOption) *OAuth2Error {
+	return NewOAuth2Error(ErrAccessDenied, opts...)
+}
+
+func NewServerError(opts ...ErrorOption) *OAuth2Error {
+	return NewOAuth2Error(ErrServerError, opts...)
 }

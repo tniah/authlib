@@ -14,17 +14,17 @@ const (
 	AuthMethodClientSecretPost  TokenEndpointAuthMethodType = "client_secret_post"
 	AuthMethodNone              TokenEndpointAuthMethodType = "none"
 
-	GtAuthorizationCode   GrantType = "authorization_code"
-	GtPasswordCredentials GrantType = "password"
-	GtClientCredentials   GrantType = "client_credentials"
-	GtRefreshToken        GrantType = "refresh_token"
+	GrantTypeAuthorizationCode   GrantType = "authorization_code"
+	GrantTypePasswordCredentials GrantType = "password"
+	GrantTypeClientCredentials   GrantType = "client_credentials"
+	GrantTypeRefreshToken        GrantType = "refresh_token"
 )
 
 func (gt GrantType) String() string {
-	if gt == GtAuthorizationCode ||
-		gt == GtPasswordCredentials ||
-		gt == GtClientCredentials ||
-		gt == GtRefreshToken {
+	if gt == GrantTypeAuthorizationCode ||
+		gt == GrantTypePasswordCredentials ||
+		gt == GrantTypeClientCredentials ||
+		gt == GrantTypeRefreshToken {
 		return string(gt)
 	}
 

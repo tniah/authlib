@@ -2,14 +2,14 @@ package manage
 
 import (
 	"errors"
-	"github.com/tniah/authlib/oauth2/rfc6749"
+	"github.com/tniah/authlib/oauth2/rfc6749/models"
 	"net/http"
 )
 
 var ErrClientNotFound = errors.New("client not found")
 
 type ClientStore interface {
-	QueryClientByID(id string) (rfc6749.OAuthClient, error)
+	QueryClientByID(id string) (models.OAuthClient, error)
 }
 
 type ClientManager struct {
@@ -20,7 +20,7 @@ func NewClientManager(store ClientStore) *ClientManager {
 	return &ClientManager{store: store}
 }
 
-func (m *ClientManager) QueryByClientID(ClientID string) (rfc6749.OAuthClient, error) {
+func (m *ClientManager) QueryByClientID(ClientID string) (models.OAuthClient, error) {
 	client, err := m.store.QueryClientByID(ClientID)
 	if err != nil {
 		return nil, err
@@ -33,6 +33,6 @@ func (m *ClientManager) QueryByClientID(ClientID string) (rfc6749.OAuthClient, e
 	return client, nil
 }
 
-func (m *ClientManager) Authenticate(r *http.Request) (rfc6749.OAuthClient, error) {
+func (m *ClientManager) Authenticate(r *http.Request) (models.OAuthClient, error) {
 	return nil, nil
 }

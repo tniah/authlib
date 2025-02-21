@@ -1,39 +1,41 @@
 package grants
 
 import (
-	"github.com/tniah/authlib/oauth2/rfc6749"
+	"github.com/tniah/authlib/oauth2/rfc6749/errors"
+	"github.com/tniah/authlib/oauth2/rfc6749/manage"
+	"github.com/tniah/authlib/oauth2/rfc6749/models"
 	"net/http"
 )
 
 type AuthorizationCodeGrant struct {
-	server rfc6749.AuthorizationServer
+	clientManager   *manage.ClientManager
+	authCodeManager *manage.AuthorizationCodeManager
 }
 
-func NewAuthorizationCodeHandler() *AuthorizationCodeGrant {
-	return &AuthorizationCodeGrant{}
+func NewAuthorizationCodeGrant(clientManager *manage.ClientManager, authCodeManager *manage.AuthorizationCodeManager) *AuthorizationCodeGrant {
+	return &AuthorizationCodeGrant{
+		clientManager:   clientManager,
+		authCodeManager: authCodeManager,
+	}
 }
 
-func (gt *AuthorizationCodeGrant) RegisterWithServer(srv rfc6749.AuthorizationServer) {
-	gt.server = srv
+func (gt *AuthorizationCodeGrant) CheckResponseType(responseType ResponseType) bool {
+	return responseType == ResponseTypeCode
 }
 
-func (gt *AuthorizationCodeGrant) CheckResponseType(responseType rfc6749.ResponseType) bool {
-	return responseType == rfc6749.ResponseTypeCode
-}
-
-func (gt *AuthorizationCodeGrant) ValidateAuthorizationRequest(r *rfc6749.AuthorizationRequest) error {
+func (gt *AuthorizationCodeGrant) ValidateAuthorizationRequest(r *AuthorizationRequest) error {
 	clientID := r.ClientID
 	if clientID == "" {
-		return rfc6749.NewInvalidRequestError(
-			rfc6749.WithDescription(ErrDescMissingClientId),
-			rfc6749.WithState(r.State))
+		return errors.NewInvalidRequestError(
+			errors.WithDescription(ErrDescMissingClientId),
+			errors.WithState(r.State))
 	}
 
-	client := gt.server.QueryClient(clientID)
-	if client == nil {
-		return rfc6749.NewInvalidRequestError(
-			rfc6749.WithDescription(ErrDescClientIDNotFound),
-			rfc6749.WithState(r.State))
+	client, err := gt.clientManager.QueryByClientID(clientID)
+	if err != nil {
+		return errors.NewInvalidRequestError(
+			errors.WithDescription(ErrDescClientIDNotFound),
+			errors.WithState(r.State))
 	}
 
 	redirectURI, err := validateRedirectUri(r, client)
@@ -41,38 +43,54 @@ func (gt *AuthorizationCodeGrant) ValidateAuthorizationRequest(r *rfc6749.Author
 		return err
 	}
 
+	if !gt.CheckResponseType(r.ResponseType) {
+		return errors.NewUnsupportedResponseTypeError(
+			errors.WithState(r.State),
+			errors.WithRedirectUri(redirectURI))
+	}
 	if allowed := client.CheckResponseType(r.ResponseType); !allowed {
-		return rfc6749.NewUnauthorizedClientError(
-			rfc6749.WithState(r.State),
-			rfc6749.WithRedirectUri(redirectURI))
+		return errors.NewUnauthorizedClientError(
+			errors.WithState(r.State),
+			errors.WithRedirectUri(redirectURI))
 	}
 
 	r.Client = client
 	r.RedirectURI = redirectURI
+
+	// TODO - Validate requested scopes
 	return nil
 }
 
 func (gt *AuthorizationCodeGrant) CreateAuthorizationResponse(
 	rw http.ResponseWriter,
-	r *rfc6749.AuthorizationRequest,
+	r *AuthorizationRequest,
 ) error {
+	userID := r.UserID
+	if userID == "" {
+		return errors.NewAccessDeniedError(
+			errors.WithState(r.State),
+			errors.WithRedirectUri(r.RedirectURI))
+	}
+
+	authCode := gt.authCodeManager.Generate(GrantTypeAuthorizationCode, r.Client, userID)
+
 	return nil
 }
 
-func validateRedirectUri(r *rfc6749.AuthorizationRequest, client rfc6749.OAuthClient) (redirectURI string, err error) {
+func validateRedirectUri(r *AuthorizationRequest, client models.OAuthClient) (redirectURI string, err error) {
 	if r.RedirectURI == "" {
-		redirectURI = client.GetDefaultRedirectUri()
+		redirectURI = client.GetDefaultRedirectURI()
 		if redirectURI == "" {
-			return "", rfc6749.NewInvalidRequestError(
-				rfc6749.WithDescription(ErrDescMissingRedirectUri),
-				rfc6749.WithState(r.State))
+			return "", errors.NewInvalidRequestError(
+				errors.WithDescription(ErrDescMissingRedirectUri),
+				errors.WithState(r.State))
 		}
 	} else {
 		redirectURI = r.RedirectURI
-		if allowed := client.CheckRedirectUri(redirectURI); !allowed {
-			return "", rfc6749.NewInvalidRequestError(
-				rfc6749.WithDescription(ErrDescInvalidRedirectUri),
-				rfc6749.WithState(r.State))
+		if allowed := client.CheckRedirectURI(redirectURI); !allowed {
+			return "", errors.NewInvalidRequestError(
+				errors.WithDescription(ErrDescInvalidRedirectUri),
+				errors.WithState(r.State))
 		}
 	}
 

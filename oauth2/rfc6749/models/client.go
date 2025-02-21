@@ -1,6 +1,9 @@
 package models
 
-import "github.com/tniah/authlib/oauth2/rfc6749"
+import (
+	"github.com/tniah/authlib/oauth2/rfc6749"
+	"github.com/tniah/authlib/oauth2/rfc6749/grants"
+)
 
 type OAuthClient interface {
 	GetClientID() string
@@ -11,7 +14,7 @@ type OAuthClient interface {
 	CheckRedirectURI(redirectURI string) bool
 	CheckClientSecret(secret string) bool
 	CheckTokenEndpointAuthMethod(method string) bool
-	CheckResponseType(responseType string) bool
+	CheckResponseType(responseType grants.ResponseType) bool
 	CheckGrantType(grantType string) bool
 }
 
@@ -87,9 +90,9 @@ func (c *OAuth2ClientMixin) CheckTokenEndpointAuthMethod(method string) bool {
 	return c.TokenEndpointAuthMethod == method
 }
 
-func (c *OAuth2ClientMixin) CheckResponseType(responseType string) bool {
+func (c *OAuth2ClientMixin) CheckResponseType(responseType rfc6749.ResponseType) bool {
 	for i := range c.GrantTypes {
-		if c.GrantTypes[i] == responseType {
+		if rfc6749.ResponseType(c.GrantTypes[i]) == responseType {
 			return true
 		}
 	}

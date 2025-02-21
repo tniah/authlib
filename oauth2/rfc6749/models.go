@@ -10,3 +10,11 @@ type OAuthClient interface {
 	CheckResponseType(responseType ResponseType) bool
 	//CheckGrantType(grantType GrantType) bool
 }
+
+type User interface {
+	GetUserID() string
+}
+
+type AuthorizationCode interface {
+	Code() string
+}
