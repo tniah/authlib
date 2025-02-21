@@ -1,6 +1,7 @@
 package grants
 
 import (
+	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/oauth2/rfc6749/errors"
 	"github.com/tniah/authlib/oauth2/rfc6749/manage"
 	"github.com/tniah/authlib/oauth2/rfc6749/models"
@@ -73,7 +74,20 @@ func (gt *AuthorizationCodeGrant) CreateAuthorizationResponse(
 	}
 
 	authCode := gt.authCodeManager.Generate(GrantTypeAuthorizationCode, r.Client, userID)
+	params := map[string]interface{}{
+		"code": authCode.GetCode(),
+	}
+	if r.State != "" {
+		params["state"] = r.State
+	}
 
+	uri, err := common.AddParamsToURI(r.RedirectURI, params)
+	if err != nil {
+		return err
+	}
+
+	rw.Header().Set("Location", uri)
+	rw.WriteHeader(http.StatusFound)
 	return nil
 }
 
