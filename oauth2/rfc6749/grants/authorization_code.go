@@ -3,20 +3,19 @@ package grants
 import (
 	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/oauth2/rfc6749/errors"
-	"github.com/tniah/authlib/oauth2/rfc6749/manage"
 	"net/http"
 )
 
 type AuthorizationCodeGrant struct {
-	clientManager   *manage.ClientManager
-	authCodeManager *manage.AuthorizationCodeManager
-	*AuthorizationGrantMixin
+	clientMgr   ClientManager
+	authCodeMgr AuthorizationCodeManager
+	AuthorizationGrantMixin
 }
 
-func NewAuthorizationCodeGrant(clientManager *manage.ClientManager, authCodeManager *manage.AuthorizationCodeManager) *AuthorizationCodeGrant {
+func NewAuthorizationCodeGrant(clientMgr ClientManager, authCodeMgr AuthorizationCodeManager) *AuthorizationCodeGrant {
 	return &AuthorizationCodeGrant{
-		clientManager:   clientManager,
-		authCodeManager: authCodeManager,
+		clientMgr:   clientMgr,
+		authCodeMgr: authCodeMgr,
 	}
 }
 
@@ -32,7 +31,7 @@ func (grant *AuthorizationCodeGrant) ValidateRequest(r *AuthorizationRequest) er
 			errors.WithState(r.State))
 	}
 
-	client, err := grant.clientManager.QueryByClientID(r.Request.Context(), clientID)
+	client, err := grant.clientMgr.QueryByClientId(r.Request.Context(), clientID)
 	if err != nil {
 		return errors.NewInvalidRequestError(
 			errors.WithDescription(ErrDescClientIDNotFound),
@@ -70,7 +69,7 @@ func (grant *AuthorizationCodeGrant) Response(rw http.ResponseWriter, r *Authori
 			errors.WithRedirectUri(r.RedirectURI))
 	}
 
-	authCode := grant.authCodeManager.Generate(GrantTypeAuthorizationCode, r.Client, userID)
+	authCode := grant.authCodeMgr.Generate(GrantTypeAuthorizationCode, r.Client, userID)
 	params := map[string]interface{}{
 		Code: authCode.GetCode(),
 	}

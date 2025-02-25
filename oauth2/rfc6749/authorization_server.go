@@ -8,25 +8,22 @@ import (
 	"net/http"
 )
 
-const (
-	headerLocation      = "Location"
-	headerContentType   = "Content-Type"
-	headerCacheControl  = "Cache-Control"
-	headerPragma        = "Pragma"
-	contentTypeJSON     = "application/json;charset=UTF-8"
-	cacheControlNoStore = "no-store"
-	pragmaNoCache       = "no-cache"
-)
+type AuthorizationServer interface {
+	CreateAuthorizationRequest(r *http.Request) *grants.AuthorizationRequest
+	GetAuthorizationGrant(r *grants.AuthorizationRequest) (grants.AuthorizationGrant, error)
+	RegisterGrant(grant interface{})
+	HandleError(rw http.ResponseWriter, err error) error
+}
 
-type AuthorizationServer struct {
+type DefaultAuthorizationServer struct {
 	authorizationGrants map[grants.AuthorizationGrant]bool
 }
 
-func NewAuthorizationServer() *AuthorizationServer {
-	return &AuthorizationServer{}
+func NewAuthorizationServer() AuthorizationServer {
+	return &DefaultAuthorizationServer{}
 }
 
-func (srv *AuthorizationServer) CreateAuthorizationRequest(r *http.Request) *grants.AuthorizationRequest {
+func (srv *DefaultAuthorizationServer) CreateAuthorizationRequest(r *http.Request) *grants.AuthorizationRequest {
 	return &grants.AuthorizationRequest{
 		ClientID:     r.FormValue("client_id"),
 		ResponseType: grants.ResponseType(r.FormValue("response_type")),
@@ -37,7 +34,7 @@ func (srv *AuthorizationServer) CreateAuthorizationRequest(r *http.Request) *gra
 	}
 }
 
-func (srv *AuthorizationServer) GetAuthorizationGrant(r *grants.AuthorizationRequest) (grants.AuthorizationGrant, error) {
+func (srv *DefaultAuthorizationServer) GetAuthorizationGrant(r *grants.AuthorizationRequest) (grants.AuthorizationGrant, error) {
 	for grant := range srv.authorizationGrants {
 		if grant.CheckResponseType(r.ResponseType) {
 			return grant, nil
@@ -46,25 +43,25 @@ func (srv *AuthorizationServer) GetAuthorizationGrant(r *grants.AuthorizationReq
 	return nil, errors.NewUnsupportedResponseTypeError()
 }
 
-func (srv *AuthorizationServer) CreateAuthorizationResponse(rw http.ResponseWriter, req *http.Request) error {
+func (srv *DefaultAuthorizationServer) CreateAuthorizationResponse(rw http.ResponseWriter, req *http.Request) error {
 	r := srv.CreateAuthorizationRequest(req)
 	grant, err := srv.GetAuthorizationGrant(r)
 	if err != nil {
-		return srv.HandleOAuth2Error(rw, err)
+		return srv.HandleError(rw, err)
 	}
 
 	if err = grant.ValidateRequest(r); err != nil {
-		return srv.HandleOAuth2Error(rw, err)
+		return srv.HandleError(rw, err)
 	}
 
 	if err = grant.Response(rw, r); err != nil {
-		return srv.HandleOAuth2Error(rw, err)
+		return srv.HandleError(rw, err)
 	}
 
 	return nil
 }
 
-func (srv *AuthorizationServer) RegisterGrant(grant interface{}) {
+func (srv *DefaultAuthorizationServer) RegisterGrant(grant interface{}) {
 	//g, ok := grant.(OAuth2Grant)
 	//if !ok {
 	//	return
@@ -79,7 +76,7 @@ func (srv *AuthorizationServer) RegisterGrant(grant interface{}) {
 	}
 }
 
-func (srv *AuthorizationServer) HandleOAuth2Error(rw http.ResponseWriter, err error) error {
+func (srv *DefaultAuthorizationServer) HandleError(rw http.ResponseWriter, err error) error {
 	authErr, err := errors.ToOAuth2Error(err)
 	if err != nil {
 		return err
@@ -90,10 +87,10 @@ func (srv *AuthorizationServer) HandleOAuth2Error(rw http.ResponseWriter, err er
 	}
 
 	status, header, data := authErr.Response()
-	return srv.HandleJSONResponse(rw, status, header, data)
+	return srv.JSONResponse(rw, status, header, data)
 }
 
-func (srv *AuthorizationServer) HandleJSONResponse(rw http.ResponseWriter, status int, header http.Header, data map[string]interface{}) error {
+func (srv *DefaultAuthorizationServer) JSONResponse(rw http.ResponseWriter, status int, header http.Header, data map[string]interface{}) error {
 	rw.Header().Set(headerContentType, contentTypeJSON)
 	rw.Header().Set(headerCacheControl, cacheControlNoStore)
 	rw.Header().Set(headerPragma, pragmaNoCache)

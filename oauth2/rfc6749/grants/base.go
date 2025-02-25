@@ -1,7 +1,6 @@
 package grants
 
 import (
-	"github.com/tniah/authlib/oauth2/rfc6749"
 	"github.com/tniah/authlib/oauth2/rfc6749/errors"
 	"net/http"
 )
@@ -14,7 +13,7 @@ type AuthorizationGrant interface {
 
 type AuthorizationGrantMixin struct{}
 
-func (grant *AuthorizationGrantMixin) ValidateRedirectUri(r *AuthorizationRequest, client rfc6749.OAuthClient) (redirectURI string, err error) {
+func (grant *AuthorizationGrantMixin) ValidateRedirectUri(r *AuthorizationRequest, client OAuthClient) (redirectURI string, err error) {
 	if r.RedirectURI == "" {
 		redirectURI = client.GetDefaultRedirectURI()
 		if redirectURI == "" {
