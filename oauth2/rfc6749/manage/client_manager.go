@@ -3,25 +3,25 @@ package manage
 import (
 	"context"
 	"errors"
-	"github.com/tniah/authlib/oauth2/rfc6749"
+	"github.com/tniah/authlib/oauth2/rfc6749/grants"
 	"net/http"
 )
 
 var ErrClientNotFound = errors.New("client not found")
 
 type ClientStore interface {
-	FetchByClientId(ctx context.Context, id string) (rfc6749.OAuthClient, error)
+	FetchByClientId(ctx context.Context, id string) (grants.OAuthClient, error)
 }
 
 type ClientManager struct {
 	store ClientStore
 }
 
-func NewClientManager(store ClientStore) *ClientManager {
+func NewClientManager(store ClientStore) grants.ClientManager {
 	return &ClientManager{store: store}
 }
 
-func (m *ClientManager) QueryByClientID(ctx context.Context, ClientID string) (rfc6749.OAuthClient, error) {
+func (m *ClientManager) QueryByClientId(ctx context.Context, ClientID string) (grants.OAuthClient, error) {
 	client, err := m.store.FetchByClientId(ctx, ClientID)
 	if err != nil {
 		return nil, err
@@ -34,6 +34,6 @@ func (m *ClientManager) QueryByClientID(ctx context.Context, ClientID string) (r
 	return client, nil
 }
 
-func (m *ClientManager) Authenticate(r *http.Request) (rfc6749.OAuthClient, error) {
+func (m *ClientManager) Authenticate(r *http.Request) (grants.OAuthClient, error) {
 	return nil, nil
 }
