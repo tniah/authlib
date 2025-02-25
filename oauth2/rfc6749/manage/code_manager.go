@@ -12,19 +12,20 @@ const AuthorizationCodeLength = 48
 
 var ErrAuthorizationCodeNotFound = errors.New("authorization code not found")
 
-type (
-	AuthorizationCodeManager struct {
-		store         AuthorizationCodeStore
-		codeGenerator CodeGenerator
-	}
-	AuthorizationCodeStore interface {
-		FetchByCode(ctx context.Context, code string) (grants.AuthorizationCode, error)
-		Create(ctx context.Context, authCode grants.AuthorizationCode) error
-		DeleteByCode(ctx context.Context, code string) error
-	}
-	CodeGenerator         func(gt grants.GrantType, client grants.OAuthClient, userID string) string
-	AuthCodeManagerOption func(m *AuthorizationCodeManager)
-)
+type AuthorizationCodeManager struct {
+	store         AuthorizationCodeStore
+	codeGenerator CodeGenerator
+}
+
+type AuthorizationCodeStore interface {
+	FetchByCode(ctx context.Context, code string) (grants.AuthorizationCode, error)
+	Create(ctx context.Context, authCode grants.AuthorizationCode) error
+	DeleteByCode(ctx context.Context, code string) error
+}
+
+type CodeGenerator func(gt grants.GrantType, client grants.OAuthClient, userID string) string
+
+type AuthCodeManagerOption func(m *AuthorizationCodeManager)
 
 func NewAuthorizationCodeManager(store AuthorizationCodeStore, opts ...AuthCodeManagerOption) *AuthorizationCodeManager {
 	m := &AuthorizationCodeManager{store: store}
