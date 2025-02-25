@@ -74,6 +74,14 @@ func (c *AuthorizationCode) SetNonce(nonce string) {
 	c.Nonce = nonce
 }
 
+func (c *AuthorizationCode) GetState() string {
+	return c.State
+}
+
+func (c *AuthorizationCode) SetState(state string) {
+	c.State = state
+}
+
 func (c *AuthorizationCode) GetAuthTime() time.Time {
 	return c.AuthTime
 }

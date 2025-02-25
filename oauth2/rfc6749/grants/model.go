@@ -30,6 +30,8 @@ type AuthorizationCode interface {
 	SetScopes(scopes []string)
 	GetNonce() string
 	SetNonce(nonce string)
+	GetState() string
+	SetState(state string)
 	GetAuthTime() time.Time
 	SetAuthTime(authTime time.Time)
 	GetCodeChallenge() string
