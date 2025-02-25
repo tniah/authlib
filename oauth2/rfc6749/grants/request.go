@@ -1,7 +1,7 @@
 package grants
 
 import (
-	"github.com/tniah/authlib/oauth2/rfc6749/models"
+	"github.com/tniah/authlib/oauth2/rfc6749"
 	"net/http"
 )
 
@@ -12,6 +12,6 @@ type AuthorizationRequest struct {
 	Scope        string
 	State        string
 	UserID       string
-	Client       models.OAuthClient
+	Client       rfc6749.OAuthClient
 	Request      *http.Request
 }
