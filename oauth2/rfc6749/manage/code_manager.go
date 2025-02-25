@@ -26,7 +26,7 @@ type (
 	AuthCodeManagerOption func(m *AuthorizationCodeManager)
 )
 
-func NewAuthorizationCodeManager(store AuthorizationCodeStore, opts ...AuthCodeManagerOption) grants.AuthorizationCodeManager {
+func NewAuthorizationCodeManager(store AuthorizationCodeStore, opts ...AuthCodeManagerOption) *AuthorizationCodeManager {
 	m := &AuthorizationCodeManager{store: store}
 	for _, opt := range opts {
 		opt(m)

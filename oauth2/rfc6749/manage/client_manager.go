@@ -17,7 +17,7 @@ type ClientManager struct {
 	store ClientStore
 }
 
-func NewClientManager(store ClientStore) grants.ClientManager {
+func NewClientManager(store ClientStore) *ClientManager {
 	return &ClientManager{store: store}
 }
 
