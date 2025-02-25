@@ -21,7 +21,7 @@ type DefaultAuthorizationServer struct {
 
 func NewAuthorizationServer() AuthorizationServer {
 	return &DefaultAuthorizationServer{
-		authorizationGrants: make(map[grants.AuthorizationGrant]bool),
+		//authorizationGrants: make(map[grants.AuthorizationGrant]bool),
 	}
 }
 
@@ -72,6 +72,9 @@ func (srv *DefaultAuthorizationServer) RegisterGrant(grant interface{}) {
 
 	switch t := grant.(type) {
 	case grants.AuthorizationGrant:
+		if srv.authorizationGrants == nil {
+			srv.authorizationGrants = make(map[grants.AuthorizationGrant]bool)
+		}
 		srv.authorizationGrants[t] = true
 	default:
 		return
