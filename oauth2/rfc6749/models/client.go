@@ -1,10 +1,5 @@
 package models
 
-import (
-	"github.com/tniah/authlib/oauth2/rfc6749"
-	"github.com/tniah/authlib/oauth2/rfc6749/grants"
-)
-
 type OAuthClient interface {
 	GetClientID() string
 	GetClientSecret() string
@@ -14,7 +9,7 @@ type OAuthClient interface {
 	CheckRedirectURI(redirectURI string) bool
 	CheckClientSecret(secret string) bool
 	CheckTokenEndpointAuthMethod(method string) bool
-	CheckResponseType(responseType grants.ResponseType) bool
+	CheckResponseType(responseType string) bool
 	CheckGrantType(grantType string) bool
 }
 
@@ -23,6 +18,7 @@ type OAuth2ClientMixin struct {
 	ClientSecret            string
 	ClientName              string
 	RedirectURIs            []string
+	ResponseTypes           []string
 	GrantTypes              []string
 	Scopes                  []string
 	ClientURI               string
@@ -45,7 +41,7 @@ func (c *OAuth2ClientMixin) GetClientSecret() string {
 }
 
 func (c *OAuth2ClientMixin) IsPublic() bool {
-	return rfc6749.TokenEndpointAuthMethodType(c.TokenEndpointAuthMethod) == rfc6749.AuthMethodNone
+	return c.TokenEndpointAuthMethod == "none"
 }
 
 func (c *OAuth2ClientMixin) GetDefaultRedirectURI() string {
@@ -90,9 +86,9 @@ func (c *OAuth2ClientMixin) CheckTokenEndpointAuthMethod(method string) bool {
 	return c.TokenEndpointAuthMethod == method
 }
 
-func (c *OAuth2ClientMixin) CheckResponseType(responseType rfc6749.ResponseType) bool {
-	for i := range c.GrantTypes {
-		if rfc6749.ResponseType(c.GrantTypes[i]) == responseType {
+func (c *OAuth2ClientMixin) CheckResponseType(responseType string) bool {
+	for i := range c.ResponseTypes {
+		if c.ResponseTypes[i] == responseType {
 			return true
 		}
 	}
