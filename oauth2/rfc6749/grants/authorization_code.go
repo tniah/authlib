@@ -49,7 +49,7 @@ func (grant *AuthorizationCodeGrant) ValidateRequest(r *AuthorizationRequest) er
 			errors.WithState(r.State),
 			errors.WithRedirectUri(redirectURI))
 	}
-	if allowed := client.CheckResponseType(r.ResponseType); !allowed {
+	if allowed := client.CheckResponseType(string(r.ResponseType)); !allowed {
 		return errors.NewUnauthorizedClientError(
 			errors.WithState(r.State),
 			errors.WithRedirectUri(redirectURI))
