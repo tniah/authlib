@@ -21,7 +21,7 @@ type DefaultAuthorizationServer struct {
 
 func NewAuthorizationServer() AuthorizationServer {
 	return &DefaultAuthorizationServer{
-		//authorizationGrants: make(map[grants.AuthorizationGrant]bool),
+		authorizationGrants: make(map[grants.AuthorizationGrant]bool),
 	}
 }
 
