@@ -7,9 +7,8 @@ type (
 )
 
 const (
-	Code           = "code"
-	State          = "state"
-	HeaderLocation = "Location"
+	Code  = "code"
+	State = "state"
 
 	ResponseTypeCode  ResponseType = "code"
 	ResponseTypeToken ResponseType = "token"

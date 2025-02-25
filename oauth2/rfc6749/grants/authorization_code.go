@@ -77,12 +77,5 @@ func (grant *AuthorizationCodeGrant) Response(rw http.ResponseWriter, r *Authori
 		params[State] = r.State
 	}
 
-	location, err := common.AddParamsToURI(r.RedirectURI, params)
-	if err != nil {
-		return err
-	}
-
-	rw.Header().Set(HeaderLocation, location)
-	rw.WriteHeader(http.StatusFound)
-	return nil
+	return common.Redirect(rw, r.RedirectURI, params)
 }
