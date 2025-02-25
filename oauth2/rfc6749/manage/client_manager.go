@@ -9,7 +9,7 @@ import (
 var ErrClientNotFound = errors.New("client not found")
 
 type ClientStore interface {
-	QueryClientByID(id string) (models.OAuthClient, error)
+	FetchByClientId(id string) (models.OAuthClient, error)
 }
 
 type ClientManager struct {
@@ -21,7 +21,7 @@ func NewClientManager(store ClientStore) *ClientManager {
 }
 
 func (m *ClientManager) QueryByClientID(ClientID string) (models.OAuthClient, error) {
-	client, err := m.store.QueryClientByID(ClientID)
+	client, err := m.store.FetchByClientId(ClientID)
 	if err != nil {
 		return nil, err
 	}
