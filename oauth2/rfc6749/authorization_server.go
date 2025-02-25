@@ -1,33 +1,35 @@
 package rfc6749
 
 import (
+	"encoding/json"
+	"github.com/tniah/authlib/common"
+	"github.com/tniah/authlib/oauth2/rfc6749/errors"
+	"github.com/tniah/authlib/oauth2/rfc6749/grants"
 	"net/http"
 )
 
-type AuthorizationServer interface {
-	QueryClient(ClientID string) OAuthClient
-	CreateAuthorizationRequest(r *http.Request) *AuthorizationRequest
-	CreateAuthorizationResponse(rw http.ResponseWriter, r *AuthorizationRequest) error
-	//CreateTokenRequest(r *http.Request)
-	//CreateTokenResponse(rw http.ResponseWriter, r *http.Request)
+const (
+	headerLocation      = "Location"
+	headerContentType   = "Content-Type"
+	headerCacheControl  = "Cache-Control"
+	headerPragma        = "Pragma"
+	contentTypeJSON     = "application/json;charset=UTF-8"
+	cacheControlNoStore = "no-store"
+	pragmaNoCache       = "no-cache"
+)
+
+type AuthorizationServer struct {
+	authorizationGrants map[grants.AuthorizationGrant]bool
 }
 
-type DefaultAuthorizationServer struct {
-	authorizationGrants map[AuthorizationRequestHandler]bool
+func NewAuthorizationServer() *AuthorizationServer {
+	return &AuthorizationServer{}
 }
 
-func NewAuthorizationServer() AuthorizationServer {
-	return nil
-}
-
-func (srv *DefaultAuthorizationServer) QueryClient(clientID string) OAuthClient {
-	return nil
-}
-
-func (srv *DefaultAuthorizationServer) CreateAuthorizationRequest(r *http.Request) *AuthorizationRequest {
-	return &AuthorizationRequest{
+func (srv *AuthorizationServer) CreateAuthorizationRequest(r *http.Request) *grants.AuthorizationRequest {
+	return &grants.AuthorizationRequest{
 		ClientID:     r.FormValue("client_id"),
-		ResponseType: ResponseType(r.FormValue("response_type")),
+		ResponseType: grants.ResponseType(r.FormValue("response_type")),
 		RedirectURI:  r.FormValue("redirect_uri"),
 		Scope:        r.FormValue("scope"),
 		State:        r.FormValue("state"),
@@ -35,30 +37,71 @@ func (srv *DefaultAuthorizationServer) CreateAuthorizationRequest(r *http.Reques
 	}
 }
 
-func (srv *DefaultAuthorizationServer) GetAuthorizationRequestHandler(r *AuthorizationRequest) (AuthorizationRequestHandler, error) {
+func (srv *AuthorizationServer) GetAuthorizationGrant(r *grants.AuthorizationRequest) (grants.AuthorizationGrant, error) {
 	for grant := range srv.authorizationGrants {
 		if grant.CheckResponseType(r.ResponseType) {
 			return grant, nil
 		}
 	}
-	return nil, NewUnsupportedResponseTypeError()
+	return nil, errors.NewUnsupportedResponseTypeError()
 }
 
-func (srv *DefaultAuthorizationServer) CreateAuthorizationResponse(rw http.ResponseWriter, r *AuthorizationRequest) error {
+func (srv *AuthorizationServer) CreateAuthorizationResponse(rw http.ResponseWriter, req *http.Request) error {
+	r := srv.CreateAuthorizationRequest(req)
+	grant, err := srv.GetAuthorizationGrant(r)
+	if err != nil {
+		return srv.HandleOAuth2Error(rw, err)
+	}
+
+	if err = grant.ValidateRequest(r); err != nil {
+		return srv.HandleOAuth2Error(rw, err)
+	}
+
+	if err = grant.Response(rw, r); err != nil {
+		return srv.HandleOAuth2Error(rw, err)
+	}
+
 	return nil
 }
 
-func (srv *DefaultAuthorizationServer) RegisterGrant(grant interface{}) {
-	g, ok := grant.(OAuth2Grant)
-	if !ok {
-		return
-	}
-	g.RegisterWithServer(srv)
+func (srv *AuthorizationServer) RegisterGrant(grant interface{}) {
+	//g, ok := grant.(OAuth2Grant)
+	//if !ok {
+	//	return
+	//}
+	//g.RegisterWithServer(srv)
 
 	switch t := grant.(type) {
-	case AuthorizationRequestHandler:
+	case grants.AuthorizationGrant:
 		srv.authorizationGrants[t] = true
 	default:
 		return
 	}
+}
+
+func (srv *AuthorizationServer) HandleOAuth2Error(rw http.ResponseWriter, err error) error {
+	authErr, err := errors.ToOAuth2Error(err)
+	if err != nil {
+		return err
+	}
+
+	if authErr.RedirectUri != "" {
+		return common.Redirect(rw, authErr.RedirectUri, authErr.Data())
+	}
+
+	status, header, data := authErr.Response()
+	return srv.HandleJSONResponse(rw, status, header, data)
+}
+
+func (srv *AuthorizationServer) HandleJSONResponse(rw http.ResponseWriter, status int, header http.Header, data map[string]interface{}) error {
+	rw.Header().Set(headerContentType, contentTypeJSON)
+	rw.Header().Set(headerCacheControl, cacheControlNoStore)
+	rw.Header().Set(headerPragma, pragmaNoCache)
+
+	for k := range header {
+		rw.Header().Set(k, header.Get(k))
+	}
+
+	rw.WriteHeader(status)
+	return json.NewEncoder(rw).Encode(data)
 }

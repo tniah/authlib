@@ -6,117 +6,127 @@ import (
 	"net/http"
 )
 
-var (
-	ErrInvalidRequest          = errors.New("invalid_request")
-	ErrUnauthorizedClient      = errors.New("unauthorized_client")
-	ErrAccessDenied            = errors.New("access_denied")
-	ErrUnsupportedResponseType = errors.New("unsupported_response_type")
-	ErrInvalidScope            = errors.New("invalid_scope")
-	ErrServerError             = errors.New("server_error")
-	ErrTemporarilyUnavailable  = errors.New("temporarily_unavailable")
-)
-
-// Descriptions error description
-var Descriptions = map[error]string{
-	ErrInvalidRequest:          "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed",
-	ErrUnauthorizedClient:      "The client is not authorized to request an authorization code using this method",
-	ErrAccessDenied:            "The resource owner or authorization server denied the request",
-	ErrUnsupportedResponseType: "The authorization server does not support obtaining an authorization code using this method",
-	ErrServerError:             "The authorization server encountered an unexpected condition that prevented it from fulfilling the request",
-}
-
-// HttpCodes Http status code
-var HttpCodes = map[error]int{
-	ErrInvalidRequest:          http.StatusBadRequest,
-	ErrUnauthorizedClient:      http.StatusUnauthorized,
-	ErrAccessDenied:            http.StatusForbidden,
-	ErrUnsupportedResponseType: http.StatusUnauthorized,
-}
-
 type OAuth2Error struct {
-	// Code an error code
+	// Code a short-string error code
 	Code error
 	// Description human-readable text providing additional information,
 	// used to assist the client developer in understanding the error that occurred
 	Description string
-	// ErrorUri a URI identifying a human-readable web page with information about the error
-	ErrorUri string
-	// State if a "state" parameter was present in the authorization request. The exact value received from the client
+	// Uri a URI identifying a human-readable web page with information about the error
+	Uri string
+	// State
 	State string
 	// RedirectUri
 	RedirectUri string
-
-	// HttpCode HTTP code
-	HttpCode int
-	// HttpHeader HTTP headers
-	HttpHeader http.Header
+	// StatusCode Http status code
+	StatusCode int
+	// Header Http header
+	Header http.Header
 }
+
+type OAuth2ErrorOption func(*OAuth2Error)
 
 func (e *OAuth2Error) Error() string {
 	return fmt.Sprintf("error=%v | description=%s", e.Code, e.Description)
 }
 
-type ErrorOption func(*OAuth2Error)
+func New(code error, opts ...OAuth2ErrorOption) *OAuth2Error {
+	statusCode := http.StatusBadRequest
+	if v, ok := HttpCodes[code]; !ok {
+		statusCode = v
+	}
 
-func WithDescription(description string) ErrorOption {
+	e := &OAuth2Error{Code: code, StatusCode: statusCode}
+	for _, opt := range opts {
+		opt(e)
+	}
+
+	if e.Description == "" {
+		if value, ok := Descriptions[code]; ok {
+			e.Description = value
+		}
+	}
+
+	e.Header = make(http.Header)
+	return e
+}
+
+func WithDescription(desc string) OAuth2ErrorOption {
 	return func(e *OAuth2Error) {
-		e.Description = description
+		e.Description = desc
 	}
 }
 
-func WithErrUri(uri string) ErrorOption {
+func WithErrUri(uri string) OAuth2ErrorOption {
 	return func(e *OAuth2Error) {
-		e.ErrorUri = uri
+		e.Uri = uri
 	}
 }
 
-func WithState(state string) ErrorOption {
+func WithState(state string) OAuth2ErrorOption {
 	return func(e *OAuth2Error) {
 		e.State = state
 	}
 }
 
-func WithRedirectUri(uri string) ErrorOption {
+func WithRedirectUri(redirectUri string) OAuth2ErrorOption {
 	return func(e *OAuth2Error) {
-		e.RedirectUri = uri
+		e.RedirectUri = redirectUri
 	}
 }
 
-func NewOAuth2Error(e error, opts ...ErrorOption) *OAuth2Error {
-	err := &OAuth2Error{Code: e, HttpCode: http.StatusBadRequest}
-	for _, opt := range opts {
-		opt(err)
+func WithStatusCode(status int) OAuth2ErrorOption {
+	return func(e *OAuth2Error) {
+		e.StatusCode = status
+	}
+}
+
+func ToOAuth2Error(e error) (*OAuth2Error, error) {
+	var err *OAuth2Error
+	if ok := errors.As(e, &err); ok {
+		return err, nil
+	}
+	return nil, err
+}
+
+func (e *OAuth2Error) Data() map[string]interface{} {
+	data := map[string]interface{}{ErrCode: fmt.Sprint(e.Code)}
+
+	if e.Description != "" {
+		data[ErrDescription] = e.Description
 	}
 
-	if code, ok := HttpCodes[err.Code]; ok {
-		err.HttpCode = code
+	if e.Uri != "" {
+		data[ErrUri] = e.Uri
 	}
 
-	if err.Description == "" {
-		if value, ok := Descriptions[e]; ok {
-			err.Description = value
-		}
+	if e.State != "" {
+		data[ErrState] = e.State
 	}
 
-	return err
+	return data
 }
 
-func NewInvalidRequestError(opts ...ErrorOption) *OAuth2Error {
-	return NewOAuth2Error(ErrInvalidRequest, opts...)
+func (e *OAuth2Error) Response() (statusCode int, header http.Header, data map[string]interface{}) {
+	return e.StatusCode, e.Header, e.Data()
 }
 
-func NewUnauthorizedClientError(opts ...ErrorOption) *OAuth2Error {
-	return NewOAuth2Error(ErrUnauthorizedClient, opts...)
+func NewInvalidRequestError(opts ...OAuth2ErrorOption) *OAuth2Error {
+	return New(ErrInvalidRequest, opts...)
 }
 
-func NewUnsupportedResponseTypeError(opts ...ErrorOption) *OAuth2Error {
-	return NewOAuth2Error(ErrUnsupportedResponseType, opts...)
+func NewUnauthorizedClientError(opts ...OAuth2ErrorOption) *OAuth2Error {
+	return New(ErrUnauthorizedClient, opts...)
 }
 
-func NewAccessDeniedError(opts ...ErrorOption) *OAuth2Error {
-	return NewOAuth2Error(ErrAccessDenied, opts...)
+func NewUnsupportedResponseTypeError(opts ...OAuth2ErrorOption) *OAuth2Error {
+	return New(ErrUnsupportedResponseType, opts...)
 }
 
-func NewServerError(opts ...ErrorOption) *OAuth2Error {
-	return NewOAuth2Error(ErrServerError, opts...)
+func NewAccessDeniedError(opts ...OAuth2ErrorOption) *OAuth2Error {
+	return New(ErrAccessDenied, opts...)
+}
+
+func NewServerError(opts ...OAuth2ErrorOption) *OAuth2Error {
+	return New(ErrServerError, opts...)
 }
