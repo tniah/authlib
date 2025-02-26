@@ -1,41 +1,39 @@
 package grants
 
-import "time"
-
 type OAuthClient interface {
-	GetClientID() string
-	GetClientSecret() string
-	IsPublic() bool
+	//GetClientID() string
+	//GetClientSecret() string
+	//IsPublic() bool
 	GetDefaultRedirectURI() string
-	GetAllowedScopes(scopes []string) []string
-	CheckRedirectURI(redirectURI string) bool
-	CheckClientSecret(secret string) bool
-	CheckTokenEndpointAuthMethod(method string) bool
+	CheckRedirectURI(RedirectURI string) bool
+	//GetAllowedScopes(scopes []string) []string
+	//CheckClientSecret(secret string) bool
+	//CheckTokenEndpointAuthMethod(method string) bool
 	CheckResponseType(responseType string) bool
-	CheckGrantType(grantType string) bool
+	//CheckGrantType(grantType string) bool
 }
 
 type AuthorizationCode interface {
 	GetCode() string
-	SetCode(code string)
-	GetClientID() string
-	SetClientID(clientID string)
-	GetUserID() string
-	SetUserID(userID string)
-	GetRedirectURI() string
-	SetRedirectURI(redirectURI string)
-	GetResponseType() string
-	SetResponseType(responseType string)
-	GetScopes() []string
-	SetScopes(scopes []string)
-	GetNonce() string
-	SetNonce(nonce string)
-	GetState() string
-	SetState(state string)
-	GetAuthTime() time.Time
-	SetAuthTime(authTime time.Time)
-	GetCodeChallenge() string
-	SetCodeChallenge(codeChallenge string)
-	GetCodeChallengeMethod() string
-	SetCodeChallengeMethod(codeChallengeMethod string)
+	//SetCode(code string)
+	//GetClientID() string
+	//SetClientID(ClientID string)
+	//GetUserID() string
+	//SetUserID(UserID string)
+	//GetRedirectURI() string
+	//SetRedirectURI(RedirectURI string)
+	//GetResponseType() string
+	//SetResponseType(responseType string)
+	//GetScopes() []string
+	//SetScopes(scopes []string)
+	//GetNonce() string
+	//SetNonce(nonce string)
+	//GetState() string
+	//SetState(state string)
+	//GetAuthTime() time.Time
+	//SetAuthTime(authTime time.Time)
+	//GetCodeChallenge() string
+	//SetCodeChallenge(codeChallenge string)
+	//GetCodeChallengeMethod() string
+	//SetCodeChallengeMethod(codeChallengeMethod string)
 }

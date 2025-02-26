@@ -6,6 +6,7 @@ import (
 	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/oauth2/rfc6749/grants"
+	"time"
 )
 
 const AuthorizationCodeLength = 48
@@ -23,7 +24,7 @@ type AuthorizationCodeStore interface {
 	DeleteByCode(ctx context.Context, code string) error
 }
 
-type CodeGenerator func(gt grants.GrantType, client grants.OAuthClient, userID string) string
+type CodeGenerator func(gt grants.GrantType, r grants.AuthorizationRequest) (string, error)
 
 type AuthCodeManagerOption func(m *AuthorizationCodeManager)
 
@@ -62,23 +63,30 @@ func (m *AuthorizationCodeManager) DeleteByCode(ctx context.Context, code string
 	return m.store.DeleteByCode(ctx, code)
 }
 
-func (m *AuthorizationCodeManager) Generate(gt grants.GrantType, client grants.OAuthClient, userID string) grants.AuthorizationCode {
-	switch gt {
-	case grants.GrantTypeAuthorizationCode:
-		var code string
-		if m.codeGenerator != nil {
-			code = m.codeGenerator(gt, client, userID)
-		} else {
-			code, _ = common.GenerateRandString(AuthorizationCodeLength, common.AlphaNum)
-		}
-
-		authCode := &models.AuthorizationCode{
-			Code: code,
-		}
-		// TODO - Continue to set more attributes
-		return authCode
-	default:
-		// TODO
-		return nil
+func (m *AuthorizationCodeManager) Generate(gt grants.GrantType, r grants.AuthorizationRequest) (grants.AuthorizationCode, error) {
+	code, err := m.generateCode(gt, r)
+	if err != nil {
+		return nil, err
 	}
+
+	authCode := &models.AuthorizationCode{
+		Code:         code,
+		ClientID:     r.ClientId(),
+		UserID:       r.UserId(),
+		RedirectURI:  r.RedirectUri(),
+		ResponseType: r.ResponseType(),
+		Scopes:       r.Scopes(),
+		State:        r.State(),
+		AuthTime:     time.Now().UTC().Round(time.Second),
+	}
+
+	return authCode, nil
+}
+
+func (m *AuthorizationCodeManager) generateCode(gt grants.GrantType, r grants.AuthorizationRequest) (string, error) {
+	if m.codeGenerator != nil {
+		return m.codeGenerator(gt, r)
+	}
+
+	return common.GenerateRandString(AuthorizationCodeLength, common.AlphaNum)
 }

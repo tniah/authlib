@@ -19,63 +19,73 @@ func NewAuthorizationCodeGrant(clientMgr ClientManager, authCodeMgr Authorizatio
 	}
 }
 
-func (grant *AuthorizationCodeGrant) CheckResponseType(responseType ResponseType) bool {
-	return responseType == ResponseTypeCode
+func (grant *AuthorizationCodeGrant) CheckResponseType(responseType string) bool {
+	return ResponseType(responseType) == ResponseTypeCode
 }
 
-func (grant *AuthorizationCodeGrant) ValidateRequest(r *AuthorizationRequest) error {
-	clientID := r.ClientID
-	if clientID == "" {
+func (grant *AuthorizationCodeGrant) ValidateRequest(r AuthorizationRequest) error {
+	ClientID := r.ClientID()
+	state := r.State()
+
+	if ClientID == "" {
 		return errors.NewInvalidRequestError(
-			errors.WithDescription(ErrDescMissingClientId),
-			errors.WithState(r.State))
+			errors.WithDescription(ErrDescMissingClientID),
+			errors.WithState(state))
 	}
 
-	client, err := grant.clientMgr.QueryByClientId(r.Request.Context(), clientID)
+	client, err := grant.clientMgr.QueryByClientID(r.Request().Context(), ClientID)
 	if err != nil {
 		return errors.NewInvalidRequestError(
 			errors.WithDescription(ErrDescClientIDNotFound),
-			errors.WithState(r.State))
+			errors.WithState(state))
 	}
 
-	redirectURI, err := grant.ValidateRedirectUri(r, client)
+	RedirectURI, err := grant.ValidateRedirectURI(r, client)
 	if err != nil {
 		return err
 	}
 
-	if !grant.CheckResponseType(r.ResponseType) {
+	responseType := r.ResponseType()
+	if !grant.CheckResponseType(responseType) {
 		return errors.NewUnsupportedResponseTypeError(
-			errors.WithState(r.State),
-			errors.WithRedirectUri(redirectURI))
+			errors.WithState(state),
+			errors.WithRedirectURI(RedirectURI))
 	}
-	if allowed := client.CheckResponseType(string(r.ResponseType)); !allowed {
+	if allowed := client.CheckResponseType(r.ResponseType()); !allowed {
 		return errors.NewUnauthorizedClientError(
-			errors.WithState(r.State),
-			errors.WithRedirectUri(redirectURI))
+			errors.WithState(state),
+			errors.WithRedirectURI(RedirectURI))
 	}
 
-	r.Client = client
-	r.RedirectURI = redirectURI
+	r.SetClient(client)
+	r.SetRedirectURI(RedirectURI)
 
 	// TODO - Validate requested scopes
 	return nil
 }
 
-func (grant *AuthorizationCodeGrant) Response(rw http.ResponseWriter, r *AuthorizationRequest) error {
-	userID := r.UserID
-	if userID == "" {
+func (grant *AuthorizationCodeGrant) Response(rw http.ResponseWriter, r AuthorizationRequest) error {
+	UserID := r.UserID()
+	state := r.State()
+	RedirectURI := r.RedirectURI()
+
+	if UserID == "" {
 		return errors.NewAccessDeniedError(
-			errors.WithState(r.State),
-			errors.WithRedirectUri(r.RedirectURI))
+			errors.WithState(state),
+			errors.WithRedirectURI(RedirectURI))
 	}
 
-	authCode := grant.authCodeMgr.Generate(GrantTypeAuthorizationCode, r.Client, userID)
+	authCode, err := grant.authCodeMgr.Generate(GrantTypeAuthorizationCode, r)
+	if err != nil {
+		return err
+	}
+
 	params := map[string]interface{}{
 		Code: authCode.GetCode(),
 	}
-	if r.State != "" {
+	if state != "" {
 		params[State] = r.State
 	}
 
-	return common.Redirect(rw, r.RedirectURI, params)
+	return common.Redirect(rw, RedirectURI, params)
 }

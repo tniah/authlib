@@ -2,32 +2,26 @@ package grants
 
 import (
 	"github.com/tniah/authlib/oauth2/rfc6749/errors"
-	"net/http"
 )
-
-type AuthorizationGrant interface {
-	CheckResponseType(responseType ResponseType) bool
-	ValidateRequest(r *AuthorizationRequest) error
-	Response(rw http.ResponseWriter, r *AuthorizationRequest) error
-}
 
 type AuthorizationGrantMixin struct{}
 
-func (grant *AuthorizationGrantMixin) ValidateRedirectUri(r *AuthorizationRequest, client OAuthClient) (redirectURI string, err error) {
-	if r.RedirectURI == "" {
-		redirectURI = client.GetDefaultRedirectURI()
-		if redirectURI == "" {
+func (grant *AuthorizationGrantMixin) ValidateRedirectURI(r AuthorizationRequest, client OAuthClient) (RedirectURI string, err error) {
+	RedirectURI = r.RedirectURI()
+	state := r.State()
+	if RedirectURI == "" {
+		RedirectURI = client.GetDefaultRedirectURI()
+		if RedirectURI == "" {
 			return "", errors.NewInvalidRequestError(
-				errors.WithDescription(ErrDescMissingRedirectUri),
-				errors.WithState(r.State))
+				errors.WithDescription(ErrDescMissingRedirectURI),
+				errors.WithState(state))
 		}
 	} else {
-		redirectURI = r.RedirectURI
-		if allowed := client.CheckRedirectURI(redirectURI); !allowed {
+		if allowed := client.CheckRedirectURI(RedirectURI); !allowed {
 			return "", errors.NewInvalidRequestError(
-				errors.WithDescription(ErrDescInvalidRedirectUri),
-				errors.WithState(r.State))
+				errors.WithDescription(ErrDescInvalidRedirectURI),
+				errors.WithState(state))
 		}
 	}
-	return redirectURI, nil
+	return RedirectURI, nil
 }

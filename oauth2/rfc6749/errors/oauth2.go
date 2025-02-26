@@ -69,7 +69,7 @@ func WithState(state string) OAuth2ErrorOption {
 	}
 }
 
-func WithRedirectUri(redirectUri string) OAuth2ErrorOption {
+func WithRedirectURI(redirectUri string) OAuth2ErrorOption {
 	return func(e *OAuth2Error) {
 		e.RedirectUri = redirectUri
 	}
