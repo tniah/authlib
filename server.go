@@ -3,20 +3,10 @@ package authlib
 import (
 	"encoding/json"
 	"github.com/tniah/authlib/common"
+	"github.com/tniah/authlib/constants"
 	"github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/requests"
 	"net/http"
-)
-
-const (
-	QueryParamResponseType        = "response_type"
-	QueryParamClientID            = "client_id"
-	QueryParamRedirectURI         = "redirect_uri"
-	QueryParamScope               = "scope"
-	QueryParamState               = "state"
-	QueryParamNonce               = "nonce"
-	QueryParamCodeChallenge       = "code_challenge"
-	QueryParamCodeChallengeMethod = "code_challenge_method"
 )
 
 type AuthorizationGrant interface {
@@ -37,14 +27,14 @@ func NewServer() *Server {
 
 func (srv *Server) CreateAuthorizationRequest(r *http.Request) *requests.AuthorizationRequest {
 	return &requests.AuthorizationRequest{
-		ResponseType:        r.FormValue(QueryParamResponseType),
-		ClientID:            r.FormValue(QueryParamClientID),
-		RedirectURI:         r.FormValue(QueryParamRedirectURI),
-		Scope:               r.FormValue(QueryParamScope),
-		State:               r.FormValue(QueryParamState),
-		Nonce:               r.FormValue(QueryParamNonce),
-		CodeChallenge:       r.FormValue(QueryParamCodeChallenge),
-		CodeChallengeMethod: r.FormValue(QueryParamCodeChallengeMethod),
+		ResponseType:        r.FormValue(constants.QueryParamResponseType),
+		ClientID:            r.FormValue(constants.QueryParamClientID),
+		RedirectURI:         r.FormValue(constants.QueryParamRedirectURI),
+		Scope:               r.FormValue(constants.QueryParamScope),
+		State:               r.FormValue(constants.QueryParamState),
+		Nonce:               r.FormValue(constants.QueryParamNonce),
+		CodeChallenge:       r.FormValue(constants.QueryParamCodeChallenge),
+		CodeChallengeMethod: r.FormValue(constants.QueryParamCodeChallengeMethod),
 		Request:             r,
 	}
 }

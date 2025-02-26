@@ -2,14 +2,17 @@ package rfc6749
 
 import (
 	"github.com/tniah/authlib/common"
+	"github.com/tniah/authlib/constants"
 	"github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/requests"
 	"net/http"
 )
 
 const (
-	responseTypeCode           = "code"
-	grantTypeAuthorizationCode = "authorization_code"
+	ErrDescMissingClientID    = "Missing \"client_id\" parameter in request"
+	ErrDescClientIDNotFound   = "No client was found that matches \"client_id\" value"
+	ErrDescMissingRedirectURI = "Missing \"redirect_uri\" parameter in request"
+	ErrDescInvalidRedirectURI = "Redirect URI is not supported by client"
 )
 
 type AuthorizationCodeGrant struct {
@@ -26,7 +29,7 @@ func NewAuthorizationCodeGrant(clientMgr ClientManager, authCodeMgr Authorizatio
 }
 
 func (grant *AuthorizationCodeGrant) CheckResponseType(responseType string) bool {
-	return responseType == responseTypeCode
+	return constants.ResponseType(responseType) == constants.ResponseTypeCode
 }
 
 func (grant *AuthorizationCodeGrant) ValidateRequest(r *requests.AuthorizationRequest) error {
@@ -77,16 +80,16 @@ func (grant *AuthorizationCodeGrant) Response(rw http.ResponseWriter, r *request
 			errors.WithRedirectURI(r.RedirectURI))
 	}
 
-	code, err := grant.authCodeMgr.Generate(grantTypeAuthorizationCode, r)
+	code, err := grant.authCodeMgr.Generate(constants.GrantTypeAuthorizationCode, r)
 	if err != nil {
 		return err
 	}
 
 	params := map[string]interface{}{
-		Code: code,
+		constants.QueryParamCode: code,
 	}
 	if r.State != "" {
-		params[State] = r.State
+		params[constants.QueryParamState] = r.State
 	}
 
 	return common.Redirect(rw, r.RedirectURI, params)

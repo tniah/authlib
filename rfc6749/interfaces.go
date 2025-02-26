@@ -2,6 +2,7 @@ package rfc6749
 
 import (
 	"context"
+	"github.com/tniah/authlib/constants"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
 )
@@ -11,5 +12,5 @@ type ClientManager interface {
 }
 
 type AuthorizationCodeManager interface {
-	Generate(grantType string, r *requests.AuthorizationRequest) (string, error)
+	Generate(grantType constants.GrantType, r *requests.AuthorizationRequest) (string, error)
 }
