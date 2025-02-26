@@ -45,6 +45,18 @@ func (srv *Server) GetAuthorizationGrant(r *request.AuthorizationRequest) (Autho
 	return nil, errors.NewUnsupportedResponseTypeError()
 }
 
+func (srv *Server) RegisterGrant(grant interface{}) {
+	switch t := grant.(type) {
+	case AuthorizationGrant:
+		if srv.authorizationGrants == nil {
+			srv.authorizationGrants = make(map[AuthorizationGrant]bool)
+		}
+		srv.authorizationGrants[t] = true
+	default:
+		return
+	}
+}
+
 func (srv *Server) HandleError(rw http.ResponseWriter, err error) error {
 	authErr, err := errors.ToOAuth2Error(err)
 	if err != nil {
