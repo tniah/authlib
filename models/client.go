@@ -27,9 +27,9 @@ func (c *OAuth2Client) GetClientSecret() string {
 	return c.ClientSecret
 }
 
-func (c *OAuth2Client) IsPublic() bool {
-	return c.TokenEndpointAuthMethod == "none"
-}
+//func (c *OAuth2Client) IsPublic() bool {
+//	return c.TokenEndpointAuthMethod == "none"
+//}
 
 func (c *OAuth2Client) GetDefaultRedirectURI() string {
 	if len(c.RedirectURIs) == 0 {

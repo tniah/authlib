@@ -3,7 +3,7 @@ package grants
 type OAuthClient interface {
 	//GetClientID() string
 	//GetClientSecret() string
-	//IsPublic() bool
+	IsPublic() bool
 	GetDefaultRedirectURI() string
 	CheckRedirectURI(RedirectURI string) bool
 	//GetAllowedScopes(scopes []string) []string

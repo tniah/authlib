@@ -2,8 +2,14 @@ package grants
 
 import (
 	"github.com/tniah/authlib/common"
-	"github.com/tniah/authlib/oauth2/rfc6749/errors"
+	"github.com/tniah/authlib/rfc6749/errors"
+	"github.com/tniah/authlib/rfc6749/request"
 	"net/http"
+)
+
+const (
+	responseTypeCode           = "code"
+	grantTypeAuthorizationCode = "authorization_code"
 )
 
 type AuthorizationCodeGrant struct {
@@ -20,72 +26,68 @@ func NewAuthorizationCodeGrant(clientMgr ClientManager, authCodeMgr Authorizatio
 }
 
 func (grant *AuthorizationCodeGrant) CheckResponseType(responseType string) bool {
-	return ResponseType(responseType) == ResponseTypeCode
+	return responseType == responseTypeCode
 }
 
-func (grant *AuthorizationCodeGrant) ValidateRequest(r AuthorizationRequest) error {
-	ClientID := r.ClientID()
-	state := r.State()
+func (grant *AuthorizationCodeGrant) ValidateRequest(r *request.AuthorizationRequest) error {
+	clientID := r.ClientID
+	state := r.State
 
-	if ClientID == "" {
+	if clientID == "" {
 		return errors.NewInvalidRequestError(
 			errors.WithDescription(ErrDescMissingClientID),
 			errors.WithState(state))
 	}
 
-	client, err := grant.clientMgr.QueryByClientId(r.Request().Context(), ClientID)
+	client, err := grant.clientMgr.QueryByClientID(clientID)
 	if err != nil {
 		return errors.NewInvalidRequestError(
 			errors.WithDescription(ErrDescClientIDNotFound),
 			errors.WithState(state))
 	}
 
-	RedirectURI, err := grant.ValidateRedirectURI(r, client)
+	redirectURI, err := grant.ValidateRedirectURI(r, client)
 	if err != nil {
 		return err
 	}
 
-	responseType := r.ResponseType()
+	responseType := r.ResponseType
 	if !grant.CheckResponseType(responseType) {
 		return errors.NewUnsupportedResponseTypeError(
 			errors.WithState(state),
-			errors.WithRedirectURI(RedirectURI))
+			errors.WithRedirectURI(redirectURI))
 	}
-	if allowed := client.CheckResponseType(r.ResponseType()); !allowed {
+	if allowed := client.CheckResponseType(responseType); !allowed {
 		return errors.NewUnauthorizedClientError(
 			errors.WithState(state),
-			errors.WithRedirectURI(RedirectURI))
+			errors.WithRedirectURI(redirectURI))
 	}
 
-	r.SetClient(client)
-	r.SetRedirectURI(RedirectURI)
+	r.Client = client
+	r.RedirectURI = redirectURI
 
 	// TODO - Validate requested scopes
 	return nil
 }
 
-func (grant *AuthorizationCodeGrant) Response(rw http.ResponseWriter, r AuthorizationRequest) error {
-	UserID := r.UserID()
-	state := r.State()
-	RedirectURI := r.RedirectURI()
-
-	if UserID == "" {
+func (grant *AuthorizationCodeGrant) Response(rw http.ResponseWriter, r *request.AuthorizationRequest) error {
+	if r.UserID == "" {
 		return errors.NewAccessDeniedError(
-			errors.WithState(state),
-			errors.WithRedirectURI(RedirectURI))
+			errors.WithState(r.State),
+			errors.WithRedirectURI(r.RedirectURI))
 	}
 
-	authCode, err := grant.authCodeMgr.Generate(GrantTypeAuthorizationCode, r)
+	code, err := grant.authCodeMgr.Generate(grantTypeAuthorizationCode, r)
 	if err != nil {
 		return err
 	}
 
 	params := map[string]interface{}{
-		Code: authCode.GetCode(),
+		Code: code,
 	}
-	if state != "" {
+	if r.State != "" {
 		params[State] = r.State
 	}
 
-	return common.Redirect(rw, RedirectURI, params)
+	return common.Redirect(rw, r.RedirectURI, params)
 }
