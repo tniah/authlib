@@ -71,13 +71,17 @@ func (m *AuthorizationCodeManager) Generate(gt grants.GrantType, r grants.Author
 
 	authCode := &models.AuthorizationCode{
 		Code:         code,
-		ClientID:     r.ClientId(),
-		UserID:       r.UserId(),
-		RedirectURI:  r.RedirectUri(),
+		ClientID:     r.ClientID(),
+		UserID:       r.UserID(),
+		RedirectURI:  r.RedirectURI(),
 		ResponseType: r.ResponseType(),
 		Scopes:       r.Scopes(),
 		State:        r.State(),
 		AuthTime:     time.Now().UTC().Round(time.Second),
+	}
+
+	if err = m.store.Create(r.Request().Context(), authCode); err != nil {
+		return nil, err
 	}
 
 	return authCode, nil

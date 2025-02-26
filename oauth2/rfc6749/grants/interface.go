@@ -5,12 +5,6 @@ import (
 	"net/http"
 )
 
-type AuthorizationGrant interface {
-	CheckResponseType(responseType string) bool
-	ValidateRequest(r AuthorizationRequest) error
-	Response(rw http.ResponseWriter, r AuthorizationRequest) error
-}
-
 type AuthorizationRequest interface {
 	ResponseType() string
 	ClientID() string
