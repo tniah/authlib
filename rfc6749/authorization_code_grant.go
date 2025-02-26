@@ -9,10 +9,14 @@ import (
 )
 
 const (
-	ErrDescMissingClientID    = "Missing \"client_id\" parameter in request"
-	ErrDescClientIDNotFound   = "No client was found that matches \"client_id\" value"
-	ErrDescMissingRedirectURI = "Missing \"redirect_uri\" parameter in request"
-	ErrDescInvalidRedirectURI = "Redirect URI is not supported by client"
+	ErrMissingClientID        = "Missing \"client_id\" parameter in request"
+	ErrClientIDNotFound       = "No client was found that matches \"client_id\" value"
+	ErrMissingRedirectURI     = "Missing \"redirect_uri\" parameter in request"
+	ErrUnsupportedRedirectURI = "Redirect URI is not supported by client"
+	ErrUnsupportedGrantType   = "The client is not authorized to use grant type \"authorization_code\""
+	ErrMissingCode            = "Missing \"code\" parameter in request"
+	ErrInvalidCode            = "Invalid \"code\" in request"
+	ErrInvalidRedirectURI     = "Invalid \"redirect_uri\" in request"
 )
 
 type AuthorizationCodeGrant struct {
@@ -32,20 +36,20 @@ func (grant *AuthorizationCodeGrant) CheckResponseType(responseType string) bool
 	return constants.ResponseType(responseType) == constants.ResponseTypeCode
 }
 
-func (grant *AuthorizationCodeGrant) ValidateRequest(r *requests.AuthorizationRequest) error {
+func (grant *AuthorizationCodeGrant) ValidateAuthorizationRequest(r *requests.AuthorizationRequest) error {
 	clientID := r.ClientID
 	state := r.State
 
 	if clientID == "" {
 		return errors.NewInvalidRequestError(
-			errors.WithDescription(ErrDescMissingClientID),
+			errors.WithDescription(ErrMissingClientID),
 			errors.WithState(state))
 	}
 
 	client, err := grant.clientMgr.QueryByClientID(r.Request.Context(), clientID)
 	if err != nil {
 		return errors.NewInvalidRequestError(
-			errors.WithDescription(ErrDescClientIDNotFound),
+			errors.WithDescription(ErrClientIDNotFound),
 			errors.WithState(state))
 	}
 
@@ -73,7 +77,7 @@ func (grant *AuthorizationCodeGrant) ValidateRequest(r *requests.AuthorizationRe
 	return nil
 }
 
-func (grant *AuthorizationCodeGrant) Response(rw http.ResponseWriter, r *requests.AuthorizationRequest) error {
+func (grant *AuthorizationCodeGrant) AuthorizationResponse(rw http.ResponseWriter, r *requests.AuthorizationRequest) error {
 	if r.UserID == "" {
 		return errors.NewAccessDeniedError(
 			errors.WithState(r.State),
@@ -93,4 +97,38 @@ func (grant *AuthorizationCodeGrant) Response(rw http.ResponseWriter, r *request
 	}
 
 	return common.Redirect(rw, r.RedirectURI, params)
+}
+
+func (grant *AuthorizationCodeGrant) ValidateTokenRequest(r *requests.TokenRequest) error {
+	client, authMethod, err := grant.clientMgr.Authenticate(r.Request)
+	if err != nil {
+		return errors.NewInvalidClientError()
+	}
+
+	if !client.CheckGrantType(constants.GrantTypeAuthorizationCode) {
+		return errors.NewUnauthorizedClientError(errors.WithDescription(ErrUnsupportedGrantType))
+	}
+
+	code := r.Code
+	if code == "" {
+		return errors.NewInvalidRequestError(errors.WithDescription(ErrMissingCode))
+	}
+
+	authCode, err := grant.authCodeMgr.QueryByCode(r.Request.Context(), code)
+	if err != nil {
+		return err
+	}
+	if authCode == nil {
+		return errors.NewInvalidGrantError(errors.WithDescription(ErrInvalidCode))
+	}
+
+	redirectURI := authCode.GetRedirectURI()
+	if redirectURI != "" && redirectURI != r.RedirectURI {
+		return errors.NewInvalidGrantError(errors.WithDescription(ErrInvalidRedirectURI))
+	}
+
+	r.Client = client
+	r.TokenEndpointAuthMethod = authMethod
+	r.AuthorizationCode = authCode
+	return nil
 }

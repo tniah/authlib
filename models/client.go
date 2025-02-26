@@ -1,5 +1,7 @@
 package models
 
+import "github.com/tniah/authlib/constants"
+
 type Client interface {
 	GetClientID() string
 	GetClientSecret() string
@@ -11,5 +13,7 @@ type Client interface {
 	GetDefaultRedirectURI() string
 	CheckRedirectURI(redirectURI string) bool
 	CheckResponseType(responseType string) bool
-	CheckTokenEndpointAuthMethod(authMethod string) bool
+	CheckTokenEndpointAuthMethod(authMethod constants.TokenEndpointAuthMethodType) bool
+	CheckClientSecret(secret string) bool
+	CheckGrantType(grantType constants.GrantType) bool
 }

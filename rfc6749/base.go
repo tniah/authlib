@@ -13,14 +13,14 @@ func (grant *AuthorizationGrantMixin) ValidateRedirectURI(r *requests.Authorizat
 		redirectURI = client.GetDefaultRedirectURI()
 		if redirectURI == "" {
 			return "", errors.NewInvalidRequestError(
-				errors.WithDescription(ErrDescMissingRedirectURI),
+				errors.WithDescription(ErrMissingRedirectURI),
 				errors.WithState(r.State))
 		}
 	} else {
 		redirectURI = r.RedirectURI
 		if allowed := client.CheckRedirectURI(redirectURI); !allowed {
 			return "", errors.NewInvalidRequestError(
-				errors.WithDescription(ErrDescInvalidRedirectURI),
+				errors.WithDescription(ErrUnsupportedRedirectURI),
 				errors.WithState(r.State))
 		}
 	}

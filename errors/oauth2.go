@@ -62,15 +62,15 @@ func (e *OAuth2Error) SetHeader(key, value string) {
 
 func (e *OAuth2Error) Data() map[string]interface{} {
 	data := map[string]interface{}{
-		errCode: e.Code,
+		ErrCode: e.Code,
 	}
 
 	if e.Description != "" {
-		data[errDescription] = e.Description
+		data[ErrDescription] = e.Description
 	}
 
 	if e.URI != "" {
-		data[errUri] = e.URI
+		data[ErrUri] = e.URI
 	}
 
 	return data

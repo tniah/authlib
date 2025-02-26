@@ -2,18 +2,21 @@ package manage
 
 import (
 	"context"
-	"errors"
+	"github.com/tniah/authlib/constants"
 	"github.com/tniah/authlib/models"
+	"net/http"
+	"sync"
 )
-
-var ErrClientNotFound = errors.New("client not found")
 
 type ClientStore interface {
 	FetchByClientID(ctx context.Context, clientID string) (models.Client, error)
 }
 
 type ClientManager struct {
-	store ClientStore
+	lock               *sync.Mutex
+	store              ClientStore
+	authMethods        map[ClientAuthentication]bool
+	defaultAuthMethods map[ClientAuthentication]bool
 }
 
 func NewClientManager(store ClientStore) *ClientManager {
@@ -31,4 +34,45 @@ func (m *ClientManager) QueryByClientID(ctx context.Context, clientID string) (m
 	}
 
 	return c, nil
+}
+
+func (m *ClientManager) Authenticate(r *http.Request) (models.Client, constants.TokenEndpointAuthMethodType, error) {
+	authMethods := m.authMethods
+	if authMethods == nil {
+		authMethods = m.DefaultAuthMethods()
+	}
+
+	for h, _ := range authMethods {
+		client, err := h.Authenticate(r)
+		if err == nil {
+			return client, h.Method(), nil
+		}
+	}
+
+	return nil, "", ErrUnauthorizedClient
+}
+
+func (m *ClientManager) RegisterAuthMethod(authMethod ClientAuthentication) {
+	if m.authMethods == nil {
+		m.authMethods = make(map[ClientAuthentication]bool)
+	}
+	m.authMethods[authMethod] = true
+}
+
+func (m *ClientManager) DefaultAuthMethods() map[ClientAuthentication]bool {
+	if m.defaultAuthMethods == nil {
+		m.lock.Lock()
+		defer m.lock.Unlock()
+		if m.defaultAuthMethods == nil {
+			noneAuth := &ClientNoneAuthentication{store: m.store}
+			basicAuth := &ClientBasicAuthentication{store: m.store}
+			formAuth := &ClientFormAuthentication{store: m.store}
+			m.defaultAuthMethods = map[ClientAuthentication]bool{
+				noneAuth:  true,
+				basicAuth: true,
+				formAuth:  true,
+			}
+		}
+	}
+	return m.defaultAuthMethods
 }

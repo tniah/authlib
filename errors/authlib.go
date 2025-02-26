@@ -28,7 +28,7 @@ func NewAuthLibError(code error, opts ...AuthLibErrorOption) *AuthLibError {
 func (e *AuthLibError) Data() map[string]interface{} {
 	data := e.OAuth2Error.Data()
 	if e.State != "" {
-		data[errState] = e.State
+		data[ErrState] = e.State
 	}
 	return data
 }
@@ -73,8 +73,16 @@ func NewInvalidRequestError(opts ...AuthLibErrorOption) *AuthLibError {
 	return NewAuthLibError(ErrInvalidRequest, opts...)
 }
 
+func NewInvalidClientError(opts ...AuthLibErrorOption) *AuthLibError {
+	return NewAuthLibError(ErrInvalidClient, opts...)
+}
+
 func NewUnauthorizedClientError(opts ...AuthLibErrorOption) *AuthLibError {
 	return NewAuthLibError(ErrUnauthorizedClient, opts...)
+}
+
+func NewInvalidGrantError(opts ...AuthLibErrorOption) *AuthLibError {
+	return NewAuthLibError(ErrInvalidGrant, opts...)
 }
 
 func NewUnsupportedResponseTypeError(opts ...AuthLibErrorOption) *AuthLibError {

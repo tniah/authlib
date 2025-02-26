@@ -11,8 +11,8 @@ import (
 
 type AuthorizationGrant interface {
 	CheckResponseType(responseType string) bool
-	ValidateRequest(r *requests.AuthorizationRequest) error
-	Response(rw http.ResponseWriter, r *requests.AuthorizationRequest) error
+	ValidateAuthorizationRequest(r *requests.AuthorizationRequest) error
+	AuthorizationResponse(rw http.ResponseWriter, r *requests.AuthorizationRequest) error
 }
 
 type Server struct {
