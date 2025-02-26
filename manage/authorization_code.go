@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/tniah/authlib/common"
+	"github.com/tniah/authlib/constants"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
 	"time"
@@ -18,7 +19,7 @@ type AuthorizationCodeStore interface {
 	Save(ctx context.Context, authorizationCode models.AuthorizationCode) error
 }
 
-type CodeGenerator func(grantType string, r *requests.AuthorizationRequest) (string, error)
+type CodeGenerator func(grantType constants.GrantType, r *requests.AuthorizationRequest) (string, error)
 
 type AuthorizationCodeManagerOption func(m *AuthorizationCodeManager)
 
@@ -54,19 +55,19 @@ func (m *AuthorizationCodeManager) QueryByCode(ctx context.Context, code string)
 	return authCode, nil
 }
 
-func (m *AuthorizationCodeManager) Generate(grantType string, r *requests.AuthorizationRequest) (string, error) {
+func (m *AuthorizationCodeManager) Generate(grantType constants.GrantType, r *requests.AuthorizationRequest) (string, error) {
 	code, err := m.generateCode(grantType, r)
 	if err != nil {
 		return "", err
 	}
 
+	// TODO scopes
 	authCode := &AuthorizationCode{
 		Code:                code,
 		ClientID:            r.ClientID,
 		UserID:              r.UserID,
 		RedirectURI:         r.RedirectURI,
 		ResponseType:        r.ResponseType,
-		Scopes:              r.Scopes,
 		Nonce:               r.Nonce,
 		State:               r.State,
 		AuthTime:            time.Now().UTC().Round(time.Second),
@@ -80,7 +81,7 @@ func (m *AuthorizationCodeManager) Generate(grantType string, r *requests.Author
 	return code, nil
 }
 
-func (m *AuthorizationCodeManager) generateCode(grantType string, r *requests.AuthorizationRequest) (string, error) {
+func (m *AuthorizationCodeManager) generateCode(grantType constants.GrantType, r *requests.AuthorizationRequest) (string, error) {
 	if m.codeGenerator != nil {
 		return m.codeGenerator(grantType, r)
 	}
