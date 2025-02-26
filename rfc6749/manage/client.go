@@ -1,6 +1,7 @@
 package manage
 
 import (
+	"context"
 	"errors"
 	"github.com/tniah/authlib/rfc6749/model"
 )
@@ -8,15 +9,15 @@ import (
 var ErrClientNotFound = errors.New("client not found")
 
 type ClientStore interface {
-	FetchByClientID(clientID string) (model.Client, error)
+	FetchByClientID(ctx context.Context, clientID string) (model.Client, error)
 }
 
 type ClientManager struct {
 	store ClientStore
 }
 
-func (m *ClientManager) QueryByClientID(clientID string) (model.Client, error) {
-	c, err := m.store.FetchByClientID(clientID)
+func (m *ClientManager) QueryByClientID(ctx context.Context, clientID string) (model.Client, error) {
+	c, err := m.store.FetchByClientID(ctx, clientID)
 	if err != nil {
 		return nil, err
 	}

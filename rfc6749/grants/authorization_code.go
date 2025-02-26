@@ -39,7 +39,7 @@ func (grant *AuthorizationCodeGrant) ValidateRequest(r *request.AuthorizationReq
 			errors.WithState(state))
 	}
 
-	client, err := grant.clientMgr.QueryByClientID(clientID)
+	client, err := grant.clientMgr.QueryByClientID(r.Request.Context(), clientID)
 	if err != nil {
 		return errors.NewInvalidRequestError(
 			errors.WithDescription(ErrDescClientIDNotFound),

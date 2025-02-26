@@ -1,12 +1,13 @@
 package grants
 
 import (
+	"context"
 	"github.com/tniah/authlib/rfc6749/model"
 	"github.com/tniah/authlib/rfc6749/request"
 )
 
 type ClientManager interface {
-	QueryByClientID(clientID string) (model.Client, error)
+	QueryByClientID(ctx context.Context, clientID string) (model.Client, error)
 }
 
 type AuthorizationCodeManager interface {
