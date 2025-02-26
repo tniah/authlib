@@ -16,6 +16,10 @@ type ClientManager struct {
 	store ClientStore
 }
 
+func NewClientManager(store ClientStore) *ClientManager {
+	return &ClientManager{store: store}
+}
+
 func (m *ClientManager) QueryByClientID(ctx context.Context, clientID string) (model.Client, error) {
 	c, err := m.store.FetchByClientID(ctx, clientID)
 	if err != nil {
