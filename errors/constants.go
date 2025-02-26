@@ -6,10 +6,10 @@ import (
 )
 
 const (
-	ErrCode        = "error"
-	ErrDescription = "error_description"
-	ErrUri         = "error_uri"
-	ErrState       = "state"
+	errCode        = "error"
+	errDescription = "error_description"
+	errUri         = "error_uri"
+	errState       = "state"
 )
 
 var (

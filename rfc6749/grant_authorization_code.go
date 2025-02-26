@@ -1,9 +1,9 @@
-package grants
+package rfc6749
 
 import (
 	"github.com/tniah/authlib/common"
-	"github.com/tniah/authlib/rfc6749/errors"
-	"github.com/tniah/authlib/rfc6749/request"
+	"github.com/tniah/authlib/errors"
+	"github.com/tniah/authlib/requests"
 	"net/http"
 )
 
@@ -29,7 +29,7 @@ func (grant *AuthorizationCodeGrant) CheckResponseType(responseType string) bool
 	return responseType == responseTypeCode
 }
 
-func (grant *AuthorizationCodeGrant) ValidateRequest(r *request.AuthorizationRequest) error {
+func (grant *AuthorizationCodeGrant) ValidateRequest(r *requests.AuthorizationRequest) error {
 	clientID := r.ClientID
 	state := r.State
 
@@ -70,7 +70,7 @@ func (grant *AuthorizationCodeGrant) ValidateRequest(r *request.AuthorizationReq
 	return nil
 }
 
-func (grant *AuthorizationCodeGrant) Response(rw http.ResponseWriter, r *request.AuthorizationRequest) error {
+func (grant *AuthorizationCodeGrant) Response(rw http.ResponseWriter, r *requests.AuthorizationRequest) error {
 	if r.UserID == "" {
 		return errors.NewAccessDeniedError(
 			errors.WithState(r.State),

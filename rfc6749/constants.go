@@ -1,4 +1,4 @@
-package grants
+package rfc6749
 
 type (
 	ResponseType                string

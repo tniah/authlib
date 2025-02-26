@@ -1,7 +1,7 @@
-package request
+package requests
 
 import (
-	"github.com/tniah/authlib/rfc6749/model"
+	"github.com/tniah/authlib/models"
 	"net/http"
 )
 
@@ -9,12 +9,12 @@ type AuthorizationRequest struct {
 	ResponseType        string
 	ClientID            string
 	RedirectURI         string
-	Scopes              []string
+	Scope               string
 	Nonce               string
 	State               string
 	UserID              string
 	CodeChallenge       string
 	CodeChallengeMethod string
-	Client              model.Client
+	Client              models.Client
 	Request             *http.Request
 }

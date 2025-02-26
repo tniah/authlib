@@ -1,14 +1,14 @@
-package grants
+package rfc6749
 
 import (
-	"github.com/tniah/authlib/rfc6749/errors"
-	"github.com/tniah/authlib/rfc6749/model"
-	"github.com/tniah/authlib/rfc6749/request"
+	"github.com/tniah/authlib/errors"
+	"github.com/tniah/authlib/models"
+	"github.com/tniah/authlib/requests"
 )
 
 type AuthorizationGrantMixin struct{}
 
-func (grant *AuthorizationGrantMixin) ValidateRedirectURI(r *request.AuthorizationRequest, client model.Client) (redirectURI string, err error) {
+func (grant *AuthorizationGrantMixin) ValidateRedirectURI(r *requests.AuthorizationRequest, client models.Client) (redirectURI string, err error) {
 	if r.RedirectURI == "" {
 		redirectURI = client.GetDefaultRedirectURI()
 		if redirectURI == "" {
