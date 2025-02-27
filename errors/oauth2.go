@@ -65,12 +65,12 @@ func (e *OAuth2Error) Data() map[string]interface{} {
 		ErrCode: e.Code,
 	}
 
-	if e.Description != "" {
-		data[ErrDescription] = e.Description
+	if v := e.Description; v != "" {
+		data[ErrDescription] = v
 	}
 
-	if e.URI != "" {
-		data[ErrUri] = e.URI
+	if v := e.URI; v != "" {
+		data[ErrUri] = v
 	}
 
 	return data

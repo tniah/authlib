@@ -132,3 +132,7 @@ func (grant *AuthorizationCodeGrant) ValidateTokenRequest(r *requests.TokenReque
 	r.AuthorizationCode = authCode
 	return nil
 }
+
+func (grant *AuthorizationCodeGrant) TokenResponse(rw http.ResponseWriter, r *requests.TokenRequest) error {
+
+}
