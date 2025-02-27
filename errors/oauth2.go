@@ -22,8 +22,8 @@ type OAuth2Error struct {
 
 func NewOAuth2Error(code error, args ...string) *OAuth2Error {
 	httpCode := http.StatusBadRequest
-	if _, ok := HttpCodes[code]; ok {
-		httpCode = HttpCodes[code]
+	if v, ok := HttpCodes[code]; ok {
+		httpCode = v
 	}
 
 	e := &OAuth2Error{
@@ -41,8 +41,8 @@ func NewOAuth2Error(code error, args ...string) *OAuth2Error {
 	}
 
 	if e.Description == "" {
-		if _, ok := Descriptions[code]; ok {
-			e.Description = Descriptions[code]
+		if v, ok := Descriptions[code]; ok {
+			e.Description = v
 		}
 	}
 
