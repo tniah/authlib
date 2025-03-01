@@ -27,14 +27,14 @@ func NewServer() *Server {
 
 func (srv *Server) CreateAuthorizationRequest(r *http.Request) *requests.AuthorizationRequest {
 	return &requests.AuthorizationRequest{
-		ResponseType:        r.FormValue(constants.QueryParamResponseType),
-		ClientID:            r.FormValue(constants.QueryParamClientID),
-		RedirectURI:         r.FormValue(constants.QueryParamRedirectURI),
-		Scope:               r.FormValue(constants.QueryParamScope),
-		State:               r.FormValue(constants.QueryParamState),
-		Nonce:               r.FormValue(constants.QueryParamNonce),
-		CodeChallenge:       r.FormValue(constants.QueryParamCodeChallenge),
-		CodeChallengeMethod: r.FormValue(constants.QueryParamCodeChallengeMethod),
+		ResponseType:        r.FormValue(constants.ParamResponseType),
+		ClientID:            r.FormValue(constants.ParamClientID),
+		RedirectURI:         r.FormValue(constants.ParamRedirectURI),
+		Scope:               r.FormValue(constants.ParamScope),
+		State:               r.FormValue(constants.ParamState),
+		Nonce:               r.FormValue(constants.ParamNonce),
+		CodeChallenge:       r.FormValue(constants.ParamCodeChallenge),
+		CodeChallengeMethod: r.FormValue(constants.ParamCodeChallengeMethod),
 		Request:             r,
 	}
 }

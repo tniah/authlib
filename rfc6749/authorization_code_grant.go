@@ -17,18 +17,28 @@ const (
 	ErrMissingCode            = "Missing \"code\" parameter in request"
 	ErrInvalidCode            = "Invalid \"code\" in request"
 	ErrInvalidRedirectURI     = "Invalid \"redirect_uri\" in request"
+	ErrUserNotFound           = "No user could be found associated with this authorization code"
 )
 
 type AuthorizationCodeGrant struct {
+	userMgr     UserManager
 	clientMgr   ClientManager
 	authCodeMgr AuthorizationCodeManager
+	tokenMgr    TokenManager
 	AuthorizationGrantMixin
 }
 
-func NewAuthorizationCodeGrant(clientMgr ClientManager, authCodeMgr AuthorizationCodeManager) *AuthorizationCodeGrant {
+func NewAuthorizationCodeGrant(
+	userMgr UserManager,
+	clientMgr ClientManager,
+	authCodeMgr AuthorizationCodeManager,
+	tokenMgr TokenManager,
+) *AuthorizationCodeGrant {
 	return &AuthorizationCodeGrant{
+		userMgr:     userMgr,
 		clientMgr:   clientMgr,
 		authCodeMgr: authCodeMgr,
+		tokenMgr:    tokenMgr,
 	}
 }
 
@@ -90,10 +100,10 @@ func (grant *AuthorizationCodeGrant) AuthorizationResponse(rw http.ResponseWrite
 	}
 
 	params := map[string]interface{}{
-		constants.QueryParamCode: code,
+		constants.ParamCode: code,
 	}
 	if r.State != "" {
-		params[constants.QueryParamState] = r.State
+		params[constants.ParamState] = r.State
 	}
 
 	return common.Redirect(rw, r.RedirectURI, params)
@@ -134,5 +144,29 @@ func (grant *AuthorizationCodeGrant) ValidateTokenRequest(r *requests.TokenReque
 }
 
 func (grant *AuthorizationCodeGrant) TokenResponse(rw http.ResponseWriter, r *requests.TokenRequest) error {
+	userID := r.AuthorizationCode.GetUserID()
+	if userID == "" {
+		return errors.NewInvalidGrantError(errors.WithDescription(ErrUserNotFound))
+	}
 
+	user, err := grant.userMgr.GetByID(r.Request.Context(), userID)
+	if err != nil {
+		return err
+	}
+	if user == nil {
+		return errors.NewInvalidGrantError(errors.WithDescription(ErrUserNotFound))
+	}
+
+	token, err := grant.tokenMgr.GenerateAccessToken(constants.GrantTypeAuthorizationCode, user, r.Client, r.Scopes)
+	if err != nil {
+		return err
+	}
+
+	if err = grant.tokenMgr.SaveAccessToken(r.Request.Context(), token); err != nil {
+		return err
+	}
+
+	// TODO implement a hook
+	// TODO return response
+	return nil
 }

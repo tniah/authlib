@@ -26,3 +26,5 @@ func (grant *AuthorizationGrantMixin) ValidateRedirectURI(r *requests.Authorizat
 	}
 	return redirectURI, nil
 }
+
+type TokenGrantMixin struct{}

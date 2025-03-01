@@ -13,12 +13,16 @@ type ClientManager interface {
 	Authenticate(r *http.Request) (models.Client, constants.TokenEndpointAuthMethodType, error)
 }
 
+type UserManager interface {
+	GetByID(ctx context.Context, id string) (models.User, error)
+}
+
 type AuthorizationCodeManager interface {
 	QueryByCode(ctx context.Context, code string) (models.AuthorizationCode, error)
 	Generate(grantType constants.GrantType, r *requests.AuthorizationRequest) (string, error)
 }
 
 type TokenManager interface {
-	Generate(grantType constants.GrantType, r *requests.TokenRequest) (models.Token, error)
-	Save(ctx context.Context, token models.Token) error
+	GenerateAccessToken(grantType constants.GrantType, user models.User, client models.Client, scopes []string) (models.Token, error)
+	SaveAccessToken(ctx context.Context, token models.Token) error
 }

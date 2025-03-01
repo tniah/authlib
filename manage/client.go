@@ -56,6 +56,7 @@ func (m *ClientManager) RegisterAuthMethod(authMethod ClientAuthentication) {
 	if m.authMethods == nil {
 		m.authMethods = make(map[ClientAuthentication]bool)
 	}
+
 	m.authMethods[authMethod] = true
 }
 
@@ -63,6 +64,7 @@ func (m *ClientManager) DefaultAuthMethods() map[ClientAuthentication]bool {
 	if m.defaultAuthMethods == nil {
 		m.lock.Lock()
 		defer m.lock.Unlock()
+
 		if m.defaultAuthMethods == nil {
 			noneAuth := &ClientNoneAuthentication{store: m.store}
 			basicAuth := &ClientBasicAuthentication{store: m.store}
@@ -74,5 +76,6 @@ func (m *ClientManager) DefaultAuthMethods() map[ClientAuthentication]bool {
 			}
 		}
 	}
+
 	return m.defaultAuthMethods
 }

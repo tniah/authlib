@@ -11,7 +11,7 @@ type TokenRequest struct {
 	ClientID                string
 	Code                    string
 	RedirectURI             string
-	Scope                   string
+	Scopes                  []string
 	CodeChallenge           string
 	CodeChallengeMethod     string
 	CodeVerifier            string
