@@ -1,6 +1,7 @@
 package rfc6749
 
 import (
+	"encoding/json"
 	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/constants"
 	"github.com/tniah/authlib/errors"
@@ -168,5 +169,15 @@ func (grant *AuthorizationCodeGrant) TokenResponse(rw http.ResponseWriter, r *re
 
 	// TODO implement a hook
 	// TODO return response
-	return nil
+	for k, v := range common.DefaultJSONHeader() {
+		rw.Header().Set(k, v)
+	}
+	rw.WriteHeader(http.StatusOK)
+	data := map[string]interface{}{
+		"access_token": token.GetAccessToken(),
+		"token_type":   token.GetTokenType(),
+		"expires_in":   token.GetExpiresIn(),
+		"scopes":       token.GetScopes(),
+	}
+	return json.NewEncoder(rw).Encode(data)
 }
