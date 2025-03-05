@@ -7,7 +7,7 @@ import (
 )
 
 type TokenRequest struct {
-	GrantType               constants.GrantType
+	GrantType               string
 	ClientID                string
 	Code                    string
 	RedirectURI             string

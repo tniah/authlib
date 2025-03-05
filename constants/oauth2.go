@@ -23,4 +23,5 @@ const (
 	ParamCodeChallengeMethod = "code_challenge_method"
 	ParamClientID            = "client_id"
 	ParamClientSecret        = "client_secret"
+	ParamGrantType           = "grant_type"
 )

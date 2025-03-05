@@ -110,6 +110,10 @@ func (grant *AuthorizationCodeGrant) AuthorizationResponse(rw http.ResponseWrite
 	return common.Redirect(rw, r.RedirectURI, params)
 }
 
+func (grant *AuthorizationCodeGrant) CheckGrantType(grantType string) bool {
+	return constants.GrantType(grantType) == constants.GrantTypeAuthorizationCode
+}
+
 func (grant *AuthorizationCodeGrant) ValidateTokenRequest(r *requests.TokenRequest) error {
 	client, authMethod, err := grant.clientMgr.Authenticate(r.Request)
 	if err != nil {

@@ -15,13 +15,21 @@ type AuthorizationGrant interface {
 	AuthorizationResponse(rw http.ResponseWriter, r *requests.AuthorizationRequest) error
 }
 
+type TokenGrant interface {
+	CheckGrantType(grantType string) bool
+	ValidateTokenRequest(r *requests.TokenRequest) error
+	TokenResponse(rw http.ResponseWriter, r *requests.TokenRequest) error
+}
+
 type Server struct {
 	authorizationGrants map[AuthorizationGrant]bool
+	tokenGrants         map[TokenGrant]bool
 }
 
 func NewServer() *Server {
 	return &Server{
 		authorizationGrants: make(map[AuthorizationGrant]bool),
+		tokenGrants:         make(map[TokenGrant]bool),
 	}
 }
 
@@ -48,6 +56,25 @@ func (srv *Server) GetAuthorizationGrant(r *requests.AuthorizationRequest) (Auth
 	return nil, errors.NewUnsupportedResponseTypeError()
 }
 
+func (srv *Server) CreateTokenRequest(r *http.Request) *requests.TokenRequest {
+	return &requests.TokenRequest{
+		GrantType:   r.FormValue(constants.ParamGrantType),
+		ClientID:    r.FormValue(constants.ParamClientID),
+		Code:        r.FormValue(constants.ParamCode),
+		RedirectURI: r.FormValue(constants.ParamRedirectURI),
+		Request:     r,
+	}
+}
+
+func (srv *Server) GetTokenGrant(r *requests.TokenRequest) (TokenGrant, error) {
+	for grant := range srv.tokenGrants {
+		if grant.CheckGrantType(r.GrantType) {
+			return grant, nil
+		}
+	}
+	return nil, errors.NewInvalidGrantError()
+}
+
 func (srv *Server) RegisterGrant(grant interface{}) {
 	switch t := grant.(type) {
 	case AuthorizationGrant:
@@ -55,6 +82,11 @@ func (srv *Server) RegisterGrant(grant interface{}) {
 			srv.authorizationGrants = make(map[AuthorizationGrant]bool)
 		}
 		srv.authorizationGrants[t] = true
+	case TokenGrant:
+		if srv.tokenGrants == nil {
+			srv.tokenGrants = make(map[TokenGrant]bool)
+		}
+		srv.tokenGrants[t] = true
 	default:
 		return
 	}
