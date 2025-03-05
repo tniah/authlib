@@ -9,7 +9,10 @@ import (
 
 var ErrUnsupportedSigningMethod = errors.New("unsupported signing method")
 
-const JWTHeaderKid = "kid"
+const (
+	JWTHeaderKid     = "kid"
+	JWTClaimIssuedAt = "iat"
+)
 
 type JWTToken struct {
 	signingKeyID  string
@@ -52,7 +55,7 @@ func (t *JWTToken) SigningMethod() jwt.SigningMethod {
 
 func (t *JWTToken) Generate(claims JWTClaim, headers JWTHeader) (string, error) {
 	mapClaims := jwt.MapClaims{
-		"iat": jwt.NewNumericDate(time.Now()),
+		JWTClaimIssuedAt: jwt.NewNumericDate(time.Now()),
 	}
 	for k, _ := range claims {
 		mapClaims[k] = claims[k]
