@@ -84,13 +84,17 @@ func (grant *AuthorizationCodeGrant) AuthorizationResponse(rw http.ResponseWrite
 			errors.WithRedirectURI(r.RedirectURI))
 	}
 
-	code, err := grant.authCodeMgr.Generate(constants.GrantTypeAuthorizationCode, r)
+	authCode, err := grant.authCodeMgr.Generate(constants.GrantTypeAuthorizationCode, r)
 	if err != nil {
 		return err
 	}
 
+	if err = grant.authCodeMgr.Save(r.Request.Context(), authCode); err != nil {
+		return err
+	}
+
 	params := map[string]interface{}{
-		constants.ParamCode: code,
+		constants.ParamCode: authCode.GetCode(),
 	}
 	if r.State != "" {
 		params[constants.ParamState] = r.State
@@ -157,6 +161,10 @@ func (grant *AuthorizationCodeGrant) TokenResponse(rw http.ResponseWriter, r *re
 	}
 
 	if err = grant.tokenMgr.SaveAccessToken(r.Request.Context(), token); err != nil {
+		return err
+	}
+
+	if err = grant.authCodeMgr.DeleteByCode(r.Request.Context(), r.AuthorizationCode); err != nil {
 		return err
 	}
 

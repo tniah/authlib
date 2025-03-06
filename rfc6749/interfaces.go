@@ -19,7 +19,9 @@ type UserManager interface {
 
 type AuthorizationCodeManager interface {
 	QueryByCode(ctx context.Context, code string) (models.AuthorizationCode, error)
-	Generate(grantType constants.GrantType, r *requests.AuthorizationRequest) (string, error)
+	Generate(grantType constants.GrantType, r *requests.AuthorizationRequest) (models.AuthorizationCode, error)
+	Save(ctx context.Context, authorizationCode models.AuthorizationCode) error
+	DeleteByCode(ctx context.Context, code models.AuthorizationCode) error
 }
 
 type TokenManager interface {
