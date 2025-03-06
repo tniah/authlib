@@ -1,24 +1,11 @@
 package rfc6749
 
 import (
-	"encoding/json"
 	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/constants"
 	"github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/requests"
 	"net/http"
-)
-
-const (
-	ErrMissingClientID        = "Missing \"client_id\" parameter in request"
-	ErrClientIDNotFound       = "No client was found that matches \"client_id\" value"
-	ErrMissingRedirectURI     = "Missing \"redirect_uri\" parameter in request"
-	ErrUnsupportedRedirectURI = "Redirect URI is not supported by client"
-	ErrUnsupportedGrantType   = "The client is not authorized to use grant type \"authorization_code\""
-	ErrMissingCode            = "Missing \"code\" parameter in request"
-	ErrInvalidCode            = "Invalid \"code\" in request"
-	ErrInvalidRedirectURI     = "Invalid \"redirect_uri\" in request"
-	ErrUserNotFound           = "No user could be found associated with this authorization code"
 )
 
 type AuthorizationCodeGrant struct {
@@ -27,6 +14,7 @@ type AuthorizationCodeGrant struct {
 	authCodeMgr AuthorizationCodeManager
 	tokenMgr    TokenManager
 	AuthorizationGrantMixin
+	TokenGrantMixin
 }
 
 func NewAuthorizationCodeGrant(
@@ -172,16 +160,11 @@ func (grant *AuthorizationCodeGrant) TokenResponse(rw http.ResponseWriter, r *re
 	}
 
 	// TODO implement a hook
-	// TODO return response
-	for k, v := range common.DefaultJSONHeader() {
-		rw.Header().Set(k, v)
-	}
-	rw.WriteHeader(http.StatusOK)
 	data := map[string]interface{}{
-		"access_token": token.GetAccessToken(),
-		"token_type":   token.GetTokenType(),
-		"expires_in":   token.GetExpiresIn(),
-		"scopes":       token.GetScopes(),
+		ParamAccessToken: token.GetAccessToken(),
+		ParamTokenType:   token.GetTokenType(),
+		ParamExpiresIn:   token.GetExpiresIn(),
+		ParamScope:       token.GetScopes(),
 	}
-	return json.NewEncoder(rw).Encode(data)
+	return grant.HandleTokenResponse(rw, data)
 }

@@ -1,9 +1,12 @@
 package rfc6749
 
 import (
+	"encoding/json"
+	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
+	"net/http"
 )
 
 type AuthorizationGrantMixin struct{}
@@ -28,3 +31,12 @@ func (grant *AuthorizationGrantMixin) ValidateRedirectURI(r *requests.Authorizat
 }
 
 type TokenGrantMixin struct{}
+
+func (grant *TokenGrantMixin) HandleTokenResponse(rw http.ResponseWriter, data map[string]interface{}) error {
+	for k, v := range common.DefaultJSONHeader() {
+		rw.Header().Set(k, v)
+	}
+
+	rw.WriteHeader(http.StatusOK)
+	return json.NewEncoder(rw).Encode(data)
+}
