@@ -27,6 +27,7 @@ const (
 	ClaimNotBefore                  = "nbf"
 	ClaimIssuedAt                   = "iat"
 	ClaimJwtID                      = "jti"
+	ClaimScopes                     = "scopes"
 	DefaultAccessTokenLength        = 48
 	DefaultAccessTokenType          = TokenTypeJWT
 	DefaultAccessTokenSigningMethod = SigningMethodRS256
@@ -112,8 +113,10 @@ func (m *TokenManager) GenerateAccessToken(grantType constants.GrantType, user m
 		return nil, err
 	}
 
-	var token string
 	issuedAt := time.Now()
+	allowedScopes := client.GetAllowedScopes(scopes)
+
+	var token string
 	if typ == TokenTypeOpaque {
 		token, err = m.generateOpaqueToken(m.accessTokenLength)
 		if err != nil {
@@ -132,6 +135,7 @@ func (m *TokenManager) GenerateAccessToken(grantType constants.GrantType, user m
 			ClaimAudience:       client.GetClientID(),
 			ClaimIssuedAt:       jwt.NewNumericDate(issuedAt),
 			ClaimExpirationTime: jwt.NewNumericDate(issuedAt.Add(m.accessTokenExpiresIn)),
+			ClaimScopes:         allowedScopes,
 		}
 		token, err = m.generateJWTToken(m.accessTokenSigningKey, signingMethod, claims)
 		if err != nil {
@@ -143,7 +147,7 @@ func (m *TokenManager) GenerateAccessToken(grantType constants.GrantType, user m
 		AccessToken: token,
 		ClientID:    client.GetClientID(),
 		TokenType:   TokenTypeBearer,
-		Scopes:      scopes,
+		Scopes:      allowedScopes,
 		IssuedAt:    issuedAt,
 		ExpiresIn:   m.accessTokenExpiresIn,
 		UserID:      user.GetSubjectID(),

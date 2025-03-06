@@ -11,6 +11,7 @@ type Client interface {
 	GetScopes() []string
 	GetTokenEndpointAuthMethod() string
 	GetDefaultRedirectURI() string
+	GetAllowedScopes(scopes []string) []string
 	CheckRedirectURI(redirectURI string) bool
 	CheckResponseType(responseType constants.ResponseType) bool
 	CheckTokenEndpointAuthMethod(authMethod constants.TokenEndpointAuthMethodType) bool

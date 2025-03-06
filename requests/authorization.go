@@ -10,7 +10,7 @@ type AuthorizationRequest struct {
 	ResponseType        constants.ResponseType
 	ClientID            string
 	RedirectURI         string
-	Scope               string
+	Scopes              []string
 	Nonce               string
 	State               string
 	UserID              string

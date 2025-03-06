@@ -173,7 +173,7 @@ func (grant *AuthorizationCodeGrant) TokenResponse(rw http.ResponseWriter, r *re
 		ParamAccessToken: token.GetAccessToken(),
 		ParamTokenType:   token.GetTokenType(),
 		ParamExpiresIn:   int64(token.GetExpiresIn() / time.Second),
-		ParamScope:       token.GetScopes(),
+		ParamScopes:      token.GetScopes(),
 	}
 	return grant.HandleTokenResponse(rw, data)
 }

@@ -14,5 +14,5 @@ const (
 	ParamRefreshToken         = "refresh_token"
 	ParamTokenType            = "token_type"
 	ParamExpiresIn            = "expires_in"
-	ParamScope                = "scope"
+	ParamScopes               = "scopes"
 )

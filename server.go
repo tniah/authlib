@@ -7,6 +7,7 @@ import (
 	"github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/requests"
 	"net/http"
+	"strings"
 )
 
 type AuthorizationGrant interface {
@@ -38,7 +39,7 @@ func (srv *Server) CreateAuthorizationRequest(r *http.Request) *requests.Authori
 		ResponseType:        constants.ResponseType(r.FormValue(constants.ParamResponseType)),
 		ClientID:            r.FormValue(constants.ParamClientID),
 		RedirectURI:         r.FormValue(constants.ParamRedirectURI),
-		Scope:               r.FormValue(constants.ParamScope),
+		Scopes:              strings.Fields(r.FormValue(constants.ParamScope)),
 		State:               r.FormValue(constants.ParamState),
 		Nonce:               r.FormValue(constants.ParamNonce),
 		CodeChallenge:       r.FormValue(constants.ParamCodeChallenge),
@@ -62,6 +63,7 @@ func (srv *Server) CreateTokenRequest(r *http.Request) *requests.TokenRequest {
 		ClientID:    r.FormValue(constants.ParamClientID),
 		Code:        r.FormValue(constants.ParamCode),
 		RedirectURI: r.FormValue(constants.ParamRedirectURI),
+		Scopes:      strings.Fields(r.FormValue(constants.ParamScope)),
 		Request:     r,
 	}
 }

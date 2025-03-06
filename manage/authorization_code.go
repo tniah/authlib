@@ -62,13 +62,13 @@ func (m *AuthorizationCodeManager) Generate(grantType constants.GrantType, r *re
 		return nil, err
 	}
 
-	// TODO scopes
 	authCode := &AuthorizationCode{
 		Code:                code,
 		ClientID:            r.ClientID,
 		UserID:              r.UserID,
 		RedirectURI:         r.RedirectURI,
 		ResponseType:        string(r.ResponseType),
+		Scopes:              r.Scopes,
 		Nonce:               r.Nonce,
 		State:               r.State,
 		AuthTime:            time.Now().UTC().Round(time.Second),
