@@ -68,7 +68,7 @@ func (m *AuthorizationCodeManager) Generate(grantType constants.GrantType, r *re
 		ClientID:            r.ClientID,
 		UserID:              r.UserID,
 		RedirectURI:         r.RedirectURI,
-		ResponseType:        r.ResponseType,
+		ResponseType:        string(r.ResponseType),
 		Nonce:               r.Nonce,
 		State:               r.State,
 		AuthTime:            time.Now().UTC().Round(time.Second),
