@@ -6,6 +6,7 @@ import (
 	"github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/requests"
 	"net/http"
+	"time"
 )
 
 type AuthorizationCodeGrant struct {
@@ -163,7 +164,7 @@ func (grant *AuthorizationCodeGrant) TokenResponse(rw http.ResponseWriter, r *re
 	data := map[string]interface{}{
 		ParamAccessToken: token.GetAccessToken(),
 		ParamTokenType:   token.GetTokenType(),
-		ParamExpiresIn:   token.GetExpiresIn(),
+		ParamExpiresIn:   int64(token.GetExpiresIn() / time.Second),
 		ParamScope:       token.GetScopes(),
 	}
 	return grant.HandleTokenResponse(rw, data)

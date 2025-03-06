@@ -13,7 +13,7 @@ import (
 const (
 	TokenTypeJWT                    = "jwt"
 	TokenTypeOpaque                 = "opaque"
-	TokenTypeBearer                 = "bearer"
+	TokenTypeBearer                 = "Bearer"
 	SigningMethodRS256              = "RS256"
 	SigningMethodRS384              = "RS384"
 	SigningMethodRS512              = "RS512"
