@@ -44,16 +44,7 @@ func WithCodeGenerator(fn CodeGenerator) AuthorizationCodeManagerOption {
 }
 
 func (m *AuthorizationCodeManager) QueryByCode(ctx context.Context, code string) (models.AuthorizationCode, error) {
-	authCode, err := m.store.FetchByCode(ctx, code)
-	if err != nil {
-		return nil, err
-	}
-
-	if authCode == nil {
-		return nil, ErrAuthorizationCodeNotFound
-	}
-
-	return authCode, nil
+	return m.store.FetchByCode(ctx, code)
 }
 
 func (m *AuthorizationCodeManager) Generate(grantType constants.GrantType, r *requests.AuthorizationRequest) (models.AuthorizationCode, error) {
