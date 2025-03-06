@@ -10,13 +10,13 @@ import (
 )
 
 type AuthorizationGrant interface {
-	CheckResponseType(responseType string) bool
+	CheckResponseType(responseType constants.ResponseType) bool
 	ValidateAuthorizationRequest(r *requests.AuthorizationRequest) error
 	AuthorizationResponse(rw http.ResponseWriter, r *requests.AuthorizationRequest) error
 }
 
 type TokenGrant interface {
-	CheckGrantType(grantType string) bool
+	CheckGrantType(grantType constants.GrantType) bool
 	ValidateTokenRequest(r *requests.TokenRequest) error
 	TokenResponse(rw http.ResponseWriter, r *requests.TokenRequest) error
 }
@@ -35,7 +35,7 @@ func NewServer() *Server {
 
 func (srv *Server) CreateAuthorizationRequest(r *http.Request) *requests.AuthorizationRequest {
 	return &requests.AuthorizationRequest{
-		ResponseType:        r.FormValue(constants.ParamResponseType),
+		ResponseType:        constants.ResponseType(r.FormValue(constants.ParamResponseType)),
 		ClientID:            r.FormValue(constants.ParamClientID),
 		RedirectURI:         r.FormValue(constants.ParamRedirectURI),
 		Scope:               r.FormValue(constants.ParamScope),
@@ -58,7 +58,7 @@ func (srv *Server) GetAuthorizationGrant(r *requests.AuthorizationRequest) (Auth
 
 func (srv *Server) CreateTokenRequest(r *http.Request) *requests.TokenRequest {
 	return &requests.TokenRequest{
-		GrantType:   r.FormValue(constants.ParamGrantType),
+		GrantType:   constants.GrantType(r.FormValue(constants.ParamGrantType)),
 		ClientID:    r.FormValue(constants.ParamClientID),
 		Code:        r.FormValue(constants.ParamCode),
 		RedirectURI: r.FormValue(constants.ParamRedirectURI),

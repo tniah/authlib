@@ -1,12 +1,13 @@
 package requests
 
 import (
+	"github.com/tniah/authlib/constants"
 	"github.com/tniah/authlib/models"
 	"net/http"
 )
 
 type AuthorizationRequest struct {
-	ResponseType        string
+	ResponseType        constants.ResponseType
 	ClientID            string
 	RedirectURI         string
 	Scope               string

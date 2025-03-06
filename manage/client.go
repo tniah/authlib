@@ -48,7 +48,9 @@ func (m *ClientManager) Authenticate(r *http.Request) (models.Client, constants.
 	for h, _ := range authMethods {
 		client, err := h.Authenticate(r)
 		if err == nil {
-			return client, h.Method(), nil
+			if client.CheckTokenEndpointAuthMethod(h.Method()) {
+				return client, h.Method(), nil
+			}
 		}
 	}
 

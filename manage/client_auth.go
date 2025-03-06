@@ -34,10 +34,6 @@ func (h *ClientBasicAuthentication) Authenticate(r *http.Request) (models.Client
 		return nil, ErrUnauthorizedClient
 	}
 
-	if !client.CheckTokenEndpointAuthMethod(h.Method()) {
-		return nil, ErrUnauthorizedClient
-	}
-
 	return client, nil
 }
 
@@ -65,10 +61,6 @@ func (h *ClientFormAuthentication) Authenticate(r *http.Request) (models.Client,
 		return nil, ErrUnauthorizedClient
 	}
 
-	if !client.CheckTokenEndpointAuthMethod(h.Method()) {
-		return nil, ErrUnauthorizedClient
-	}
-
 	return client, nil
 }
 
@@ -89,10 +81,6 @@ func (h *ClientNoneAuthentication) Authenticate(r *http.Request) (models.Client,
 	client, err := h.store.FetchByClientID(r.Context(), clientID)
 	if err != nil {
 		return nil, err
-	}
-
-	if !client.CheckTokenEndpointAuthMethod(h.Method()) {
-		return nil, ErrUnauthorizedClient
 	}
 
 	return client, nil

@@ -32,8 +32,8 @@ func NewAuthorizationCodeGrant(
 	}
 }
 
-func (grant *AuthorizationCodeGrant) CheckResponseType(responseType string) bool {
-	return constants.ResponseType(responseType) == constants.ResponseTypeCode
+func (grant *AuthorizationCodeGrant) CheckResponseType(responseType constants.ResponseType) bool {
+	return responseType == constants.ResponseTypeCode
 }
 
 func (grant *AuthorizationCodeGrant) ValidateAuthorizationRequest(r *requests.AuthorizationRequest) error {
@@ -103,8 +103,8 @@ func (grant *AuthorizationCodeGrant) AuthorizationResponse(rw http.ResponseWrite
 	return common.Redirect(rw, r.RedirectURI, params)
 }
 
-func (grant *AuthorizationCodeGrant) CheckGrantType(grantType string) bool {
-	return constants.GrantType(grantType) == constants.GrantTypeAuthorizationCode
+func (grant *AuthorizationCodeGrant) CheckGrantType(grantType constants.GrantType) bool {
+	return grantType == constants.GrantTypeAuthorizationCode
 }
 
 func (grant *AuthorizationCodeGrant) ValidateTokenRequest(r *requests.TokenRequest) error {
