@@ -72,7 +72,7 @@ func (srv *Server) GetTokenGrant(r *requests.TokenRequest) (TokenGrant, error) {
 			return grant, nil
 		}
 	}
-	return nil, errors.NewInvalidGrantError()
+	return nil, errors.NewUnsupportedGrantTypeError()
 }
 
 func (srv *Server) RegisterGrant(grant interface{}) {

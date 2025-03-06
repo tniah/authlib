@@ -20,6 +20,7 @@ var (
 	ErrInvalidScope            = errors.New("invalid_scope")
 	ErrInvalidClient           = errors.New("invalid_client")
 	ErrInvalidGrant            = errors.New("invalid_grant")
+	ErrUnsupportedGrantType    = errors.New("unsupported_grant_type")
 	ErrServerError             = errors.New("server_error")
 	ErrTemporarilyUnavailable  = errors.New("temporarily_unavailable")
 )
@@ -33,6 +34,7 @@ var Descriptions = map[error]string{
 	ErrInvalidScope:            "The requested scope is invalid, unknown, or malformed",
 	ErrInvalidClient:           "Client authentication failed",
 	ErrInvalidGrant:            "The provided authorization grant (e.g., authorization code, resource owner credentials) or refresh token is invalid, expired, revoked, does not match the redirection URI used in the authorization request, or was issued to another client",
+	ErrUnsupportedGrantType:    "The authorization grant type is not supported by the authorization server",
 	ErrServerError:             "The authorization server encountered an unexpected condition that prevented it from fulfilling the request",
 	ErrTemporarilyUnavailable:  "The authorization server is currently unable to handle the request due to a temporary overloading or maintenance of the server",
 }
@@ -46,6 +48,7 @@ var HttpCodes = map[error]int{
 	ErrInvalidScope:            http.StatusBadRequest,
 	ErrInvalidClient:           http.StatusUnauthorized,
 	ErrInvalidGrant:            http.StatusUnauthorized,
+	ErrUnsupportedGrantType:    http.StatusUnauthorized,
 	ErrServerError:             http.StatusInternalServerError,
 	ErrTemporarilyUnavailable:  http.StatusServiceUnavailable,
 }

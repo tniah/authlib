@@ -85,6 +85,10 @@ func NewInvalidGrantError(opts ...AuthLibErrorOption) *AuthLibError {
 	return NewAuthLibError(ErrInvalidGrant, opts...)
 }
 
+func NewUnsupportedGrantTypeError(opts ...AuthLibErrorOption) *AuthLibError {
+	return NewAuthLibError(ErrUnsupportedGrantType, opts...)
+}
+
 func NewUnsupportedResponseTypeError(opts ...AuthLibErrorOption) *AuthLibError {
 	return NewAuthLibError(ErrUnsupportedResponseType, opts...)
 }
