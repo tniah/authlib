@@ -62,7 +62,7 @@ func (e *OAuth2Error) SetHeader(key, value string) {
 
 func (e *OAuth2Error) Data() map[string]interface{} {
 	data := map[string]interface{}{
-		ErrCode: e.Code,
+		ErrCode: fmt.Sprintf("%v", e.Code),
 	}
 
 	if v := e.Description; v != "" {
