@@ -20,7 +20,10 @@ type ClientManager struct {
 }
 
 func NewClientManager(store ClientStore) *ClientManager {
-	return &ClientManager{store: store}
+	return &ClientManager{
+		lock:  &sync.Mutex{},
+		store: store,
+	}
 }
 
 func (m *ClientManager) QueryByClientID(ctx context.Context, clientID string) (models.Client, error) {
