@@ -82,6 +82,11 @@ func (srv *Server) RegisterGrant(grant interface{}) {
 			srv.authorizationGrants = make(map[AuthorizationGrant]bool)
 		}
 		srv.authorizationGrants[t] = true
+	default:
+		return
+	}
+
+	switch t := grant.(type) {
 	case TokenGrant:
 		if srv.tokenGrants == nil {
 			srv.tokenGrants = make(map[TokenGrant]bool)
