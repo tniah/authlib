@@ -44,10 +44,10 @@ func (m *AuthorizationCodeManager) QueryByCode(ctx context.Context, code string)
 	return m.store.FetchByCode(ctx, code)
 }
 
-func (m *AuthorizationCodeManager) Generate(grantType string, r *requests.AuthorizationRequest) (string, error) {
+func (m *AuthorizationCodeManager) Generate(grantType string, r *requests.AuthorizationRequest) (models.AuthorizationCode, error) {
 	code, err := m.generateCode(grantType, r)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	authCode := &AuthorizationCode{
@@ -64,10 +64,10 @@ func (m *AuthorizationCodeManager) Generate(grantType string, r *requests.Author
 		CodeChallengeMethod: r.CodeChallengeMethod,
 	}
 	if err = m.store.Save(r.Request.Context(), authCode); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return code, nil
+	return authCode, nil
 }
 
 func (m *AuthorizationCodeManager) DeleteByCode(ctx context.Context, code string) error {

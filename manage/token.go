@@ -5,47 +5,78 @@ import (
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/rfc6750"
+	"sync"
 )
 
 type (
 	TokenManager struct {
-		store                TokenStore
-		bearerTokenGenerator *rfc6750.BearerTokenGenerator
+		lock                        *sync.Mutex
+		store                       TokenStore
+		accessTokenGenerator        AccessTokenGenerator
+		defaultAccessTokenGenerator AccessTokenGenerator
 	}
+
+	TokenManagerOption func(m *TokenManager)
 
 	TokenStore interface {
 		Save(ctx context.Context, token models.Token) error
 	}
+
+	AccessTokenGenerator interface {
+		Generate(
+			grantType string,
+			user models.User,
+			client models.Client,
+			scopes []string,
+			includeRefreshToken bool,
+			args ...map[string]interface{},
+		) (models.Token, error)
+	}
 )
 
-func NewTokenManager(store TokenStore) *TokenManager {
-	bearerTokenGenerator := rfc6750.NewBearerTokenGenerator()
-	return &TokenManager{
-		store:                store,
-		bearerTokenGenerator: bearerTokenGenerator,
+func NewTokenManager(store TokenStore, opts ...TokenManagerOption) *TokenManager {
+	m := &TokenManager{store: store, lock: &sync.Mutex{}}
+
+	for _, opt := range opts {
+		opt(m)
+	}
+
+	return m
+}
+
+func WithAccessTokenGenerator(g AccessTokenGenerator) TokenManagerOption {
+	return func(m *TokenManager) {
+		m.accessTokenGenerator = g
 	}
 }
 
-func (m *TokenManager) GenerateAccessToken(grantType string, r *requests.TokenRequest, includeRefreshToken bool) (map[string]interface{}, error) {
-	token, err := m.bearerTokenGenerator.Generate(grantType, r.User, r.Client, r.Scopes, includeRefreshToken)
+func (m *TokenManager) GenerateAccessToken(grantType string, r *requests.TokenRequest, includeRefreshToken bool) (models.Token, error) {
+	generator := m.accessTokenGenerator
+	if generator == nil {
+		generator = m.getDefaultAccessTokenGenerator()
+	}
+
+	token, err := generator.Generate(grantType, r.User, r.Client, r.Scopes, includeRefreshToken)
 	if err != nil {
 		return nil, err
 	}
 
-	t := &Token{
-		TokenID:      "",
-		AccessToken:  "",
-		RefreshToken: token.GetRefreshToken(),
-		ClientID:     r.Client.GetClientID(),
-		TokenType:    token.GetType(),
-		Scopes:       token.GetScopes(),
-		IssuedAt:     "",
-		ExpiresIn:    token.GetExpiresIn(),
-		UserID:       r.User.GetSubjectID(),
-	}
-	if err := m.store.Save(r.Request.Context(), t); err != nil {
+	if err := m.store.Save(r.Request.Context(), token); err != nil {
 		return nil, err
 	}
 
-	return token.GetData(), nil
+	return token, nil
+}
+
+func (m *TokenManager) getDefaultAccessTokenGenerator() AccessTokenGenerator {
+	if m.defaultAccessTokenGenerator == nil {
+		m.lock.Lock()
+		defer m.lock.Unlock()
+
+		if m.defaultAccessTokenGenerator == nil {
+			m.defaultAccessTokenGenerator = rfc6750.NewBearerTokenGenerator()
+		}
+	}
+
+	return m.defaultAccessTokenGenerator
 }

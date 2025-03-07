@@ -82,12 +82,12 @@ func (grant *AuthorizationCodeGrant) AuthorizationResponse(rw http.ResponseWrite
 			errors.WithRedirectURI(r.RedirectURI))
 	}
 
-	code, err := grant.authCodeMgr.Generate(GrantTypeAuthorizationCode, r)
+	authCode, err := grant.authCodeMgr.Generate(GrantTypeAuthorizationCode, r)
 	if err != nil {
 		return err
 	}
 
-	params := map[string]interface{}{ParamCode: code}
+	params := map[string]interface{}{ParamCode: authCode.GetCode()}
 	if r.State != "" {
 		params[ParamState] = r.State
 	}
@@ -158,5 +158,5 @@ func (grant *AuthorizationCodeGrant) TokenResponse(rw http.ResponseWriter, r *re
 	}
 
 	// TODO implement a hook
-	return grant.HandleTokenResponse(rw, token)
+	return grant.HandleTokenResponse(rw, token.GetData())
 }

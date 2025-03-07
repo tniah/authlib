@@ -18,10 +18,10 @@ type UserManager interface {
 
 type AuthorizationCodeManager interface {
 	QueryByCode(ctx context.Context, code string) (models.AuthorizationCode, error)
-	Generate(grantType string, r *requests.AuthorizationRequest) (string, error)
+	Generate(grantType string, r *requests.AuthorizationRequest) (models.AuthorizationCode, error)
 	DeleteByCode(ctx context.Context, code string) error
 }
 
 type TokenManager interface {
-	GenerateAccessToken(grantType string, r *requests.TokenRequest, includeRefreshToken bool) (map[string]interface{}, error)
+	GenerateAccessToken(grantType string, r *requests.TokenRequest, includeRefreshToken bool) (models.Token, error)
 }

@@ -92,7 +92,7 @@ func (g *BearerTokenGenerator) Generate(
 	scopes []string,
 	includeRefreshToken bool,
 	args ...map[string]interface{},
-) (*Token, error) {
+) (models.Token, error) {
 	allowedScopes := client.GetAllowedScopes(scopes)
 	t := &Token{
 		tokenID:  strings.Replace(uuid.NewString(), "-", "", -1),
