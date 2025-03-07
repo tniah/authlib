@@ -29,7 +29,7 @@ func (h *ClientBasicAuthentication) Method() string {
 func (h *ClientBasicAuthentication) Authenticate(r *http.Request) (models.Client, error) {
 	clientID, clientSecret, ok := r.BasicAuth()
 	if !ok || clientID == "" {
-		return nil, ErrClientNotFound
+		return nil, ErrInvalidClient
 	}
 
 	client, err := h.store.FetchByClientID(r.Context(), clientID)
@@ -38,7 +38,7 @@ func (h *ClientBasicAuthentication) Authenticate(r *http.Request) (models.Client
 	}
 
 	if !client.CheckClientSecret(clientSecret) {
-		return nil, ErrUnauthorizedClient
+		return nil, ErrInvalidClient
 	}
 
 	return client, nil
@@ -55,7 +55,7 @@ func (h *ClientFormAuthentication) Method() string {
 func (h *ClientFormAuthentication) Authenticate(r *http.Request) (models.Client, error) {
 	clientID := r.FormValue(ParamClientID)
 	if clientID == "" {
-		return nil, ErrClientNotFound
+		return nil, ErrInvalidClient
 	}
 
 	client, err := h.store.FetchByClientID(r.Context(), clientID)
@@ -65,7 +65,7 @@ func (h *ClientFormAuthentication) Authenticate(r *http.Request) (models.Client,
 
 	clientSecret := r.FormValue(ParamClientSecret)
 	if !client.CheckClientSecret(clientSecret) {
-		return nil, ErrUnauthorizedClient
+		return nil, ErrInvalidClient
 	}
 
 	return client, nil
@@ -82,7 +82,7 @@ func (h *ClientNoneAuthentication) Method() string {
 func (h *ClientNoneAuthentication) Authenticate(r *http.Request) (models.Client, error) {
 	clientID := r.FormValue(ParamClientID)
 	if clientID == "" {
-		return nil, ErrClientNotFound
+		return nil, ErrInvalidClient
 	}
 
 	client, err := h.store.FetchByClientID(r.Context(), clientID)

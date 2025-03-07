@@ -2,9 +2,12 @@ package manage
 
 import (
 	"context"
+	"errors"
 	"github.com/tniah/authlib/models"
 	"net/http"
 )
+
+var ErrInvalidClient = errors.New("invalid client")
 
 type ClientStore interface {
 	FetchByClientID(ctx context.Context, clientID string) (models.Client, error)
@@ -34,7 +37,7 @@ func (m *ClientManager) Authenticate(r *http.Request) (models.Client, string, er
 		}
 	}
 
-	return nil, "", ErrUnauthorizedClient
+	return nil, "", ErrInvalidClient
 }
 
 func (m *ClientManager) RegisterAuthMethod(authMethod ClientAuthentication) {
