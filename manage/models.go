@@ -105,6 +105,7 @@ func (c *AuthorizationCode) SetCodeChallengeMethod(codeChallengeMethod string) {
 }
 
 type Token struct {
+	TokenID      string
 	AccessToken  string
 	RefreshToken string
 	ClientID     string
@@ -113,6 +114,14 @@ type Token struct {
 	IssuedAt     time.Time
 	ExpiresIn    time.Duration
 	UserID       string
+}
+
+func (t *Token) GetID() string {
+	return t.TokenID
+}
+
+func (t *Token) SetID(id string) {
+	t.TokenID = id
 }
 
 func (t *Token) GetAccessToken() string {
