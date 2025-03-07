@@ -22,6 +22,10 @@ type ClientBasicAuthentication struct {
 	store ClientStore
 }
 
+func NewClientBasicAuthentication(store ClientStore) *ClientBasicAuthentication {
+	return &ClientBasicAuthentication{store: store}
+}
+
 func (h *ClientBasicAuthentication) Method() string {
 	return AuthMethodClientSecretBasic
 }
@@ -46,6 +50,10 @@ func (h *ClientBasicAuthentication) Authenticate(r *http.Request) (models.Client
 
 type ClientFormAuthentication struct {
 	store ClientStore
+}
+
+func NewClientFormAuthentication(store ClientStore) *ClientFormAuthentication {
+	return &ClientFormAuthentication{store: store}
 }
 
 func (h *ClientFormAuthentication) Method() string {
@@ -73,6 +81,10 @@ func (h *ClientFormAuthentication) Authenticate(r *http.Request) (models.Client,
 
 type ClientNoneAuthentication struct {
 	store ClientStore
+}
+
+func NewClientNoneAuthentication(store ClientStore) *ClientNoneAuthentication {
+	return &ClientNoneAuthentication{store: store}
 }
 
 func (h *ClientNoneAuthentication) Method() string {
