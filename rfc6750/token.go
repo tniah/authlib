@@ -1,122 +1,63 @@
 package rfc6750
 
-import (
-	"github.com/tniah/authlib/common"
-	"github.com/tniah/authlib/models"
-	"time"
-)
+import "time"
 
-const (
-	DefaultExpiresIn          = time.Minute * 60
-	DefaultAccessTokenLength  = 48
-	DefaultRefreshTokenLength = 48
-	ParamAccessToken          = "access_token"
-	ParamTokenType            = "token_type"
-	ParamExpiresIn            = "expires_in"
-	ParamRefreshToken         = "refresh_token"
-	TokenTypeBearer           = "Bearer"
-)
-
-type (
-	BearerTokenGenerator struct {
-		AccessTokenGenerator  TokenGenerator
-		RefreshTokenGenerator TokenGenerator
-		ExpiresInGenerator    ExpiresInGenerator
-	}
-
-	TokenGenerator             func(grantType string, user models.User, client models.Client, scopes []string) (string, error)
-	ExpiresInGenerator         func(grantType string, client models.Client) (time.Duration, error)
-	BearerTokenGeneratorOption func(*BearerTokenGenerator)
-)
-
-func NewBearerTokenGenerator(opts ...BearerTokenGeneratorOption) *BearerTokenGenerator {
-	g := &BearerTokenGenerator{}
-	for _, opt := range opts {
-		opt(g)
-	}
-	return g
+type Token interface {
+	GetType() string
+	GetAccessToken() string
+	GetRefreshToken() string
+	GetScopes() []string
+	GetExpiresIn() time.Duration
+	GetExtraData() map[string]interface{}
+	GetData() map[string]interface{}
 }
 
-func WithAccessTokenGenerator(fn TokenGenerator) BearerTokenGeneratorOption {
-	return func(g *BearerTokenGenerator) {
-		g.AccessTokenGenerator = fn
-	}
+type token struct {
+	accessToken  string
+	refreshToken string
+	scopes       []string
+	expiresIn    time.Duration
+	extraData    map[string]interface{}
 }
 
-func WithRefreshTokenGenerator(fn TokenGenerator) BearerTokenGeneratorOption {
-	return func(g *BearerTokenGenerator) {
-		g.RefreshTokenGenerator = fn
-	}
+func (t *token) GetType() string {
+	return TokenTypeBearer
 }
 
-func WithExpiresInGenerator(fn ExpiresInGenerator) BearerTokenGeneratorOption {
-	return func(g *BearerTokenGenerator) {
-		g.ExpiresInGenerator = fn
-	}
+func (t *token) GetAccessToken() string {
+	return t.accessToken
 }
 
-func (g *BearerTokenGenerator) Generate(
-	grantType string,
-	user models.User,
-	client models.Client,
-	scopes []string,
-	includeRefreshToken bool,
-	args ...map[string]interface{},
-) (map[string]interface{}, error) {
-	token := map[string]interface{}{
-		ParamTokenType: TokenTypeBearer,
-	}
-
-	allowedScopes := client.GetAllowedScopes(scopes)
-	accessToken, err := g.generateAccessToken(grantType, user, client, allowedScopes)
-	if err != nil {
-		return nil, err
-	}
-	token[ParamAccessToken] = accessToken
-
-	if includeRefreshToken {
-		refreshToken, err := g.generateRefreshToken(grantType, user, client, allowedScopes)
-		if err != nil {
-			return nil, err
-		}
-		token[ParamRefreshToken] = refreshToken
-	}
-
-	expiresIn, err := g.expiresIn(grantType, client)
-	if err != nil {
-		return nil, err
-	}
-	token[ParamExpiresIn] = expiresIn
-
-	if len(args) > 0 {
-		for k, v := range args[0] {
-			token[k] = v
-		}
-	}
-
-	return token, nil
+func (t *token) GetRefreshToken() string {
+	return t.refreshToken
 }
 
-func (g *BearerTokenGenerator) generateAccessToken(grantType string, user models.User, client models.Client, scopes []string) (string, error) {
-	if g.AccessTokenGenerator == nil {
-		return common.GenerateRandString(DefaultAccessTokenLength, common.SecretCharset)
-	}
-
-	return g.AccessTokenGenerator(grantType, user, client, scopes)
+func (t *token) GetScopes() []string {
+	return t.scopes
 }
 
-func (g *BearerTokenGenerator) generateRefreshToken(grantType string, user models.User, client models.Client, scopes []string) (string, error) {
-	if g.RefreshTokenGenerator == nil {
-		return common.GenerateRandString(DefaultRefreshTokenLength, common.SecretCharset)
-	}
-
-	return g.RefreshTokenGenerator(grantType, user, client, scopes)
+func (t *token) GetExpiresIn() time.Duration {
+	return t.expiresIn
 }
 
-func (g *BearerTokenGenerator) expiresIn(grantType string, client models.Client) (time.Duration, error) {
-	if g.ExpiresInGenerator == nil {
-		return DefaultExpiresIn, nil
+func (t *token) GetExtraData() map[string]interface{} {
+	return t.extraData
+}
+
+func (t *token) GetData() map[string]interface{} {
+	data := map[string]interface{}{
+		ParamTokenType:   TokenTypeBearer,
+		ParamAccessToken: t.accessToken,
+		ParamExpiresIn:   t.expiresIn.Seconds(),
 	}
 
-	return g.ExpiresInGenerator(grantType, client)
+	if t.refreshToken != "" {
+		data[ParamRefreshToken] = t.refreshToken
+	}
+
+	for k, v := range t.extraData {
+		data[k] = v
+	}
+
+	return data
 }
