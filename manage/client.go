@@ -2,10 +2,8 @@ package manage
 
 import (
 	"context"
-	"github.com/tniah/authlib/constants"
 	"github.com/tniah/authlib/models"
 	"net/http"
-	"sync"
 )
 
 type ClientStore interface {
@@ -13,44 +11,26 @@ type ClientStore interface {
 }
 
 type ClientManager struct {
-	lock               *sync.Mutex
-	store              ClientStore
-	authMethods        map[ClientAuthentication]bool
-	defaultAuthMethods map[ClientAuthentication]bool
+	store       ClientStore
+	authMethods map[ClientAuthentication]bool
 }
 
 func NewClientManager(store ClientStore) *ClientManager {
 	return &ClientManager{
-		lock:  &sync.Mutex{},
-		store: store,
+		store:       store,
+		authMethods: make(map[ClientAuthentication]bool),
 	}
 }
 
 func (m *ClientManager) QueryByClientID(ctx context.Context, clientID string) (models.Client, error) {
-	c, err := m.store.FetchByClientID(ctx, clientID)
-	if err != nil {
-		return nil, err
-	}
-
-	if c == nil {
-		return nil, ErrClientNotFound
-	}
-
-	return c, nil
+	return m.store.FetchByClientID(ctx, clientID)
 }
 
-func (m *ClientManager) Authenticate(r *http.Request) (models.Client, constants.TokenEndpointAuthMethodType, error) {
-	authMethods := m.authMethods
-	if authMethods == nil {
-		authMethods = m.DefaultAuthMethods()
-	}
-
-	for h, _ := range authMethods {
+func (m *ClientManager) Authenticate(r *http.Request) (models.Client, string, error) {
+	for h, _ := range m.authMethods {
 		client, err := h.Authenticate(r)
-		if err == nil {
-			if client.CheckTokenEndpointAuthMethod(h.Method()) {
-				return client, h.Method(), nil
-			}
+		if err == nil && client.CheckTokenEndpointAuthMethod(h.Method()) {
+			return client, h.Method(), nil
 		}
 	}
 
@@ -63,24 +43,4 @@ func (m *ClientManager) RegisterAuthMethod(authMethod ClientAuthentication) {
 	}
 
 	m.authMethods[authMethod] = true
-}
-
-func (m *ClientManager) DefaultAuthMethods() map[ClientAuthentication]bool {
-	if m.defaultAuthMethods == nil {
-		m.lock.Lock()
-		defer m.lock.Unlock()
-
-		if m.defaultAuthMethods == nil {
-			noneAuth := &ClientNoneAuthentication{store: m.store}
-			basicAuth := &ClientBasicAuthentication{store: m.store}
-			formAuth := &ClientFormAuthentication{store: m.store}
-			m.defaultAuthMethods = map[ClientAuthentication]bool{
-				noneAuth:  true,
-				basicAuth: true,
-				formAuth:  true,
-			}
-		}
-	}
-
-	return m.defaultAuthMethods
 }
