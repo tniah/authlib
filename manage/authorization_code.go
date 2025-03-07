@@ -2,32 +2,29 @@ package manage
 
 import (
 	"context"
-	"errors"
 	"github.com/tniah/authlib/common"
-	"github.com/tniah/authlib/constants"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
 	"time"
 )
 
-const authorizationCodeLength = 48
+const AuthorizationCodeLength = 48
 
-var ErrAuthorizationCodeNotFound = errors.New("authorization code not found")
+type (
+	AuthorizationCodeManager struct {
+		store         AuthorizationCodeStore
+		codeGenerator CodeGenerator
+	}
 
-type AuthorizationCodeStore interface {
-	FetchByCode(ctx context.Context, code string) (models.AuthorizationCode, error)
-	Save(ctx context.Context, authorizationCode models.AuthorizationCode) error
-	DeleteByCode(ctx context.Context, code string) error
-}
+	AuthorizationCodeStore interface {
+		FetchByCode(ctx context.Context, code string) (models.AuthorizationCode, error)
+		Save(ctx context.Context, authorizationCode models.AuthorizationCode) error
+		DeleteByCode(ctx context.Context, code string) error
+	}
 
-type CodeGenerator func(grantType constants.GrantType, r *requests.AuthorizationRequest) (string, error)
-
-type AuthorizationCodeManagerOption func(m *AuthorizationCodeManager)
-
-type AuthorizationCodeManager struct {
-	store         AuthorizationCodeStore
-	codeGenerator CodeGenerator
-}
+	CodeGenerator                  func(grantType string, client models.Client) (string, error)
+	AuthorizationCodeManagerOption func(m *AuthorizationCodeManager)
+)
 
 func NewAuthorizationManager(store AuthorizationCodeStore, opts ...AuthorizationCodeManagerOption) *AuthorizationCodeManager {
 	m := &AuthorizationCodeManager{store: store}
@@ -47,10 +44,10 @@ func (m *AuthorizationCodeManager) QueryByCode(ctx context.Context, code string)
 	return m.store.FetchByCode(ctx, code)
 }
 
-func (m *AuthorizationCodeManager) Generate(grantType constants.GrantType, r *requests.AuthorizationRequest) (models.AuthorizationCode, error) {
+func (m *AuthorizationCodeManager) Generate(grantType string, r *requests.AuthorizationRequest) (string, error) {
 	code, err := m.generateCode(grantType, r)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	authCode := &AuthorizationCode{
@@ -58,7 +55,7 @@ func (m *AuthorizationCodeManager) Generate(grantType constants.GrantType, r *re
 		ClientID:            r.ClientID,
 		UserID:              r.UserID,
 		RedirectURI:         r.RedirectURI,
-		ResponseType:        string(r.ResponseType),
+		ResponseType:        r.ResponseType,
 		Scopes:              r.Scopes,
 		Nonce:               r.Nonce,
 		State:               r.State,
@@ -66,22 +63,21 @@ func (m *AuthorizationCodeManager) Generate(grantType constants.GrantType, r *re
 		CodeChallenge:       r.CodeChallenge,
 		CodeChallengeMethod: r.CodeChallengeMethod,
 	}
-
-	return authCode, nil
-}
-
-func (m *AuthorizationCodeManager) Save(ctx context.Context, authorizationCode models.AuthorizationCode) error {
-	return m.store.Save(ctx, authorizationCode)
-}
-
-func (m *AuthorizationCodeManager) DeleteByCode(ctx context.Context, code models.AuthorizationCode) error {
-	return m.store.DeleteByCode(ctx, code.GetCode())
-}
-
-func (m *AuthorizationCodeManager) generateCode(grantType constants.GrantType, r *requests.AuthorizationRequest) (string, error) {
-	if m.codeGenerator != nil {
-		return m.codeGenerator(grantType, r)
+	if err = m.store.Save(r.Request.Context(), authCode); err != nil {
+		return "", err
 	}
 
-	return common.GenerateRandString(authorizationCodeLength, common.AlphaNum)
+	return code, nil
+}
+
+func (m *AuthorizationCodeManager) DeleteByCode(ctx context.Context, code string) error {
+	return m.store.DeleteByCode(ctx, code)
+}
+
+func (m *AuthorizationCodeManager) generateCode(grantType string, r *requests.AuthorizationRequest) (string, error) {
+	if m.codeGenerator != nil {
+		return m.codeGenerator(grantType, r.Client)
+	}
+
+	return common.GenerateRandString(AuthorizationCodeLength, common.AlphaNum)
 }
