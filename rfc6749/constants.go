@@ -4,13 +4,8 @@ const (
 	ResponseTypeCode           = "code"
 	GrantTypeAuthorizationCode = "authorization_code"
 
-	ParamCode         = "code"
-	ParamState        = "state"
-	ParamAccessToken  = "access_token"
-	ParamRefreshToken = "refresh_token"
-	ParamTokenType    = "token_type"
-	ParamExpiresIn    = "expires_in"
-	ParamScopes       = "scopes"
+	ParamCode  = "code"
+	ParamState = "state"
 
 	ErrMissingClientID        = "Missing \"client_id\" parameter in request"
 	ErrClientIDNotFound       = "No client was found that matches \"client_id\" value"

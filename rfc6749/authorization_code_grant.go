@@ -5,7 +5,6 @@ import (
 	"github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/requests"
 	"net/http"
-	"time"
 )
 
 type AuthorizationCodeGrant struct {
@@ -83,18 +82,12 @@ func (grant *AuthorizationCodeGrant) AuthorizationResponse(rw http.ResponseWrite
 			errors.WithRedirectURI(r.RedirectURI))
 	}
 
-	authCode, err := grant.authCodeMgr.Generate(GrantTypeAuthorizationCode, r)
+	code, err := grant.authCodeMgr.Generate(GrantTypeAuthorizationCode, r)
 	if err != nil {
 		return err
 	}
 
-	if err = grant.authCodeMgr.Save(r.Request.Context(), authCode); err != nil {
-		return err
-	}
-
-	params := map[string]interface{}{
-		ParamCode: authCode.GetCode(),
-	}
+	params := map[string]interface{}{ParamCode: code}
 	if r.State != "" {
 		params[ParamState] = r.State
 	}
@@ -154,12 +147,9 @@ func (grant *AuthorizationCodeGrant) TokenResponse(rw http.ResponseWriter, r *re
 		return errors.NewInvalidGrantError(errors.WithDescription(ErrUserNotFound))
 	}
 
-	token, err := grant.tokenMgr.GenerateAccessToken(GrantTypeAuthorizationCode, user, r.Client, r.Scopes)
+	r.User = user
+	token, err := grant.tokenMgr.GenerateAccessToken(GrantTypeAuthorizationCode, r, false)
 	if err != nil {
-		return err
-	}
-
-	if err = grant.tokenMgr.SaveAccessToken(r.Request.Context(), token); err != nil {
 		return err
 	}
 
@@ -168,11 +158,5 @@ func (grant *AuthorizationCodeGrant) TokenResponse(rw http.ResponseWriter, r *re
 	}
 
 	// TODO implement a hook
-	data := map[string]interface{}{
-		ParamAccessToken: token.GetAccessToken(),
-		ParamTokenType:   token.GetTokenType(),
-		ParamExpiresIn:   int64(token.GetExpiresIn() / time.Second),
-		ParamScopes:      token.GetScopes(),
-	}
-	return grant.HandleTokenResponse(rw, data)
+	return grant.HandleTokenResponse(rw, token)
 }

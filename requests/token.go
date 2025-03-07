@@ -16,6 +16,7 @@ type TokenRequest struct {
 	CodeVerifier            string
 	TokenEndpointAuthMethod string
 	Client                  models.Client
+	User                    models.User
 	AuthorizationCode       models.AuthorizationCode
 	Request                 *http.Request
 }
