@@ -7,21 +7,24 @@ import (
 )
 
 const (
-	DefaultExpiresIn          = time.Minute * 60
-	DefaultAccessTokenLength  = 48
-	DefaultRefreshTokenLength = 48
-	ParamAccessToken          = "access_token"
-	ParamTokenType            = "token_type"
-	ParamExpiresIn            = "expires_in"
-	ParamRefreshToken         = "refresh_token"
-	TokenTypeBearer           = "Bearer"
+	DefaultAccessTokenExpiresIn = time.Minute * 60
+	DefaultAccessTokenLength    = 48
+	DefaultRefreshTokenLength   = 48
+	ParamAccessToken            = "access_token"
+	ParamTokenType              = "token_type"
+	ParamExpiresIn              = "expires_in"
+	ParamRefreshToken           = "refresh_token"
+	TokenTypeBearer             = "Bearer"
 )
 
 type (
 	BearerTokenGenerator struct {
-		AccessTokenGenerator  TokenGenerator
-		RefreshTokenGenerator TokenGenerator
-		ExpiresInGenerator    ExpiresInGenerator
+		accessTokenGenerator  TokenGenerator
+		refreshTokenGenerator TokenGenerator
+		expiresInGenerator    ExpiresInGenerator
+		accessTokenLength     int
+		refreshTokenLength    int
+		accessTokenExpiresIn  time.Duration
 	}
 
 	TokenGenerator             func(grantType string, user models.User, client models.Client, scopes []string) (string, error)
@@ -30,28 +33,52 @@ type (
 )
 
 func NewBearerTokenGenerator(opts ...BearerTokenGeneratorOption) *BearerTokenGenerator {
-	g := &BearerTokenGenerator{}
+	g := &BearerTokenGenerator{
+		accessTokenLength:    DefaultAccessTokenLength,
+		refreshTokenLength:   DefaultRefreshTokenLength,
+		accessTokenExpiresIn: DefaultAccessTokenExpiresIn,
+	}
+
 	for _, opt := range opts {
 		opt(g)
 	}
+
 	return g
 }
 
 func WithAccessTokenGenerator(fn TokenGenerator) BearerTokenGeneratorOption {
 	return func(g *BearerTokenGenerator) {
-		g.AccessTokenGenerator = fn
+		g.accessTokenGenerator = fn
 	}
 }
 
 func WithRefreshTokenGenerator(fn TokenGenerator) BearerTokenGeneratorOption {
 	return func(g *BearerTokenGenerator) {
-		g.RefreshTokenGenerator = fn
+		g.refreshTokenGenerator = fn
 	}
 }
 
 func WithExpiresInGenerator(fn ExpiresInGenerator) BearerTokenGeneratorOption {
 	return func(g *BearerTokenGenerator) {
-		g.ExpiresInGenerator = fn
+		g.expiresInGenerator = fn
+	}
+}
+
+func WithAccessTokenLength(l int) BearerTokenGeneratorOption {
+	return func(g *BearerTokenGenerator) {
+		g.accessTokenLength = l
+	}
+}
+
+func WithRefreshTokenLength(l int) BearerTokenGeneratorOption {
+	return func(g *BearerTokenGenerator) {
+		g.refreshTokenLength = l
+	}
+}
+
+func WithAccessTokenExpiresIn(exp time.Duration) BearerTokenGeneratorOption {
+	return func(g *BearerTokenGenerator) {
+		g.accessTokenExpiresIn = exp
 	}
 }
 
@@ -94,25 +121,25 @@ func (g *BearerTokenGenerator) Generate(
 }
 
 func (g *BearerTokenGenerator) generateAccessToken(grantType string, user models.User, client models.Client, scopes []string) (string, error) {
-	if g.AccessTokenGenerator == nil {
-		return common.GenerateRandString(DefaultAccessTokenLength, common.SecretCharset)
+	if g.accessTokenGenerator == nil {
+		return common.GenerateRandString(g.accessTokenLength, common.SecretCharset)
 	}
 
-	return g.AccessTokenGenerator(grantType, user, client, scopes)
+	return g.accessTokenGenerator(grantType, user, client, scopes)
 }
 
 func (g *BearerTokenGenerator) generateRefreshToken(grantType string, user models.User, client models.Client, scopes []string) (string, error) {
-	if g.RefreshTokenGenerator == nil {
-		return common.GenerateRandString(DefaultRefreshTokenLength, common.SecretCharset)
+	if g.refreshTokenGenerator == nil {
+		return common.GenerateRandString(g.refreshTokenLength, common.SecretCharset)
 	}
 
-	return g.RefreshTokenGenerator(grantType, user, client, scopes)
+	return g.refreshTokenGenerator(grantType, user, client, scopes)
 }
 
 func (g *BearerTokenGenerator) expiresIn(grantType string, client models.Client) (time.Duration, error) {
-	if g.ExpiresInGenerator == nil {
-		return DefaultExpiresIn, nil
+	if g.expiresInGenerator == nil {
+		return g.accessTokenExpiresIn, nil
 	}
 
-	return g.ExpiresInGenerator(grantType, client)
+	return g.expiresInGenerator(grantType, client)
 }
