@@ -153,7 +153,7 @@ func (grant *AuthorizationCodeGrant) TokenResponse(rw http.ResponseWriter, r *re
 		return err
 	}
 
-	if err = grant.authCodeMgr.DeleteByCode(r.Request.Context(), r.AuthorizationCode); err != nil {
+	if err = grant.authCodeMgr.DeleteByCode(r.Request.Context(), r.AuthorizationCode.GetCode()); err != nil {
 		return err
 	}
 
