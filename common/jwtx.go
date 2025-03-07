@@ -14,14 +14,16 @@ const (
 	JWTClaimIssuedAt = "iat"
 )
 
-type JWTToken struct {
-	signingKeyID  string
-	signingKey    interface{}
-	signingMethod jwt.SigningMethod
-}
+type (
+	JWTToken struct {
+		signingKeyID  string
+		signingKey    interface{}
+		signingMethod jwt.SigningMethod
+	}
 
-type JWTHeader map[string]interface{}
-type JWTClaim map[string]interface{}
+	JWTHeader map[string]interface{}
+	JWTClaim  map[string]interface{}
+)
 
 func NewJWTToken(signingKey []byte, signingMethod jwt.SigningMethod, args ...string) (*JWTToken, error) {
 	var keyID string
