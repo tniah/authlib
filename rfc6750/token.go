@@ -1,6 +1,9 @@
 package rfc6750
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 type Token interface {
 	GetType() string
@@ -53,6 +56,10 @@ func (t *token) GetData() map[string]interface{} {
 
 	if t.refreshToken != "" {
 		data[ParamRefreshToken] = t.refreshToken
+	}
+
+	if t.scopes != nil {
+		data[ParamScope] = strings.Join(t.scopes, " ")
 	}
 
 	for k, v := range t.extraData {

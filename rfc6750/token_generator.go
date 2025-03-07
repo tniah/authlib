@@ -10,10 +10,11 @@ const (
 	DefaultAccessTokenExpiresIn = time.Minute * 60
 	DefaultAccessTokenLength    = 48
 	DefaultRefreshTokenLength   = 48
-	ParamAccessToken            = "access_token"
 	ParamTokenType              = "token_type"
-	ParamExpiresIn              = "expires_in"
+	ParamAccessToken            = "access_token"
 	ParamRefreshToken           = "refresh_token"
+	ParamExpiresIn              = "expires_in"
+	ParamScope                  = "scope"
 	TokenTypeBearer             = "Bearer"
 )
 
