@@ -13,13 +13,13 @@ type ClientManager interface {
 }
 
 type UserManager interface {
-	GetByID(ctx context.Context, id string) (models.User, error)
+	GetByID(ctx context.Context, userID string) (models.User, error)
 }
 
 type AuthorizationCodeManager interface {
 	QueryByCode(ctx context.Context, code string) (models.AuthorizationCode, error)
 	Generate(grantType string, r *requests.AuthorizationRequest) (string, error)
-	DeleteByCode(ctx context.Context, code models.AuthorizationCode) error
+	DeleteByCode(ctx context.Context, code string) error
 }
 
 type TokenManager interface {
