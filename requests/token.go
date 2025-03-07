@@ -1,13 +1,12 @@
 package requests
 
 import (
-	"github.com/tniah/authlib/constants"
 	"github.com/tniah/authlib/models"
 	"net/http"
 )
 
 type TokenRequest struct {
-	GrantType               constants.GrantType
+	GrantType               string
 	ClientID                string
 	Code                    string
 	RedirectURI             string
@@ -15,7 +14,7 @@ type TokenRequest struct {
 	CodeChallenge           string
 	CodeChallengeMethod     string
 	CodeVerifier            string
-	TokenEndpointAuthMethod constants.TokenEndpointAuthMethodType
+	TokenEndpointAuthMethod string
 	Client                  models.Client
 	AuthorizationCode       models.AuthorizationCode
 	Request                 *http.Request

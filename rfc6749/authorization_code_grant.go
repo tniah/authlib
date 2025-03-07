@@ -2,7 +2,6 @@ package rfc6749
 
 import (
 	"github.com/tniah/authlib/common"
-	"github.com/tniah/authlib/constants"
 	"github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/requests"
 	"net/http"
@@ -32,8 +31,8 @@ func NewAuthorizationCodeGrant(
 	}
 }
 
-func (grant *AuthorizationCodeGrant) CheckResponseType(responseType constants.ResponseType) bool {
-	return responseType == constants.ResponseTypeCode
+func (grant *AuthorizationCodeGrant) CheckResponseType(responseType string) bool {
+	return responseType == ResponseTypeCode
 }
 
 func (grant *AuthorizationCodeGrant) ValidateAuthorizationRequest(r *requests.AuthorizationRequest) error {
@@ -84,7 +83,7 @@ func (grant *AuthorizationCodeGrant) AuthorizationResponse(rw http.ResponseWrite
 			errors.WithRedirectURI(r.RedirectURI))
 	}
 
-	authCode, err := grant.authCodeMgr.Generate(constants.GrantTypeAuthorizationCode, r)
+	authCode, err := grant.authCodeMgr.Generate(GrantTypeAuthorizationCode, r)
 	if err != nil {
 		return err
 	}
@@ -94,17 +93,17 @@ func (grant *AuthorizationCodeGrant) AuthorizationResponse(rw http.ResponseWrite
 	}
 
 	params := map[string]interface{}{
-		constants.ParamCode: authCode.GetCode(),
+		ParamCode: authCode.GetCode(),
 	}
 	if r.State != "" {
-		params[constants.ParamState] = r.State
+		params[ParamState] = r.State
 	}
 
 	return common.Redirect(rw, r.RedirectURI, params)
 }
 
-func (grant *AuthorizationCodeGrant) CheckGrantType(grantType constants.GrantType) bool {
-	return grantType == constants.GrantTypeAuthorizationCode
+func (grant *AuthorizationCodeGrant) CheckGrantType(grantType string) bool {
+	return grantType == GrantTypeAuthorizationCode
 }
 
 func (grant *AuthorizationCodeGrant) ValidateTokenRequest(r *requests.TokenRequest) error {
@@ -113,7 +112,7 @@ func (grant *AuthorizationCodeGrant) ValidateTokenRequest(r *requests.TokenReque
 		return errors.NewInvalidClientError()
 	}
 
-	if !client.CheckGrantType(constants.GrantTypeAuthorizationCode) {
+	if !client.CheckGrantType(GrantTypeAuthorizationCode) {
 		return errors.NewUnauthorizedClientError(errors.WithDescription(ErrUnsupportedGrantType))
 	}
 
@@ -155,7 +154,7 @@ func (grant *AuthorizationCodeGrant) TokenResponse(rw http.ResponseWriter, r *re
 		return errors.NewInvalidGrantError(errors.WithDescription(ErrUserNotFound))
 	}
 
-	token, err := grant.tokenMgr.GenerateAccessToken(constants.GrantTypeAuthorizationCode, user, r.Client, r.Scopes)
+	token, err := grant.tokenMgr.GenerateAccessToken(GrantTypeAuthorizationCode, user, r.Client, r.Scopes)
 	if err != nil {
 		return err
 	}

@@ -3,29 +3,43 @@ package authlib
 import (
 	"encoding/json"
 	"github.com/tniah/authlib/common"
-	"github.com/tniah/authlib/constants"
 	"github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/requests"
 	"net/http"
 	"strings"
 )
 
-type AuthorizationGrant interface {
-	CheckResponseType(responseType constants.ResponseType) bool
-	ValidateAuthorizationRequest(r *requests.AuthorizationRequest) error
-	AuthorizationResponse(rw http.ResponseWriter, r *requests.AuthorizationRequest) error
-}
+const (
+	ParamCode                = "code"
+	ParamResponseType        = "response_type"
+	ParamRedirectURI         = "redirect_uri"
+	ParamScope               = "scope"
+	ParamState               = "state"
+	ParamNonce               = "nonce"
+	ParamCodeChallenge       = "code_challenge"
+	ParamCodeChallengeMethod = "code_challenge_method"
+	ParamClientID            = "client_id"
+	ParamGrantType           = "grant_type"
+)
 
-type TokenGrant interface {
-	CheckGrantType(grantType constants.GrantType) bool
-	ValidateTokenRequest(r *requests.TokenRequest) error
-	TokenResponse(rw http.ResponseWriter, r *requests.TokenRequest) error
-}
+type (
+	Server struct {
+		authorizationGrants map[AuthorizationGrant]bool
+		tokenGrants         map[TokenGrant]bool
+	}
 
-type Server struct {
-	authorizationGrants map[AuthorizationGrant]bool
-	tokenGrants         map[TokenGrant]bool
-}
+	AuthorizationGrant interface {
+		CheckResponseType(responseType string) bool
+		ValidateAuthorizationRequest(r *requests.AuthorizationRequest) error
+		AuthorizationResponse(rw http.ResponseWriter, r *requests.AuthorizationRequest) error
+	}
+
+	TokenGrant interface {
+		CheckGrantType(grantType string) bool
+		ValidateTokenRequest(r *requests.TokenRequest) error
+		TokenResponse(rw http.ResponseWriter, r *requests.TokenRequest) error
+	}
+)
 
 func NewServer() *Server {
 	return &Server{
@@ -36,14 +50,14 @@ func NewServer() *Server {
 
 func (srv *Server) CreateAuthorizationRequest(r *http.Request) *requests.AuthorizationRequest {
 	return &requests.AuthorizationRequest{
-		ResponseType:        constants.ResponseType(r.FormValue(constants.ParamResponseType)),
-		ClientID:            r.FormValue(constants.ParamClientID),
-		RedirectURI:         r.FormValue(constants.ParamRedirectURI),
-		Scopes:              strings.Fields(r.FormValue(constants.ParamScope)),
-		State:               r.FormValue(constants.ParamState),
-		Nonce:               r.FormValue(constants.ParamNonce),
-		CodeChallenge:       r.FormValue(constants.ParamCodeChallenge),
-		CodeChallengeMethod: r.FormValue(constants.ParamCodeChallengeMethod),
+		ResponseType:        r.FormValue(ParamResponseType),
+		ClientID:            r.FormValue(ParamClientID),
+		RedirectURI:         r.FormValue(ParamRedirectURI),
+		Scopes:              strings.Fields(r.FormValue(ParamScope)),
+		State:               r.FormValue(ParamState),
+		Nonce:               r.FormValue(ParamNonce),
+		CodeChallenge:       r.FormValue(ParamCodeChallenge),
+		CodeChallengeMethod: r.FormValue(ParamCodeChallengeMethod),
 		Request:             r,
 	}
 }
@@ -54,16 +68,17 @@ func (srv *Server) GetAuthorizationGrant(r *requests.AuthorizationRequest) (Auth
 			return grant, nil
 		}
 	}
+
 	return nil, errors.NewUnsupportedResponseTypeError()
 }
 
 func (srv *Server) CreateTokenRequest(r *http.Request) *requests.TokenRequest {
 	return &requests.TokenRequest{
-		GrantType:   constants.GrantType(r.FormValue(constants.ParamGrantType)),
-		ClientID:    r.FormValue(constants.ParamClientID),
-		Code:        r.FormValue(constants.ParamCode),
-		RedirectURI: r.FormValue(constants.ParamRedirectURI),
-		Scopes:      strings.Fields(r.FormValue(constants.ParamScope)),
+		GrantType:   r.FormValue(ParamGrantType),
+		ClientID:    r.FormValue(ParamClientID),
+		Code:        r.FormValue(ParamCode),
+		RedirectURI: r.FormValue(ParamRedirectURI),
+		Scopes:      strings.Fields(r.FormValue(ParamScope)),
 		Request:     r,
 	}
 }
@@ -74,6 +89,7 @@ func (srv *Server) GetTokenGrant(r *requests.TokenRequest) (TokenGrant, error) {
 			return grant, nil
 		}
 	}
+
 	return nil, errors.NewUnsupportedGrantTypeError()
 }
 

@@ -1,6 +1,17 @@
 package rfc6749
 
 const (
+	ResponseTypeCode           = "code"
+	GrantTypeAuthorizationCode = "authorization_code"
+
+	ParamCode         = "code"
+	ParamState        = "state"
+	ParamAccessToken  = "access_token"
+	ParamRefreshToken = "refresh_token"
+	ParamTokenType    = "token_type"
+	ParamExpiresIn    = "expires_in"
+	ParamScopes       = "scopes"
+
 	ErrMissingClientID        = "Missing \"client_id\" parameter in request"
 	ErrClientIDNotFound       = "No client was found that matches \"client_id\" value"
 	ErrMissingRedirectURI     = "Missing \"redirect_uri\" parameter in request"
@@ -10,9 +21,4 @@ const (
 	ErrMissingCode            = "Missing \"code\" parameter in request"
 	ErrInvalidCode            = "Invalid \"code\" in request"
 	ErrUserNotFound           = "No user could be found associated with this authorization code"
-	ParamAccessToken          = "access_token"
-	ParamRefreshToken         = "refresh_token"
-	ParamTokenType            = "token_type"
-	ParamExpiresIn            = "expires_in"
-	ParamScopes               = "scopes"
 )
