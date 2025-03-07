@@ -36,12 +36,18 @@ type (
 	JWTBearerTokenGeneratorOption func(*JWTBearerTokenGenerator)
 )
 
-func NewJWTAccessTokenGenerator(issuer string) *JWTBearerTokenGenerator {
-	return &JWTBearerTokenGenerator{
+func NewJWTAccessTokenGenerator(issuer string, opts ...JWTBearerTokenGeneratorOption) *JWTBearerTokenGenerator {
+	g := &JWTBearerTokenGenerator{
 		issuer:             issuer,
 		refreshTokenLength: DefaultRefreshTokenLength,
 		expiresIn:          DefaultExpiresIn,
 	}
+
+	for _, opt := range opts {
+		opt(g)
+	}
+
+	return g
 }
 
 func WithSigningKey(key []byte) JWTBearerTokenGeneratorOption {
