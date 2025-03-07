@@ -10,8 +10,6 @@ import (
 	"time"
 )
 
-const ()
-
 var (
 	ErrMissingSigningKey    = errors.New("missing signing key")
 	ErrMissingSigningMethod = errors.New("missing signing method")
