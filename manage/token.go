@@ -10,27 +10,24 @@ import (
 type (
 	TokenManager struct {
 		store                TokenStore
-		accessTokenGenerator AccessTokenGenerator
 		bearerTokenGenerator *rfc6750.BearerTokenGenerator
 	}
 
 	TokenStore interface {
 		Save(ctx context.Context, token models.Token) error
 	}
-
-	AccessTokenGenerator func(grantType string, user models.User, client models.Client, scopes []string, includeRefreshToken bool, args ...map[string]interface{}) (map[string]interface{}, error)
 )
 
-func NewTokenManager(store TokenStore, accessTokenGenerator AccessTokenGenerator) *TokenManager {
+func NewTokenManager(store TokenStore) *TokenManager {
+	bearerTokenGenerator := rfc6750.NewBearerTokenGenerator()
 	return &TokenManager{
 		store:                store,
-		accessTokenGenerator: accessTokenGenerator,
-		bearerTokenGenerator: rfc6750.NewBearerTokenGenerator(),
+		bearerTokenGenerator: bearerTokenGenerator,
 	}
 }
 
 func (m *TokenManager) GenerateAccessToken(grantType string, r *requests.TokenRequest, includeRefreshToken bool) (map[string]interface{}, error) {
-	data, err := m.bearerTokenGenerator.Generate(grantType, r.User, r.Client, r.Scopes, includeRefreshToken)
+	token, err := m.bearerTokenGenerator.Generate(grantType, r.User, r.Client, r.Scopes, includeRefreshToken)
 	if err != nil {
 		return nil, err
 	}
@@ -38,17 +35,17 @@ func (m *TokenManager) GenerateAccessToken(grantType string, r *requests.TokenRe
 	t := &Token{
 		TokenID:      "",
 		AccessToken:  "",
-		RefreshToken: "",
+		RefreshToken: token.GetRefreshToken(),
 		ClientID:     r.Client.GetClientID(),
-		TokenType:    "",
-		Scopes:       []string{},
+		TokenType:    token.GetType(),
+		Scopes:       token.GetScopes(),
 		IssuedAt:     "",
-		ExpiresIn:    "",
-		UserID:       "",
+		ExpiresIn:    token.GetExpiresIn(),
+		UserID:       r.User.GetSubjectID(),
 	}
 	if err := m.store.Save(r.Request.Context(), t); err != nil {
 		return nil, err
 	}
 
-	return data, nil
+	return token.GetData(), nil
 }

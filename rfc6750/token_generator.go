@@ -130,25 +130,25 @@ func (g *BearerTokenGenerator) Generate(
 }
 
 func (g *BearerTokenGenerator) generateAccessToken(grantType string, user models.User, client models.Client, scopes []string) (string, error) {
-	if g.accessTokenGenerator == nil {
-		return common.GenerateRandString(g.accessTokenLength, common.SecretCharset)
+	if g.accessTokenGenerator != nil {
+		return g.accessTokenGenerator(grantType, user, client, scopes)
 	}
 
-	return g.accessTokenGenerator(grantType, user, client, scopes)
+	return common.GenerateRandString(g.accessTokenLength, common.SecretCharset)
 }
 
 func (g *BearerTokenGenerator) generateRefreshToken(grantType string, user models.User, client models.Client, scopes []string) (string, error) {
-	if g.refreshTokenGenerator == nil {
-		return common.GenerateRandString(g.refreshTokenLength, common.SecretCharset)
+	if g.refreshTokenGenerator != nil {
+		return g.refreshTokenGenerator(grantType, user, client, scopes)
 	}
 
-	return g.refreshTokenGenerator(grantType, user, client, scopes)
+	return common.GenerateRandString(g.refreshTokenLength, common.SecretCharset)
 }
 
 func (g *BearerTokenGenerator) getExpiresIn(grantType string, client models.Client) (time.Duration, error) {
-	if g.expiresInGenerator == nil {
-		return g.expiresIn, nil
+	if g.expiresInGenerator != nil {
+		return g.expiresInGenerator(grantType, client)
 	}
 
-	return g.expiresInGenerator(grantType, client)
+	return g.expiresIn, nil
 }
