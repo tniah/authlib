@@ -2,6 +2,7 @@ package manage
 
 import (
 	"context"
+	"errors"
 	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
@@ -9,6 +10,8 @@ import (
 )
 
 const AuthorizationCodeLength = 48
+
+var ErrInvalidAuthorizationCode = errors.New("invalid authorization code")
 
 type (
 	AuthorizationCodeManager struct {
@@ -28,9 +31,11 @@ type (
 
 func NewAuthorizationManager(store AuthorizationCodeStore, opts ...AuthorizationCodeManagerOption) *AuthorizationCodeManager {
 	m := &AuthorizationCodeManager{store: store}
+
 	for _, opt := range opts {
 		opt(m)
 	}
+
 	return m
 }
 
@@ -41,7 +46,16 @@ func WithCodeGenerator(fn CodeGenerator) AuthorizationCodeManagerOption {
 }
 
 func (m *AuthorizationCodeManager) QueryByCode(ctx context.Context, code string) (models.AuthorizationCode, error) {
-	return m.store.FetchByCode(ctx, code)
+	authCode, err := m.store.FetchByCode(ctx, code)
+	if err != nil {
+		return nil, err
+	}
+
+	if authCode == nil {
+		return nil, ErrInvalidAuthorizationCode
+	}
+
+	return authCode, nil
 }
 
 func (m *AuthorizationCodeManager) Generate(grantType string, r *requests.AuthorizationRequest) (models.AuthorizationCode, error) {

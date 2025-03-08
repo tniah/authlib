@@ -116,9 +116,6 @@ func (grant *AuthorizationCodeGrant) ValidateTokenRequest(r *requests.TokenReque
 
 	authCode, err := grant.authCodeMgr.QueryByCode(r.Request.Context(), code)
 	if err != nil {
-		return err
-	}
-	if authCode == nil {
 		return errors.NewInvalidGrantError(errors.WithDescription(ErrInvalidCode))
 	}
 
@@ -141,9 +138,6 @@ func (grant *AuthorizationCodeGrant) TokenResponse(rw http.ResponseWriter, r *re
 
 	user, err := grant.userMgr.GetByID(r.Request.Context(), userID)
 	if err != nil {
-		return err
-	}
-	if user == nil {
 		return errors.NewInvalidGrantError(errors.WithDescription(ErrUserNotFound))
 	}
 

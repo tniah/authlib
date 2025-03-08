@@ -26,7 +26,16 @@ func NewClientManager(store ClientStore) *ClientManager {
 }
 
 func (m *ClientManager) QueryByClientID(ctx context.Context, clientID string) (models.Client, error) {
-	return m.store.FetchByClientID(ctx, clientID)
+	client, err := m.store.FetchByClientID(ctx, clientID)
+	if err != nil {
+		return nil, err
+	}
+
+	if client == nil {
+		return nil, ErrInvalidClient
+	}
+
+	return client, nil
 }
 
 func (m *ClientManager) Authenticate(r *http.Request) (models.Client, string, error) {
