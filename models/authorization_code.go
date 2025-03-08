@@ -12,6 +12,7 @@ type AuthorizationCode interface {
 	GetNonce() string
 	GetState() string
 	GetAuthTime() time.Time
+	GetExpiresIn() time.Duration
 	GetCodeChallenge() string
 	GetCodeChallengeMethod() string
 }

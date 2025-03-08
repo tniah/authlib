@@ -3,6 +3,7 @@ package rfc6749
 const (
 	ResponseTypeCode           = "code"
 	GrantTypeAuthorizationCode = "authorization_code"
+	GrantTypeRefreshToken      = "refresh_token"
 
 	ParamCode  = "code"
 	ParamState = "state"

@@ -5,6 +5,7 @@ import (
 	"github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/requests"
 	"net/http"
+	"time"
 )
 
 type AuthorizationCodeGrant struct {
@@ -119,6 +120,10 @@ func (grant *AuthorizationCodeGrant) ValidateTokenRequest(r *requests.TokenReque
 		return errors.NewInvalidGrantError(errors.WithDescription(ErrInvalidCode))
 	}
 
+	if authCode.GetAuthTime().Add(authCode.GetExpiresIn()).After(time.Now()) {
+		return errors.NewInvalidGrantError(errors.WithDescription(ErrInvalidCode))
+	}
+
 	redirectURI := authCode.GetRedirectURI()
 	if redirectURI != "" && redirectURI != r.RedirectURI {
 		return errors.NewInvalidGrantError(errors.WithDescription(ErrInvalidRedirectURI))
@@ -142,7 +147,7 @@ func (grant *AuthorizationCodeGrant) TokenResponse(rw http.ResponseWriter, r *re
 	}
 
 	r.User = user
-	token, err := grant.tokenMgr.GenerateAccessToken(GrantTypeAuthorizationCode, r, false)
+	token, err := grant.tokenMgr.GenerateAccessToken(GrantTypeAuthorizationCode, r, r.Client.CheckGrantType(GrantTypeRefreshToken))
 	if err != nil {
 		return err
 	}

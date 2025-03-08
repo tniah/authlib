@@ -9,7 +9,10 @@ import (
 	"time"
 )
 
-const AuthorizationCodeLength = 48
+const (
+	AuthorizationCodeLength = 48
+	DefaultExpiresIn        = time.Minute * 5
+)
 
 var ErrInvalidAuthorizationCode = errors.New("invalid authorization code")
 
@@ -17,6 +20,7 @@ type (
 	AuthorizationCodeManager struct {
 		store         AuthorizationCodeStore
 		codeGenerator CodeGenerator
+		expiresIn     time.Duration
 	}
 
 	AuthorizationCodeStore interface {
@@ -30,7 +34,10 @@ type (
 )
 
 func NewAuthorizationManager(store AuthorizationCodeStore, opts ...AuthorizationCodeManagerOption) *AuthorizationCodeManager {
-	m := &AuthorizationCodeManager{store: store}
+	m := &AuthorizationCodeManager{
+		store:     store,
+		expiresIn: DefaultExpiresIn,
+	}
 
 	for _, opt := range opts {
 		opt(m)
@@ -42,6 +49,12 @@ func NewAuthorizationManager(store AuthorizationCodeStore, opts ...Authorization
 func WithCodeGenerator(fn CodeGenerator) AuthorizationCodeManagerOption {
 	return func(m *AuthorizationCodeManager) {
 		m.codeGenerator = fn
+	}
+}
+
+func WithExpiresIn(exp time.Duration) AuthorizationCodeManagerOption {
+	return func(m *AuthorizationCodeManager) {
+		m.expiresIn = exp
 	}
 }
 
@@ -73,7 +86,8 @@ func (m *AuthorizationCodeManager) Generate(grantType string, r *requests.Author
 		Scopes:              r.Scopes,
 		Nonce:               r.Nonce,
 		State:               r.State,
-		AuthTime:            time.Now().UTC().Round(time.Second),
+		AuthTime:            time.Now(),
+		ExpiresIn:           m.expiresIn,
 		CodeChallenge:       r.CodeChallenge,
 		CodeChallengeMethod: r.CodeChallengeMethod,
 	}
