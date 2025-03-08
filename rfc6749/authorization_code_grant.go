@@ -120,7 +120,7 @@ func (grant *AuthorizationCodeGrant) ValidateTokenRequest(r *requests.TokenReque
 		return errors.NewInvalidGrantError(errors.WithDescription(ErrInvalidCode))
 	}
 
-	if authCode.GetAuthTime().Add(authCode.GetExpiresIn()).After(time.Now()) {
+	if authCode.GetAuthTime().Add(authCode.GetExpiresIn()).Before(time.Now()) {
 		return errors.NewInvalidGrantError(errors.WithDescription(ErrInvalidCode))
 	}
 
