@@ -1,6 +1,9 @@
 package manage
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 type AuthorizationCode struct {
 	Code                string
@@ -114,12 +117,26 @@ func (t *Token) GetUserID() string {
 }
 
 func (t *Token) GetData() map[string]interface{} {
-	return map[string]interface{}{
-		"access_token":  t.AccessToken,
-		"refresh_token": t.RefreshToken,
+	data := map[string]interface{}{
+		"token_type":   t.TokenType,
+		"access_token": t.AccessToken,
+		"expires_in":   t.ExpiresIn.Seconds(),
 	}
+
+	if t.RefreshToken != "" {
+		data["refresh_token"] = t.RefreshToken
+	}
+
+	if t.Scopes != nil {
+		data["scope"] = strings.Join(t.Scopes, " ")
+	}
+
+	return data
 }
 
 func (t *Token) GetExtraData() map[string]interface{} {
-	return map[string]interface{}{}
+	return map[string]interface{}{
+		"user_id":   t.UserID,
+		"client_id": t.ClientID,
+	}
 }
