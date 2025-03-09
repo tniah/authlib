@@ -9,25 +9,34 @@ import (
 )
 
 type AuthorizationCodeGrant struct {
-	userMgr     UserManager
-	clientMgr   ClientManager
-	authCodeMgr AuthorizationCodeManager
-	tokenMgr    TokenManager
+	queryClient         QueryClient
+	authenticateClient  AuthenticateClient
+	queryUser           QueryUser
+	queryAuthCode       QueryAuthCode
+	generateAuthCode    GenerateAuthCode
+	deleteAuthCode      DeleteAuthCode
+	generateAccessToken GenerateAccessToken
 	AuthorizationGrantMixin
 	TokenGrantMixin
 }
 
 func NewAuthorizationCodeGrant(
-	userMgr UserManager,
-	clientMgr ClientManager,
-	authCodeMgr AuthorizationCodeManager,
-	tokenMgr TokenManager,
+	queryClient QueryClient,
+	authenticateClient AuthenticateClient,
+	queryUser QueryUser,
+	queryAuthCode QueryAuthCode,
+	generateAuthCode GenerateAuthCode,
+	deleteAuthCode DeleteAuthCode,
+	generateAccessToken GenerateAccessToken,
 ) *AuthorizationCodeGrant {
 	return &AuthorizationCodeGrant{
-		userMgr:     userMgr,
-		clientMgr:   clientMgr,
-		authCodeMgr: authCodeMgr,
-		tokenMgr:    tokenMgr,
+		queryClient:         queryClient,
+		authenticateClient:  authenticateClient,
+		queryUser:           queryUser,
+		queryAuthCode:       queryAuthCode,
+		generateAuthCode:    generateAuthCode,
+		deleteAuthCode:      deleteAuthCode,
+		generateAccessToken: generateAccessToken,
 	}
 }
 
@@ -45,7 +54,7 @@ func (grant *AuthorizationCodeGrant) ValidateAuthorizationRequest(r *requests.Au
 			errors.WithState(state))
 	}
 
-	client, err := grant.clientMgr.QueryByClientID(r.Request.Context(), clientID)
+	client, err := grant.queryClient(r.Request.Context(), clientID)
 	if err != nil {
 		return errors.NewInvalidRequestError(
 			errors.WithDescription(ErrClientIDNotFound),
@@ -83,7 +92,7 @@ func (grant *AuthorizationCodeGrant) AuthorizationResponse(rw http.ResponseWrite
 			errors.WithRedirectURI(r.RedirectURI))
 	}
 
-	authCode, err := grant.authCodeMgr.Generate(GrantTypeAuthorizationCode, r)
+	authCode, err := grant.generateAuthCode(GrantTypeAuthorizationCode, r)
 	if err != nil {
 		return err
 	}
@@ -101,7 +110,7 @@ func (grant *AuthorizationCodeGrant) CheckGrantType(grantType string) bool {
 }
 
 func (grant *AuthorizationCodeGrant) ValidateTokenRequest(r *requests.TokenRequest) error {
-	client, authMethod, err := grant.clientMgr.Authenticate(r.Request)
+	client, authMethod, err := grant.authenticateClient(r.Request)
 	if err != nil {
 		return errors.NewInvalidClientError()
 	}
@@ -115,7 +124,7 @@ func (grant *AuthorizationCodeGrant) ValidateTokenRequest(r *requests.TokenReque
 		return errors.NewInvalidRequestError(errors.WithDescription(ErrMissingCode))
 	}
 
-	authCode, err := grant.authCodeMgr.QueryByCode(r.Request.Context(), code)
+	authCode, err := grant.queryAuthCode(r.Request.Context(), code)
 	if err != nil {
 		return errors.NewInvalidGrantError(errors.WithDescription(ErrInvalidCode))
 	}
@@ -134,7 +143,7 @@ func (grant *AuthorizationCodeGrant) ValidateTokenRequest(r *requests.TokenReque
 		return errors.NewInvalidGrantError(errors.WithDescription(ErrUserNotFound))
 	}
 
-	user, err := grant.userMgr.GetByID(r.Request.Context(), userID)
+	user, err := grant.queryUser(r.Request.Context(), userID)
 	if err != nil {
 		return errors.NewInvalidGrantError(errors.WithDescription(ErrUserNotFound))
 	}
@@ -147,12 +156,12 @@ func (grant *AuthorizationCodeGrant) ValidateTokenRequest(r *requests.TokenReque
 }
 
 func (grant *AuthorizationCodeGrant) TokenResponse(rw http.ResponseWriter, r *requests.TokenRequest) error {
-	token, err := grant.tokenMgr.GenerateAccessToken(GrantTypeAuthorizationCode, r, r.Client.CheckGrantType(GrantTypeRefreshToken))
+	token, err := grant.generateAccessToken(GrantTypeAuthorizationCode, r, r.Client.CheckGrantType(GrantTypeRefreshToken))
 	if err != nil {
 		return err
 	}
 
-	if err = grant.authCodeMgr.DeleteByCode(r.Request.Context(), r.AuthorizationCode.GetCode()); err != nil {
+	if err = grant.deleteAuthCode(r.Request.Context(), r.AuthorizationCode.GetCode()); err != nil {
 		return err
 	}
 
