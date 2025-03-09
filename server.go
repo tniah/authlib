@@ -98,6 +98,11 @@ func (srv *Server) GetTokenGrant(r *requests.TokenRequest) (TokenGrant, error) {
 }
 
 func (srv *Server) RegisterGrant(grant interface{}) {
+	srv.RegisterAuthorizationGrant(grant)
+	srv.RegisterTokenGrant(grant)
+}
+
+func (srv *Server) RegisterAuthorizationGrant(grant interface{}) {
 	switch t := grant.(type) {
 	case AuthorizationGrant:
 		if srv.authorizationGrants == nil {
@@ -107,7 +112,9 @@ func (srv *Server) RegisterGrant(grant interface{}) {
 	default:
 		return
 	}
+}
 
+func (srv *Server) RegisterTokenGrant(grant interface{}) {
 	switch t := grant.(type) {
 	case TokenGrant:
 		if srv.tokenGrants == nil {
