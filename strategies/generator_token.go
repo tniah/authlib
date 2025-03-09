@@ -1,4 +1,4 @@
-package manage
+package strategies
 
 import (
 	"context"
@@ -12,20 +12,15 @@ import (
 var ErrNilPointerToken = errors.New("token is a nil pointer")
 
 type (
-	TokenManager struct {
+	TokenGenerator struct {
 		lock                        *sync.Mutex
-		store                       TokenStore
+		newToken                    NewToken
+		saveToken                   SaveToken
 		accessTokenGenerator        AccessTokenGenerator
 		defaultAccessTokenGenerator AccessTokenGenerator
 	}
-
-	TokenManagerOption func(m *TokenManager)
-
-	TokenStore interface {
-		New(ctx context.Context) models.Token
-		Save(ctx context.Context, token models.Token) error
-	}
-
+	NewToken             func(ctx context.Context) models.Token
+	SaveToken            func(ctx context.Context, token models.Token) error
 	AccessTokenGenerator interface {
 		Generate(
 			token models.Token,
@@ -37,10 +32,15 @@ type (
 			args ...map[string]interface{},
 		) error
 	}
+	TokenGeneratorOption func(m *TokenGenerator)
 )
 
-func NewTokenManager(store TokenStore, opts ...TokenManagerOption) *TokenManager {
-	m := &TokenManager{store: store, lock: &sync.Mutex{}}
+func NewTokenGenerator(newToken NewToken, saveToken SaveToken, opts ...TokenGeneratorOption) *TokenGenerator {
+	m := &TokenGenerator{
+		newToken:  newToken,
+		saveToken: saveToken,
+		lock:      &sync.Mutex{},
+	}
 
 	for _, opt := range opts {
 		opt(m)
@@ -49,45 +49,36 @@ func NewTokenManager(store TokenStore, opts ...TokenManagerOption) *TokenManager
 	return m
 }
 
-func WithAccessTokenGenerator(g AccessTokenGenerator) TokenManagerOption {
-	return func(m *TokenManager) {
+func WithAccessTokenGenerator(g AccessTokenGenerator) TokenGeneratorOption {
+	return func(m *TokenGenerator) {
 		m.accessTokenGenerator = g
 	}
 }
 
-func (m *TokenManager) GenerateAccessToken(grantType string, r *requests.TokenRequest, includeRefreshToken bool) (models.Token, error) {
+func (m *TokenGenerator) GenerateAccessToken(grantType string, r *requests.TokenRequest, includeRefreshToken bool) (models.Token, error) {
 	generator := m.accessTokenGenerator
 	if generator == nil {
 		generator = m.getDefaultAccessTokenGenerator()
 	}
 
-	token, err := m.newToken(r.Request.Context())
+	token := m.newToken(r.Request.Context())
+	if token != nil {
+		return nil, ErrNilPointerToken
+	}
+
+	err := generator.Generate(token, grantType, r.User, r.Client, r.Scopes, includeRefreshToken)
 	if err != nil {
 		return nil, err
 	}
 
-	err = generator.Generate(token, grantType, r.User, r.Client, r.Scopes, includeRefreshToken)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := m.store.Save(r.Request.Context(), token); err != nil {
+	if err := m.saveToken(r.Request.Context(), token); err != nil {
 		return nil, err
 	}
 
 	return token, nil
 }
 
-func (m *TokenManager) newToken(ctx context.Context) (models.Token, error) {
-	t := m.store.New(ctx)
-	if t == nil {
-		return nil, ErrNilPointerToken
-	}
-
-	return t, nil
-}
-
-func (m *TokenManager) getDefaultAccessTokenGenerator() AccessTokenGenerator {
+func (m *TokenGenerator) getDefaultAccessTokenGenerator() AccessTokenGenerator {
 	if m.defaultAccessTokenGenerator == nil {
 		m.lock.Lock()
 		defer m.lock.Unlock()
