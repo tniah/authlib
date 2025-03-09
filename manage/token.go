@@ -19,18 +19,20 @@ type (
 	TokenManagerOption func(m *TokenManager)
 
 	TokenStore interface {
+		New(ctx context.Context) models.Token
 		Save(ctx context.Context, token models.Token) error
 	}
 
 	AccessTokenGenerator interface {
 		Generate(
+			token models.Token,
 			grantType string,
 			user models.User,
 			client models.Client,
 			scopes []string,
 			includeRefreshToken bool,
 			args ...map[string]interface{},
-		) (models.Token, error)
+		) error
 	}
 )
 
@@ -56,7 +58,8 @@ func (m *TokenManager) GenerateAccessToken(grantType string, r *requests.TokenRe
 		generator = m.getDefaultAccessTokenGenerator()
 	}
 
-	token, err := generator.Generate(grantType, r.User, r.Client, r.Scopes, includeRefreshToken)
+	token := m.store.New(r.Request.Context())
+	err := generator.Generate(token, grantType, r.User, r.Client, r.Scopes, includeRefreshToken)
 	if err != nil {
 		return nil, err
 	}

@@ -3,15 +3,27 @@ package models
 import "time"
 
 type Token interface {
-	GetTokenID() string
+	GetID() string
+	SetID(id string)
 	GetAccessToken() string
+	SetAccessToken(accessToken string)
 	GetRefreshToken() string
+	SetRefreshToken(refreshToken string)
 	GetClientID() string
+	SetClientID(clientID string)
 	GetType() string
+	SetType(string)
 	GetScopes() []string
+	SetScopes(scopes []string)
 	GetIssuedAt() time.Time
-	GetExpiresIn() time.Duration
+	SetIssuedAt(issuedAt time.Time)
+	GetAccessTokenExpiresIn() time.Duration
+	SetAccessTokenExpiresIn(exp time.Duration)
+	GetRefreshTokenExpiresIn() time.Duration
+	SetRefreshTokenExpiresIn(exp time.Duration)
 	GetUserID() string
-	GetData() map[string]interface{}
+	SetUserID(userID string)
 	GetExtraData() map[string]interface{}
+	SetExtraData(data map[string]interface{})
+	GetData() map[string]interface{}
 }

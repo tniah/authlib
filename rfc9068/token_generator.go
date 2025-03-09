@@ -139,7 +139,7 @@ func (g *JWTBearerTokenGenerator) Generate(
 	if err != nil {
 		return nil, err
 	}
-	t.expiresIn = expiresIn
+	t.accessTokenExpiresIn = expiresIn
 
 	if len(args) > 0 {
 		t.extraData = args[0]

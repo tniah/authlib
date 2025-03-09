@@ -9,25 +9,23 @@ import (
 )
 
 const (
-	DefaultExpiresIn          = time.Minute * 60
-	DefaultAccessTokenLength  = 48
-	DefaultRefreshTokenLength = 48
-	ParamTokenType            = "token_type"
-	ParamAccessToken          = "access_token"
-	ParamRefreshToken         = "refresh_token"
-	ParamExpiresIn            = "expires_in"
-	ParamScope                = "scope"
-	TokenTypeBearer           = "Bearer"
+	TokenTypeBearer              = "Bearer"
+	DefaultAccessTokenExpiresIn  = time.Minute * 60
+	DefaultRefreshTokenExpiresIn = time.Minute * 60 * 24
+	DefaultAccessTokenLength     = 48
+	DefaultRefreshTokenLength    = 48
 )
 
 type (
 	BearerTokenGenerator struct {
-		accessTokenGenerator  TokenGenerator
-		refreshTokenGenerator TokenGenerator
-		expiresInGenerator    ExpiresInGenerator
-		accessTokenLength     int
-		refreshTokenLength    int
-		expiresIn             time.Duration
+		accessTokenGenerator           TokenGenerator
+		refreshTokenGenerator          TokenGenerator
+		accessTokenExpiresInGenerator  ExpiresInGenerator
+		refreshTokenExpiresInGenerator ExpiresInGenerator
+		accessTokenLength              int
+		refreshTokenLength             int
+		accessTokenExpiresIn           time.Duration
+		refreshTokenExpiresIn          time.Duration
 	}
 
 	TokenGenerator             func(grantType string, user models.User, client models.Client, scopes []string) (string, error)
@@ -37,9 +35,10 @@ type (
 
 func NewBearerTokenGenerator(opts ...BearerTokenGeneratorOption) *BearerTokenGenerator {
 	g := &BearerTokenGenerator{
-		accessTokenLength:  DefaultAccessTokenLength,
-		refreshTokenLength: DefaultRefreshTokenLength,
-		expiresIn:          DefaultExpiresIn,
+		accessTokenLength:     DefaultAccessTokenLength,
+		refreshTokenLength:    DefaultRefreshTokenLength,
+		accessTokenExpiresIn:  DefaultAccessTokenExpiresIn,
+		refreshTokenExpiresIn: DefaultRefreshTokenExpiresIn,
 	}
 
 	for _, opt := range opts {
@@ -63,7 +62,7 @@ func WithRefreshTokenGenerator(fn TokenGenerator) BearerTokenGeneratorOption {
 
 func WithExpiresInGenerator(fn ExpiresInGenerator) BearerTokenGeneratorOption {
 	return func(g *BearerTokenGenerator) {
-		g.expiresInGenerator = fn
+		g.accessTokenExpiresInGenerator = fn
 	}
 }
 
@@ -79,54 +78,66 @@ func WithRefreshTokenLength(l int) BearerTokenGeneratorOption {
 	}
 }
 
-func WithExpiresIn(exp time.Duration) BearerTokenGeneratorOption {
+func WithAccessTokenExpiresIn(exp time.Duration) BearerTokenGeneratorOption {
 	return func(g *BearerTokenGenerator) {
-		g.expiresIn = exp
+		g.accessTokenExpiresIn = exp
+	}
+}
+
+func WithRefreshTokenExpiresIn(exp time.Duration) BearerTokenGeneratorOption {
+	return func(g *BearerTokenGenerator) {
+		g.refreshTokenExpiresIn = exp
 	}
 }
 
 func (g *BearerTokenGenerator) Generate(
+	token models.Token,
 	grantType string,
 	user models.User,
 	client models.Client,
 	scopes []string,
 	includeRefreshToken bool,
 	args ...map[string]interface{},
-) (models.Token, error) {
+) error {
 	allowedScopes := client.GetAllowedScopes(scopes)
-	t := &Token{
-		tokenID:  strings.Replace(uuid.NewString(), "-", "", -1),
-		clientID: client.GetClientID(),
-		scopes:   allowedScopes,
-		issuedAt: time.Now(),
-		userID:   user.GetSubjectID(),
-	}
+	token.SetType(TokenTypeBearer)
+	token.SetID(strings.Replace(uuid.NewString(), "-", "", -1))
+	token.SetClientID(client.GetClientID())
+	token.SetScopes(allowedScopes)
+	token.SetIssuedAt(time.Now())
+	token.SetUserID(user.GetSubjectID())
 
 	accessToken, err := g.generateAccessToken(grantType, user, client, allowedScopes)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	t.accessToken = accessToken
+	token.SetAccessToken(accessToken)
+
+	atExpiresIn, err := g.getAccessTokenExpiresIn(grantType, client)
+	if err != nil {
+		return err
+	}
+	token.SetAccessTokenExpiresIn(atExpiresIn)
 
 	if includeRefreshToken {
 		refreshToken, err := g.generateRefreshToken(grantType, user, client, allowedScopes)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		t.refreshToken = refreshToken
-	}
+		token.SetRefreshToken(refreshToken)
 
-	expiresIn, err := g.getExpiresIn(grantType, client)
-	if err != nil {
-		return nil, err
+		rtExpiresIn, err := g.getRefreshTokenExpiresIn(grantType, client)
+		if err != nil {
+			return err
+		}
+		token.SetRefreshTokenExpiresIn(rtExpiresIn)
 	}
-	t.expiresIn = expiresIn
 
 	if len(args) > 0 {
-		t.extraData = args[0]
+		token.SetExtraData(args[0])
 	}
 
-	return t, nil
+	return nil
 }
 
 func (g *BearerTokenGenerator) generateAccessToken(grantType string, user models.User, client models.Client, scopes []string) (string, error) {
@@ -145,10 +156,18 @@ func (g *BearerTokenGenerator) generateRefreshToken(grantType string, user model
 	return common.GenerateRandString(g.refreshTokenLength, common.SecretCharset)
 }
 
-func (g *BearerTokenGenerator) getExpiresIn(grantType string, client models.Client) (time.Duration, error) {
-	if g.expiresInGenerator != nil {
-		return g.expiresInGenerator(grantType, client)
+func (g *BearerTokenGenerator) getAccessTokenExpiresIn(grantType string, client models.Client) (time.Duration, error) {
+	if g.accessTokenExpiresInGenerator != nil {
+		return g.accessTokenExpiresInGenerator(grantType, client)
 	}
 
-	return g.expiresIn, nil
+	return g.accessTokenExpiresIn, nil
+}
+
+func (g *BearerTokenGenerator) getRefreshTokenExpiresIn(grantType string, client models.Client) (time.Duration, error) {
+	if g.refreshTokenExpiresInGenerator != nil {
+		return g.refreshTokenExpiresInGenerator(grantType, client)
+	}
+
+	return g.refreshTokenExpiresIn, nil
 }

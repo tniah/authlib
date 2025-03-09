@@ -6,18 +6,19 @@ import (
 )
 
 type Token struct {
-	tokenID      string
-	accessToken  string
-	refreshToken string
-	clientID     string
-	scopes       []string
-	issuedAt     time.Time
-	expiresIn    time.Duration
-	userID       string
-	extraData    map[string]interface{}
+	tokenID               string
+	accessToken           string
+	refreshToken          string
+	clientID              string
+	scopes                []string
+	issuedAt              time.Time
+	accessTokenExpiresIn  time.Duration
+	refreshTokenExpiresIn time.Duration
+	userID                string
+	extraData             map[string]interface{}
 }
 
-func (t *Token) GetTokenID() string {
+func (t *Token) GetID() string {
 	return t.tokenID
 }
 
@@ -45,8 +46,12 @@ func (t *Token) GetIssuedAt() time.Time {
 	return t.issuedAt
 }
 
-func (t *Token) GetExpiresIn() time.Duration {
-	return t.expiresIn
+func (t *Token) GetAccessTokenExpiresIn() time.Duration {
+	return t.accessTokenExpiresIn
+}
+
+func (t *Token) GetRefreshTokenExpiresIn() time.Duration {
+	return t.refreshTokenExpiresIn
 }
 
 func (t *Token) GetUserID() string {
@@ -61,7 +66,7 @@ func (t *Token) GetData() map[string]interface{} {
 	data := map[string]interface{}{
 		ParamTokenType:   TokenTypeBearer,
 		ParamAccessToken: t.accessToken,
-		ParamExpiresIn:   t.expiresIn.Seconds(),
+		ParamExpiresIn:   t.accessTokenExpiresIn.Seconds(),
 	}
 
 	if t.refreshToken != "" {
