@@ -32,7 +32,7 @@ type (
 	AuthCodeGeneratorOption func(m *AuthCodeGenerator)
 )
 
-func NewAuthorizationManager(newAuthCode NewAuthCode, saveAuthCode SaveAuthCode, opts ...AuthCodeGeneratorOption) *AuthCodeGenerator {
+func NewAuthCodeGenerator(newAuthCode NewAuthCode, saveAuthCode SaveAuthCode, opts ...AuthCodeGeneratorOption) *AuthCodeGenerator {
 	m := &AuthCodeGenerator{
 		newAuthCode:  newAuthCode,
 		saveAuthCode: saveAuthCode,
