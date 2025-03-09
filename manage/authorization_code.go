@@ -6,6 +6,7 @@ import (
 	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
+	"net/http"
 	"time"
 )
 
@@ -18,9 +19,10 @@ var ErrInvalidAuthorizationCode = errors.New("invalid authorization code")
 
 type (
 	AuthorizationCodeManager struct {
-		store         AuthorizationCodeStore
-		codeGenerator CodeGenerator
-		expiresIn     time.Duration
+		store              AuthorizationCodeStore
+		codeGenerator      CodeGenerator
+		expiresIn          time.Duration
+		extraDataGenerator ExtraDataGenerator
 	}
 
 	AuthorizationCodeStore interface {
@@ -30,6 +32,7 @@ type (
 	}
 
 	CodeGenerator                  func(grantType string, client models.Client) (string, error)
+	ExtraDataGenerator             func(grantType string, client models.Client, r *http.Request) (map[string]interface{}, error)
 	AuthorizationCodeManagerOption func(m *AuthorizationCodeManager)
 )
 
@@ -55,6 +58,12 @@ func WithCodeGenerator(fn CodeGenerator) AuthorizationCodeManagerOption {
 func WithExpiresIn(exp time.Duration) AuthorizationCodeManagerOption {
 	return func(m *AuthorizationCodeManager) {
 		m.expiresIn = exp
+	}
+}
+
+func WithExtraDataGenerator(fn ExtraDataGenerator) AuthorizationCodeManagerOption {
+	return func(m *AuthorizationCodeManager) {
+		m.extraDataGenerator = fn
 	}
 }
 
@@ -91,6 +100,16 @@ func (m *AuthorizationCodeManager) Generate(grantType string, r *requests.Author
 		CodeChallenge:       r.CodeChallenge,
 		CodeChallengeMethod: r.CodeChallengeMethod,
 	}
+
+	if fn := m.extraDataGenerator; fn != nil {
+		data, err := fn(grantType, r.Client, r.Request)
+		if err != nil {
+			return nil, err
+		}
+
+		authCode.ExtraData = data
+	}
+
 	if err = m.store.Save(r.Request.Context(), authCode); err != nil {
 		return nil, err
 	}

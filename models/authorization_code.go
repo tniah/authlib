@@ -15,4 +15,5 @@ type AuthorizationCode interface {
 	GetExpiresIn() time.Duration
 	GetCodeChallenge() string
 	GetCodeChallengeMethod() string
+	GetExtraData() map[string]interface{}
 }

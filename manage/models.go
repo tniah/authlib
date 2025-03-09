@@ -17,6 +17,7 @@ type AuthorizationCode struct {
 	ExpiresIn           time.Duration
 	CodeChallenge       string
 	CodeChallengeMethod string
+	ExtraData           map[string]interface{}
 }
 
 func (c *AuthorizationCode) GetCode() string {
@@ -65,4 +66,8 @@ func (c *AuthorizationCode) GetCodeChallenge() string {
 
 func (c *AuthorizationCode) GetCodeChallengeMethod() string {
 	return c.CodeChallengeMethod
+}
+
+func (c *AuthorizationCode) GetExtraData() map[string]interface{} {
+	return c.ExtraData
 }

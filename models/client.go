@@ -8,11 +8,11 @@ type Client interface {
 	GetGrantTypes() []string
 	GetScopes() []string
 	GetTokenEndpointAuthMethod() string
-	GetDefaultRedirectURI() string
 	GetAllowedScopes(scopes []string) []string
+	GetDefaultRedirectURI() string
 	CheckRedirectURI(redirectURI string) bool
+	CheckGrantType(grantType string) bool
 	CheckResponseType(responseType string) bool
 	CheckTokenEndpointAuthMethod(authMethod string) bool
 	CheckClientSecret(secret string) bool
-	CheckGrantType(grantType string) bool
 }
