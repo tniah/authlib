@@ -129,14 +129,7 @@ func (grant *AuthorizationCodeGrant) ValidateTokenRequest(r *requests.TokenReque
 		return errors.NewInvalidGrantError(errors.WithDescription(ErrInvalidRedirectURI))
 	}
 
-	r.Client = client
-	r.TokenEndpointAuthMethod = authMethod
-	r.AuthorizationCode = authCode
-	return nil
-}
-
-func (grant *AuthorizationCodeGrant) TokenResponse(rw http.ResponseWriter, r *requests.TokenRequest) error {
-	userID := r.AuthorizationCode.GetUserID()
+	userID := authCode.GetUserID()
 	if userID == "" {
 		return errors.NewInvalidGrantError(errors.WithDescription(ErrUserNotFound))
 	}
@@ -146,7 +139,14 @@ func (grant *AuthorizationCodeGrant) TokenResponse(rw http.ResponseWriter, r *re
 		return errors.NewInvalidGrantError(errors.WithDescription(ErrUserNotFound))
 	}
 
+	r.Client = client
+	r.TokenEndpointAuthMethod = authMethod
+	r.AuthorizationCode = authCode
 	r.User = user
+	return nil
+}
+
+func (grant *AuthorizationCodeGrant) TokenResponse(rw http.ResponseWriter, r *requests.TokenRequest) error {
 	token, err := grant.tokenMgr.GenerateAccessToken(GrantTypeAuthorizationCode, r, r.Client.CheckGrantType(GrantTypeRefreshToken))
 	if err != nil {
 		return err
