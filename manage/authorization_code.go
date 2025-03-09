@@ -15,7 +15,10 @@ const (
 	DefaultExpiresIn        = time.Minute * 5
 )
 
-var ErrInvalidAuthorizationCode = errors.New("invalid authorization code")
+var (
+	ErrInvalidAuthorizationCode    = errors.New("invalid authorization code")
+	ErrNilPointerAuthorizationCode = errors.New("authorization code is a nil pointer")
+)
 
 type (
 	AuthorizationCodeManager struct {
@@ -26,6 +29,7 @@ type (
 	}
 
 	AuthorizationCodeStore interface {
+		New(ctx context.Context) models.AuthorizationCode
 		FetchByCode(ctx context.Context, code string) (models.AuthorizationCode, error)
 		Save(ctx context.Context, authorizationCode models.AuthorizationCode) error
 		DeleteByCode(ctx context.Context, code string) error
@@ -86,20 +90,23 @@ func (m *AuthorizationCodeManager) Generate(grantType string, r *requests.Author
 		return nil, err
 	}
 
-	authCode := &AuthorizationCode{
-		Code:                code,
-		ClientID:            r.ClientID,
-		UserID:              r.UserID,
-		RedirectURI:         r.RedirectURI,
-		ResponseType:        r.ResponseType,
-		Scopes:              r.Scopes,
-		Nonce:               r.Nonce,
-		State:               r.State,
-		AuthTime:            time.Now(),
-		ExpiresIn:           m.expiresIn,
-		CodeChallenge:       r.CodeChallenge,
-		CodeChallengeMethod: r.CodeChallengeMethod,
+	authCode, err := m.newCode(r.Request.Context())
+	if err != nil {
+		return nil, err
 	}
+
+	authCode.SetCode(code)
+	authCode.SetClientID(r.ClientID)
+	authCode.SetUserID(r.UserID)
+	authCode.SetRedirectURI(r.RedirectURI)
+	authCode.SetResponseType(r.ResponseType)
+	authCode.SetScopes(r.Scopes)
+	authCode.SetNonce(r.Nonce)
+	authCode.SetState(r.State)
+	authCode.SetAuthTime(time.Now())
+	authCode.SetExpiresIn(m.expiresIn)
+	authCode.SetCodeChallenge(r.CodeChallenge)
+	authCode.SetCodeChallengeMethod(r.CodeChallengeMethod)
 
 	if fn := m.extraDataGenerator; fn != nil {
 		data, err := fn(grantType, r.Client, r.Request)
@@ -107,7 +114,7 @@ func (m *AuthorizationCodeManager) Generate(grantType string, r *requests.Author
 			return nil, err
 		}
 
-		authCode.ExtraData = data
+		authCode.SetExtraData(data)
 	}
 
 	if err = m.store.Save(r.Request.Context(), authCode); err != nil {
@@ -119,6 +126,15 @@ func (m *AuthorizationCodeManager) Generate(grantType string, r *requests.Author
 
 func (m *AuthorizationCodeManager) DeleteByCode(ctx context.Context, code string) error {
 	return m.store.DeleteByCode(ctx, code)
+}
+
+func (m *AuthorizationCodeManager) newCode(ctx context.Context) (models.AuthorizationCode, error) {
+	c := m.store.New(ctx)
+	if c == nil {
+		return nil, ErrNilPointerAuthorizationCode
+	}
+
+	return c, nil
 }
 
 func (m *AuthorizationCodeManager) generateCode(grantType string, r *requests.AuthorizationRequest) (string, error) {
