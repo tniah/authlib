@@ -7,21 +7,21 @@ import (
 )
 
 type ROPCGrant struct {
-	clientAuthHandler    ClientAuthenticationHandler
-	userAuthHandler      UserAuthenticationHandler
-	accessTokenGenerator AccessTokenGenerator
+	authenticateClient  AuthenticateClient
+	authenticateUser    AuthenticateUser
+	generateAccessToken GenerateAccessToken
 	TokenGrantMixin
 }
 
 func NewROPCGrant(
-	clientAuthHandler ClientAuthenticationHandler,
-	userAuthHandler UserAuthenticationHandler,
-	accessTokenGenerator AccessTokenGenerator,
+	authenticateClient AuthenticateClient,
+	authenticateUser AuthenticateUser,
+	generateAccessToken GenerateAccessToken,
 ) *ROPCGrant {
 	return &ROPCGrant{
-		clientAuthHandler:    clientAuthHandler,
-		userAuthHandler:      userAuthHandler,
-		accessTokenGenerator: accessTokenGenerator,
+		authenticateClient:  authenticateClient,
+		authenticateUser:    authenticateUser,
+		generateAccessToken: generateAccessToken,
 	}
 }
 
@@ -30,7 +30,7 @@ func (grant *ROPCGrant) CheckGrantType(grantType string) bool {
 }
 
 func (grant *ROPCGrant) ValidateTokenRequest(r *requests.TokenRequest) error {
-	client, authMethod, err := grant.clientAuthHandler(r.Request)
+	client, authMethod, err := grant.authenticateClient(r.Request)
 	if err != nil {
 		return errors.NewInvalidClientError()
 	}
@@ -49,7 +49,7 @@ func (grant *ROPCGrant) ValidateTokenRequest(r *requests.TokenRequest) error {
 		return errors.NewInvalidRequestError(errors.WithDescription(ErrMissingPassword))
 	}
 
-	user, err := grant.userAuthHandler(username, password)
+	user, err := grant.authenticateUser(username, password)
 	if err != nil {
 		return errors.NewInvalidRequestError(errors.WithDescription(ErrUsernameOrPasswordIncorrect))
 	}
@@ -61,7 +61,7 @@ func (grant *ROPCGrant) ValidateTokenRequest(r *requests.TokenRequest) error {
 }
 
 func (grant *ROPCGrant) TokenResponse(rw http.ResponseWriter, r *requests.TokenRequest) error {
-	token, err := grant.accessTokenGenerator(GrantTypeROPC, r, r.Client.CheckGrantType(GrantTypeRefreshToken))
+	token, err := grant.generateAccessToken(GrantTypeROPC, r, r.Client.CheckGrantType(GrantTypeRefreshToken))
 	if err != nil {
 		return err
 	}

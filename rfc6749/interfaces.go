@@ -27,11 +27,15 @@ type TokenManager interface {
 }
 
 type (
-	QueryByClientID func(ctx context.Context, clientID string) (models.Client, error)
+	QueryClient func(ctx context.Context, clientID string) (models.Client, error)
 
-	ClientAuthenticationHandler func(r *http.Request) (models.Client, string, error)
+	AuthenticateClient func(r *http.Request) (models.Client, string, error)
 
-	UserAuthenticationHandler func(username string, password string) (models.User, error)
+	AuthenticateUser func(username string, password string) (models.User, error)
 
-	AccessTokenGenerator func(grantType string, r *requests.TokenRequest, includeRefreshToken bool) (models.Token, error)
+	QueryAuthCode func(ctx context.Context, code string) (models.AuthorizationCode, error)
+
+	GenerateAuthCode func(grantType string, r *requests.AuthorizationRequest) (models.AuthorizationCode, error)
+
+	GenerateAccessToken func(grantType string, r *requests.TokenRequest, includeRefreshToken bool) (models.Token, error)
 )
