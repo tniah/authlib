@@ -15,6 +15,8 @@ type TokenRequest struct {
 	CodeChallengeMethod     string
 	CodeVerifier            string
 	TokenEndpointAuthMethod string
+	Username                string
+	Password                string
 	Client                  models.Client
 	User                    models.User
 	AuthorizationCode       models.AuthorizationCode

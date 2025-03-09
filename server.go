@@ -20,6 +20,8 @@ const (
 	ParamCodeChallengeMethod = "code_challenge_method"
 	ParamClientID            = "client_id"
 	ParamGrantType           = "grant_type"
+	ParamUsername            = "username"
+	ParamPassword            = "password"
 )
 
 type (
@@ -79,6 +81,8 @@ func (srv *Server) CreateTokenRequest(r *http.Request) *requests.TokenRequest {
 		Code:        r.FormValue(ParamCode),
 		RedirectURI: r.FormValue(ParamRedirectURI),
 		Scopes:      strings.Fields(r.FormValue(ParamScope)),
+		Username:    r.FormValue(ParamUsername),
+		Password:    r.FormValue(ParamPassword),
 		Request:     r,
 	}
 }
