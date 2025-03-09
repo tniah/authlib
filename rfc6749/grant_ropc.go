@@ -2,27 +2,26 @@ package rfc6749
 
 import (
 	"github.com/tniah/authlib/errors"
-	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
 	"net/http"
 )
 
-type (
-	ROPCGrant struct {
-		clientMgr        ClientManager
-		tokenMgr         TokenManager
-		authenticateUser AuthenticateUser
-		TokenGrantMixin
-	}
+type ROPCGrant struct {
+	clientAuthHandler    ClientAuthenticationHandler
+	userAuthHandler      UserAuthenticationHandler
+	accessTokenGenerator AccessTokenGenerator
+	TokenGrantMixin
+}
 
-	AuthenticateUser func(username string, password string) (models.User, error)
-)
-
-func NewROPCGrant(clientMgr ClientManager, tokenMgr TokenManager, authenticateUser AuthenticateUser) *ROPCGrant {
+func NewROPCGrant(
+	clientAuthHandler ClientAuthenticationHandler,
+	userAuthHandler UserAuthenticationHandler,
+	accessTokenGenerator AccessTokenGenerator,
+) *ROPCGrant {
 	return &ROPCGrant{
-		clientMgr:        clientMgr,
-		tokenMgr:         tokenMgr,
-		authenticateUser: authenticateUser,
+		clientAuthHandler:    clientAuthHandler,
+		userAuthHandler:      userAuthHandler,
+		accessTokenGenerator: accessTokenGenerator,
 	}
 }
 
@@ -31,7 +30,7 @@ func (grant *ROPCGrant) CheckGrantType(grantType string) bool {
 }
 
 func (grant *ROPCGrant) ValidateTokenRequest(r *requests.TokenRequest) error {
-	client, authMethod, err := grant.clientMgr.Authenticate(r.Request)
+	client, authMethod, err := grant.clientAuthHandler(r.Request)
 	if err != nil {
 		return errors.NewInvalidClientError()
 	}
@@ -50,7 +49,7 @@ func (grant *ROPCGrant) ValidateTokenRequest(r *requests.TokenRequest) error {
 		return errors.NewInvalidRequestError(errors.WithDescription(ErrMissingPassword))
 	}
 
-	user, err := grant.authenticateUser(username, password)
+	user, err := grant.userAuthHandler(username, password)
 	if err != nil {
 		return errors.NewInvalidRequestError(errors.WithDescription(ErrUsernameOrPasswordIncorrect))
 	}
@@ -62,7 +61,7 @@ func (grant *ROPCGrant) ValidateTokenRequest(r *requests.TokenRequest) error {
 }
 
 func (grant *ROPCGrant) TokenResponse(rw http.ResponseWriter, r *requests.TokenRequest) error {
-	token, err := grant.tokenMgr.GenerateAccessToken(GrantTypeROPC, r, r.Client.CheckGrantType(GrantTypeRefreshToken))
+	token, err := grant.accessTokenGenerator(GrantTypeROPC, r, r.Client.CheckGrantType(GrantTypeRefreshToken))
 	if err != nil {
 		return err
 	}
