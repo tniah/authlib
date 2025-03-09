@@ -60,9 +60,15 @@ func WithRefreshTokenGenerator(fn TokenGenerator) BearerTokenGeneratorOption {
 	}
 }
 
-func WithExpiresInGenerator(fn ExpiresInGenerator) BearerTokenGeneratorOption {
+func WithAccessTokenExpiresInGenerator(fn ExpiresInGenerator) BearerTokenGeneratorOption {
 	return func(g *BearerTokenGenerator) {
 		g.accessTokenExpiresInGenerator = fn
+	}
+}
+
+func WithRefreshTokenExpiresInGenerator(fn ExpiresInGenerator) BearerTokenGeneratorOption {
+	return func(g *BearerTokenGenerator) {
+		g.refreshTokenExpiresInGenerator = fn
 	}
 }
 

@@ -5,14 +5,14 @@ import "time"
 type Token interface {
 	GetID() string
 	SetID(id string)
+	GetType() string
+	SetType(string)
 	GetAccessToken() string
 	SetAccessToken(accessToken string)
 	GetRefreshToken() string
 	SetRefreshToken(refreshToken string)
 	GetClientID() string
 	SetClientID(clientID string)
-	GetType() string
-	SetType(string)
 	GetScopes() []string
 	SetScopes(scopes []string)
 	GetIssuedAt() time.Time

@@ -3,15 +3,10 @@ package rfc9068
 import "time"
 
 const (
-	TokenTypeBearer           = "Bearer"
-	DefaultExpiresIn          = time.Minute * 60
-	DefaultRefreshTokenLength = 48
-
-	ParamTokenType    = "token_type"
-	ParamAccessToken  = "access_token"
-	ParamRefreshToken = "refresh_token"
-	ParamExpiresIn    = "expires_in"
-	ParamScope        = "scope"
+	TokenTypeBearer              = "Bearer"
+	DefaultAccessTokenExpiresIn  = time.Minute * 60
+	DefaultRefreshTokenExpiresIn = time.Minute * 60 * 24
+	DefaultRefreshTokenLength    = 48
 
 	ClaimIssuer         = "iss"
 	ClaimSubject        = "sub"

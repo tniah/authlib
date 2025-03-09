@@ -2,11 +2,14 @@ package manage
 
 import (
 	"context"
+	"errors"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/rfc6750"
 	"sync"
 )
+
+var ErrNilPointerToken = errors.New("token is a nil pointer")
 
 type (
 	TokenManager struct {
@@ -58,8 +61,12 @@ func (m *TokenManager) GenerateAccessToken(grantType string, r *requests.TokenRe
 		generator = m.getDefaultAccessTokenGenerator()
 	}
 
-	token := m.store.New(r.Request.Context())
-	err := generator.Generate(token, grantType, r.User, r.Client, r.Scopes, includeRefreshToken)
+	token, err := m.newToken(r.Request.Context())
+	if err != nil {
+		return nil, err
+	}
+
+	err = generator.Generate(token, grantType, r.User, r.Client, r.Scopes, includeRefreshToken)
 	if err != nil {
 		return nil, err
 	}
@@ -69,6 +76,15 @@ func (m *TokenManager) GenerateAccessToken(grantType string, r *requests.TokenRe
 	}
 
 	return token, nil
+}
+
+func (m *TokenManager) newToken(ctx context.Context) (models.Token, error) {
+	t := m.store.New(ctx)
+	if t == nil {
+		return nil, ErrNilPointerToken
+	}
+
+	return t, nil
 }
 
 func (m *TokenManager) getDefaultAccessTokenGenerator() AccessTokenGenerator {
