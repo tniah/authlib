@@ -62,7 +62,7 @@ func (m *TokenGenerator) GenerateAccessToken(grantType string, r *requests.Token
 	}
 
 	token := m.newToken(r.Request.Context())
-	if token != nil {
+	if token == nil {
 		return nil, ErrNilPointerToken
 	}
 
