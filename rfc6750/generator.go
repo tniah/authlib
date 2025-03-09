@@ -1,10 +1,8 @@
 package rfc6750
 
 import (
-	"github.com/google/uuid"
 	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/models"
-	"strings"
 	"time"
 )
 
@@ -107,7 +105,6 @@ func (g *BearerTokenGenerator) Generate(
 ) error {
 	allowedScopes := client.GetAllowedScopes(scopes)
 	token.SetType(TokenTypeBearer)
-	token.SetID(strings.Replace(uuid.NewString(), "-", "", -1))
 	token.SetClientID(client.GetClientID())
 	token.SetScopes(allowedScopes)
 	token.SetIssuedAt(time.Now())

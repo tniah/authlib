@@ -130,7 +130,7 @@ func (g *JWTBearerTokenGenerator) Generate(
 ) error {
 	allowedScopes := client.GetAllowedScopes(scopes)
 	token.SetType(TokenTypeBearer)
-	token.SetID(strings.Replace(uuid.NewString(), "-", "", -1))
+	token.SetJwtID(strings.Replace(uuid.NewString(), "-", "", -1))
 	token.SetClientID(client.GetClientID())
 	token.SetScopes(allowedScopes)
 	token.SetIssuedAt(time.Now())
@@ -182,7 +182,7 @@ func (g *JWTBearerTokenGenerator) generateAccessToken(t models.Token, grantType 
 		ClaimClientID:       client.GetClientID(),
 		ClaimIssuedAt:       jwt.NewNumericDate(t.GetIssuedAt()),
 		ClaimScope:          strings.Join(t.GetScopes(), " "),
-		ClaimJwtID:          t.GetID(),
+		ClaimJwtID:          t.GetJwtID(),
 	}
 
 	sub := user.GetSubjectID()

@@ -3,8 +3,8 @@ package models
 import "time"
 
 type Token interface {
-	GetID() string
-	SetID(id string)
+	GetJwtID() string
+	SetJwtID(id string)
 	GetType() string
 	SetType(string)
 	GetAccessToken() string
