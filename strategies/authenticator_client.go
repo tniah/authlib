@@ -126,6 +126,7 @@ func NewClientAuthenticator(queryClient QueryClient) *ClientAuthenticator {
 func (m *ClientAuthenticator) Authenticate(r *http.Request) (models.Client, string, error) {
 	for h, _ := range m.authHandlers {
 		client, err := h.Authenticate(r)
+
 		if err == nil && client.CheckTokenEndpointAuthMethod(h.Method()) {
 			return client, h.Method(), nil
 		}
