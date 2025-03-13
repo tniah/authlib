@@ -32,7 +32,7 @@ type (
 		) error
 	}
 
-	TokenStrategyOption func(m *TokenStrategy)
+	TokenStrategyOption func(s *TokenStrategy)
 )
 
 func NewTokenStrategy(store TokenStore, opts ...TokenStrategyOption) *TokenStrategy {
@@ -49,23 +49,23 @@ func NewTokenStrategy(store TokenStore, opts ...TokenStrategyOption) *TokenStrat
 }
 
 func WithAccessTokenGenerator(g Generator) TokenStrategyOption {
-	return func(m *TokenStrategy) {
-		m.generator = g
+	return func(s *TokenStrategy) {
+		s.generator = g
 	}
 }
 
-func (m *TokenStrategy) GenerateAccessToken(grantType string, r *requests.TokenRequest, includeRefreshToken bool) (models.Token, error) {
-	token := m.store.New(r.Request.Context())
+func (s *TokenStrategy) GenerateAccessToken(grantType string, r *requests.TokenRequest, includeRefreshToken bool) (models.Token, error) {
+	token := s.store.New(r.Request.Context())
 	if token == nil {
 		return nil, ErrNilPointerToken
 	}
 
-	err := m.generator.Generate(grantType, token, r.User, r.Client, r.Scopes, includeRefreshToken)
+	err := s.generator.Generate(grantType, token, r.User, r.Client, r.Scopes, includeRefreshToken)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := m.store.Save(r.Request.Context(), token); err != nil {
+	if err = s.store.Save(r.Request.Context(), token); err != nil {
 		return nil, err
 	}
 

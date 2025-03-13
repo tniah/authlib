@@ -125,8 +125,8 @@ func NewClientStrategy() *ClientStrategy {
 	}
 }
 
-func (m *ClientStrategy) Authenticate(r *http.Request) (models.Client, string, error) {
-	for h, _ := range m.authHandlers {
+func (s *ClientStrategy) Authenticate(r *http.Request) (models.Client, string, error) {
+	for h, _ := range s.authHandlers {
 		client, err := h.Authenticate(r)
 
 		if err == nil && client.CheckTokenEndpointAuthMethod(h.Method()) {
@@ -137,10 +137,10 @@ func (m *ClientStrategy) Authenticate(r *http.Request) (models.Client, string, e
 	return nil, "", ErrInvalidClient
 }
 
-func (m *ClientStrategy) RegisterAuthMethod(authMethod ClientAuthHandler) {
-	if m.authHandlers == nil {
-		m.authHandlers = make(map[ClientAuthHandler]bool)
+func (s *ClientStrategy) RegisterAuthMethod(authMethod ClientAuthHandler) {
+	if s.authHandlers == nil {
+		s.authHandlers = make(map[ClientAuthHandler]bool)
 	}
 
-	m.authHandlers[authMethod] = true
+	s.authHandlers[authMethod] = true
 }

@@ -36,43 +36,43 @@ type (
 )
 
 func NewAuthCodeStrategy(store AuthCodeStore, opts ...AuthCodeStrategyOption) *AuthCodeStrategy {
-	m := &AuthCodeStrategy{
+	s := &AuthCodeStrategy{
 		store:     store,
 		expiresIn: DefaultExpiresIn,
 	}
 
 	for _, opt := range opts {
-		opt(m)
+		opt(s)
 	}
 
-	return m
+	return s
 }
 
 func WithCodeGenerator(fn CodeGenerator) AuthCodeStrategyOption {
-	return func(m *AuthCodeStrategy) {
-		m.codeGenerator = fn
+	return func(s *AuthCodeStrategy) {
+		s.codeGenerator = fn
 	}
 }
 
 func WithExpiresIn(exp time.Duration) AuthCodeStrategyOption {
-	return func(m *AuthCodeStrategy) {
-		m.expiresIn = exp
+	return func(s *AuthCodeStrategy) {
+		s.expiresIn = exp
 	}
 }
 
 func WithExtraDataGenerator(fn ExtraDataGenerator) AuthCodeStrategyOption {
-	return func(m *AuthCodeStrategy) {
-		m.extraDataGenerator = fn
+	return func(s *AuthCodeStrategy) {
+		s.extraDataGenerator = fn
 	}
 }
 
-func (m *AuthCodeStrategy) Generate(grantType string, r *requests.AuthorizationRequest) (models.AuthorizationCode, error) {
-	code, err := m.generateCode(grantType, r)
+func (s *AuthCodeStrategy) Generate(grantType string, r *requests.AuthorizationRequest) (models.AuthorizationCode, error) {
+	code, err := s.generateCode(grantType, r)
 	if err != nil {
 		return nil, err
 	}
 
-	authCode := m.store.New(r.Request.Context())
+	authCode := s.store.New(r.Request.Context())
 	if authCode == nil {
 		return nil, ErrNilPointerAuthorizationCode
 	}
@@ -86,11 +86,11 @@ func (m *AuthCodeStrategy) Generate(grantType string, r *requests.AuthorizationR
 	authCode.SetNonce(r.Nonce)
 	authCode.SetState(r.State)
 	authCode.SetAuthTime(time.Now())
-	authCode.SetExpiresIn(m.expiresIn)
+	authCode.SetExpiresIn(s.expiresIn)
 	authCode.SetCodeChallenge(r.CodeChallenge)
 	authCode.SetCodeChallengeMethod(r.CodeChallengeMethod)
 
-	if fn := m.extraDataGenerator; fn != nil {
+	if fn := s.extraDataGenerator; fn != nil {
 		data, err := fn(grantType, r.Client, r.Request)
 		if err != nil {
 			return nil, err
@@ -99,15 +99,15 @@ func (m *AuthCodeStrategy) Generate(grantType string, r *requests.AuthorizationR
 		authCode.SetExtraData(data)
 	}
 
-	if err = m.store.Save(r.Request.Context(), authCode); err != nil {
+	if err = s.store.Save(r.Request.Context(), authCode); err != nil {
 		return nil, err
 	}
 
 	return authCode, nil
 }
 
-func (m *AuthCodeStrategy) generateCode(grantType string, r *requests.AuthorizationRequest) (string, error) {
-	if fn := m.codeGenerator; fn != nil {
+func (s *AuthCodeStrategy) generateCode(grantType string, r *requests.AuthorizationRequest) (string, error) {
+	if fn := s.codeGenerator; fn != nil {
 		return fn(grantType, r.Client)
 	}
 
