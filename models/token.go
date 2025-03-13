@@ -24,3 +24,9 @@ type Token interface {
 	GetJwtID() string
 	SetJwtID(id string)
 }
+
+type ExtendableToken interface {
+	Token
+	GetExtraData() map[string]interface{}
+	SetExtraData(data map[string]interface{})
+}
