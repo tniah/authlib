@@ -17,19 +17,23 @@ const (
 
 var ErrInvalidClient = errors.New("invalid client")
 
-type QueryClient func(ctx context.Context, clientID string) (models.Client, error)
+type (
+	ClientStore interface {
+		QueryByClientID(ctx context.Context, clientID string) (models.Client, error)
+	}
 
-type ClientAuthHandler interface {
-	Method() string
-	Authenticate(r *http.Request) (models.Client, error)
-}
+	ClientAuthHandler interface {
+		Method() string
+		Authenticate(r *http.Request) (models.Client, error)
+	}
+)
 
 type ClientBasicAuthHandler struct {
-	queryClient QueryClient
+	store ClientStore
 }
 
-func NewClientBasicAuthHandler(queryClient QueryClient) *ClientBasicAuthHandler {
-	return &ClientBasicAuthHandler{queryClient: queryClient}
+func NewClientBasicAuthHandler(store ClientStore) *ClientBasicAuthHandler {
+	return &ClientBasicAuthHandler{store: store}
 }
 
 func (h *ClientBasicAuthHandler) Method() string {
@@ -42,7 +46,7 @@ func (h *ClientBasicAuthHandler) Authenticate(r *http.Request) (models.Client, e
 		return nil, ErrInvalidClient
 	}
 
-	client, err := h.queryClient(r.Context(), clientID)
+	client, err := h.store.QueryByClientID(r.Context(), clientID)
 	if err != nil {
 		return nil, err
 	}
@@ -55,11 +59,11 @@ func (h *ClientBasicAuthHandler) Authenticate(r *http.Request) (models.Client, e
 }
 
 type ClientFormAuthHandler struct {
-	queryClient QueryClient
+	store ClientStore
 }
 
-func NewClientFormAuthHandler(queryClient QueryClient) *ClientFormAuthHandler {
-	return &ClientFormAuthHandler{queryClient: queryClient}
+func NewClientFormAuthHandler(store ClientStore) *ClientFormAuthHandler {
+	return &ClientFormAuthHandler{store: store}
 }
 
 func (h *ClientFormAuthHandler) Method() string {
@@ -72,7 +76,7 @@ func (h *ClientFormAuthHandler) Authenticate(r *http.Request) (models.Client, er
 		return nil, ErrInvalidClient
 	}
 
-	client, err := h.queryClient(r.Context(), clientID)
+	client, err := h.store.QueryByClientID(r.Context(), clientID)
 	if err != nil {
 		return nil, err
 	}
@@ -86,11 +90,11 @@ func (h *ClientFormAuthHandler) Authenticate(r *http.Request) (models.Client, er
 }
 
 type ClientNoneAuthHandler struct {
-	queryClient QueryClient
+	store ClientStore
 }
 
-func NewClientNoneAuthHandler(queryClient QueryClient) *ClientNoneAuthHandler {
-	return &ClientNoneAuthHandler{queryClient: queryClient}
+func NewClientNoneAuthHandler(store ClientStore) *ClientNoneAuthHandler {
+	return &ClientNoneAuthHandler{store: store}
 }
 
 func (h *ClientNoneAuthHandler) Method() string {
@@ -103,7 +107,7 @@ func (h *ClientNoneAuthHandler) Authenticate(r *http.Request) (models.Client, er
 		return nil, ErrInvalidClient
 	}
 
-	client, err := h.queryClient(r.Context(), clientID)
+	client, err := h.store.QueryByClientID(r.Context(), clientID)
 	if err != nil {
 		return nil, err
 	}
@@ -111,19 +115,17 @@ func (h *ClientNoneAuthHandler) Authenticate(r *http.Request) (models.Client, er
 	return client, nil
 }
 
-type ClientAuthenticator struct {
-	queryClient  QueryClient
+type ClientStrategy struct {
 	authHandlers map[ClientAuthHandler]bool
 }
 
-func NewClientAuthenticator(queryClient QueryClient) *ClientAuthenticator {
-	return &ClientAuthenticator{
-		queryClient:  queryClient,
+func NewClientStrategy(store ClientStore) *ClientStrategy {
+	return &ClientStrategy{
 		authHandlers: make(map[ClientAuthHandler]bool),
 	}
 }
 
-func (m *ClientAuthenticator) Authenticate(r *http.Request) (models.Client, string, error) {
+func (m *ClientStrategy) Authenticate(r *http.Request) (models.Client, string, error) {
 	for h, _ := range m.authHandlers {
 		client, err := h.Authenticate(r)
 
@@ -135,7 +137,7 @@ func (m *ClientAuthenticator) Authenticate(r *http.Request) (models.Client, stri
 	return nil, "", ErrInvalidClient
 }
 
-func (m *ClientAuthenticator) RegisterAuthMethod(authMethod ClientAuthHandler) {
+func (m *ClientStrategy) RegisterAuthMethod(authMethod ClientAuthHandler) {
 	if m.authHandlers == nil {
 		m.authHandlers = make(map[ClientAuthHandler]bool)
 	}
