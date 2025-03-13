@@ -119,7 +119,7 @@ type ClientStrategy struct {
 	authHandlers map[ClientAuthHandler]bool
 }
 
-func NewClientStrategy(store ClientStore) *ClientStrategy {
+func NewClientStrategy() *ClientStrategy {
 	return &ClientStrategy{
 		authHandlers: make(map[ClientAuthHandler]bool),
 	}
