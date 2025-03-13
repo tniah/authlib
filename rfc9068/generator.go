@@ -52,10 +52,14 @@ type (
 	JWTAccessTokenGeneratorOption func(*JWTAccessTokenGenerator)
 )
 
-func NewJWTAccessTokenGenerator() *JWTAccessTokenGenerator {
-	return &JWTAccessTokenGenerator{
+func NewJWTAccessTokenGenerator(opts ...JWTAccessTokenGeneratorOption) *JWTAccessTokenGenerator {
+	g := &JWTAccessTokenGenerator{
 		expiresIn: DefaultExpiresIn,
 	}
+	for _, opt := range opts {
+		opt(g)
+	}
+	return g
 }
 
 func WithIssuer(iss string) JWTAccessTokenGeneratorOption {
