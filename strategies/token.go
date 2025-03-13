@@ -13,7 +13,7 @@ var ErrNilPointerToken = errors.New("token is a nil pointer")
 type (
 	TokenStrategy struct {
 		store     TokenStore
-		generator Generator
+		generator TokenGenerator
 	}
 
 	TokenStore interface {
@@ -21,7 +21,7 @@ type (
 		Save(ctx context.Context, token models.Token) error
 	}
 
-	Generator interface {
+	TokenGenerator interface {
 		Generate(
 			grantType string,
 			token models.Token,
@@ -48,13 +48,13 @@ func NewTokenStrategy(store TokenStore, opts ...TokenStrategyOption) *TokenStrat
 	return m
 }
 
-func WithAccessTokenGenerator(g Generator) TokenStrategyOption {
+func WithTokenGenerator(g TokenGenerator) TokenStrategyOption {
 	return func(s *TokenStrategy) {
 		s.generator = g
 	}
 }
 
-func (s *TokenStrategy) GenerateAccessToken(grantType string, r *requests.TokenRequest, includeRefreshToken bool) (models.Token, error) {
+func (s *TokenStrategy) Generate(grantType string, r *requests.TokenRequest, includeRefreshToken bool) (models.Token, error) {
 	token := s.store.New(r.Request.Context())
 	if token == nil {
 		return nil, ErrNilPointerToken
