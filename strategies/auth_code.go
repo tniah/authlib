@@ -32,7 +32,7 @@ type (
 
 	CodeGenerator          func(grantType string, client models.Client) (string, error)
 	ExtraDataGenerator     func(grantType string, client models.Client, r *http.Request) (map[string]interface{}, error)
-	AuthCodeStrategyOption func(m *AuthCodeStrategy)
+	AuthCodeStrategyOption func(s *AuthCodeStrategy)
 )
 
 func NewAuthCodeStrategy(store AuthCodeStore, opts ...AuthCodeStrategyOption) *AuthCodeStrategy {
