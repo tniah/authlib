@@ -67,7 +67,7 @@ func WithExtraDataGenerator(fn ExtraDataGenerator) AuthCodeStrategyOption {
 }
 
 func (s *AuthCodeStrategy) Generate(grantType string, r *requests.AuthorizationRequest) (models.AuthorizationCode, error) {
-	code, err := s.generateCode(grantType, r)
+	code, err := s.generate(grantType, r)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func (s *AuthCodeStrategy) Generate(grantType string, r *requests.AuthorizationR
 	return authCode, nil
 }
 
-func (s *AuthCodeStrategy) generateCode(grantType string, r *requests.AuthorizationRequest) (string, error) {
+func (s *AuthCodeStrategy) generate(grantType string, r *requests.AuthorizationRequest) (string, error) {
 	if fn := s.codeGenerator; fn != nil {
 		return fn(grantType, r.Client)
 	}
