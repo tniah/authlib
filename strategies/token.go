@@ -35,7 +35,7 @@ type (
 	TokenStrategyOption func(m *TokenStrategy)
 )
 
-func NewTokenGenerator(store TokenStore, opts ...TokenStrategyOption) *TokenStrategy {
+func NewTokenStrategy(store TokenStore, opts ...TokenStrategyOption) *TokenStrategy {
 	m := &TokenStrategy{
 		store:     store,
 		generator: rfc6750.NewBearerTokenGenerator(),
