@@ -10,192 +10,159 @@ import (
 	"time"
 )
 
+const (
+	DefaultExpiresIn    = time.Minute * 60
+	ClaimIssuer         = "iss"
+	ClaimSubject        = "sub"
+	ClaimAudience       = "aud"
+	ClaimExpirationTime = "exp"
+	ClaimIssuedAt       = "iat"
+	ClaimJwtID          = "jti"
+	ClaimClientID       = "client_id"
+	HeaderMediaType     = "typ"
+	MediaType           = "at+JWT"
+)
+
 var (
+	ErrMissingIssuer        = errors.New("missing issuer")
+	ErrInvalidExpiresIn     = errors.New("invalid 'expiresIn' value")
 	ErrMissingSigningKey    = errors.New("missing signing key")
 	ErrMissingSigningMethod = errors.New("missing signing method")
 )
 
 type (
-	JWTBearerTokenGenerator struct {
-		issuer                         string
-		signingKey                     []byte
-		signingKeyMethod               jwt.SigningMethod
-		signingKeyID                   string
-		signingKeyGenerator            SigningKeyGenerator
-		extraClaimGenerator            ExtraClaimGenerator
-		refreshTokenGenerator          TokenGenerator
-		accessTokenExpiresInGenerator  ExpiresInGenerator
-		refreshTokenExpiresInGenerator ExpiresInGenerator
-		refreshTokenLength             int
-		accessTokenExpiresIn           time.Duration
-		refreshTokenExpiresIn          time.Duration
+	JWTAccessTokenGenerator struct {
+		issuer              string
+		issuerGenerator     IssuerGenerator
+		expiresIn           time.Duration
+		expiresInGenerator  ExpiresInGenerator
+		signingKey          []byte
+		signingKeyMethod    jwt.SigningMethod
+		signingKeyID        string
+		signingKeyGenerator SigningKeyGenerator
+		extraClaimGenerator ExtraClaimGenerator
+		jwtIDGenerator      JWTIDGenerator
 	}
 
-	TokenGenerator                func(grantType string, user models.User, client models.Client, scopes []string) (string, error)
-	SigningKeyGenerator           func(grantType string, client models.Client) ([]byte, jwt.SigningMethod, string, error)
+	IssuerGenerator               func(grantType string, client models.Client) (string, error)
 	ExpiresInGenerator            func(grantType string, client models.Client) (time.Duration, error)
+	SigningKeyGenerator           func(grantType string, client models.Client) ([]byte, jwt.SigningMethod, string, error)
 	ExtraClaimGenerator           func(grantType string, user models.User, client models.Client, scopes []string) (map[string]interface{}, error)
-	JWTBearerTokenGeneratorOption func(*JWTBearerTokenGenerator)
+	JWTIDGenerator                func(grantType string, client models.Client) (string, error)
+	JWTAccessTokenGeneratorOption func(*JWTAccessTokenGenerator)
 )
 
-func NewJWTAccessTokenGenerator(issuer string, opts ...JWTBearerTokenGeneratorOption) *JWTBearerTokenGenerator {
-	g := &JWTBearerTokenGenerator{
-		issuer:                issuer,
-		refreshTokenLength:    DefaultRefreshTokenLength,
-		accessTokenExpiresIn:  DefaultAccessTokenExpiresIn,
-		refreshTokenExpiresIn: DefaultRefreshTokenExpiresIn,
+func NewJWTAccessTokenGenerator() *JWTAccessTokenGenerator {
+	return &JWTAccessTokenGenerator{
+		expiresIn: DefaultExpiresIn,
 	}
-
-	for _, opt := range opts {
-		opt(g)
-	}
-
-	return g
 }
 
-func WithSigningKey(key []byte) JWTBearerTokenGeneratorOption {
-	return func(g *JWTBearerTokenGenerator) {
+func WithIssuer(iss string) JWTAccessTokenGeneratorOption {
+	return func(g *JWTAccessTokenGenerator) {
+		g.issuer = iss
+	}
+}
+
+func WithIssuerGenerator(fn IssuerGenerator) JWTAccessTokenGeneratorOption {
+	return func(g *JWTAccessTokenGenerator) {
+		g.issuerGenerator = fn
+	}
+}
+
+func WithExpiresIn(exp time.Duration) JWTAccessTokenGeneratorOption {
+	return func(g *JWTAccessTokenGenerator) {
+		g.expiresIn = exp
+	}
+}
+
+func WithExpiresInGenerator(fn ExpiresInGenerator) JWTAccessTokenGeneratorOption {
+	return func(g *JWTAccessTokenGenerator) {
+		g.expiresInGenerator = fn
+	}
+}
+
+func WithSigningKey(key []byte, method jwt.SigningMethod, id ...string) JWTAccessTokenGeneratorOption {
+	return func(g *JWTAccessTokenGenerator) {
 		g.signingKey = key
-	}
-}
-
-func WithSigningKeyMethod(method jwt.SigningMethod) JWTBearerTokenGeneratorOption {
-	return func(g *JWTBearerTokenGenerator) {
 		g.signingKeyMethod = method
+		if len(id) > 0 {
+			g.signingKeyID = id[0]
+		}
 	}
 }
 
-func WithSigningKeyID(keyID string) JWTBearerTokenGeneratorOption {
-	return func(g *JWTBearerTokenGenerator) {
-		g.signingKeyID = keyID
-	}
-}
-
-func WithSigningKeyGenerator(fn SigningKeyGenerator) JWTBearerTokenGeneratorOption {
-	return func(g *JWTBearerTokenGenerator) {
+func WithSigningKeyGenerator(fn SigningKeyGenerator) JWTAccessTokenGeneratorOption {
+	return func(g *JWTAccessTokenGenerator) {
 		g.signingKeyGenerator = fn
 	}
 }
 
-func WithExtraClaimGenerator(fn ExtraClaimGenerator) JWTBearerTokenGeneratorOption {
-	return func(g *JWTBearerTokenGenerator) {
+func WithExtraClaimGenerator(fn ExtraClaimGenerator) JWTAccessTokenGeneratorOption {
+	return func(g *JWTAccessTokenGenerator) {
 		g.extraClaimGenerator = fn
 	}
 }
 
-func WithRefreshTokenGenerator(fn TokenGenerator) JWTBearerTokenGeneratorOption {
-	return func(g *JWTBearerTokenGenerator) {
-		g.refreshTokenGenerator = fn
+func WithJWTIDGenerator(fn JWTIDGenerator) JWTAccessTokenGeneratorOption {
+	return func(g *JWTAccessTokenGenerator) {
+		g.jwtIDGenerator = fn
 	}
 }
 
-func WithAccessTokenExpiresInGenerator(fn ExpiresInGenerator) JWTBearerTokenGeneratorOption {
-	return func(g *JWTBearerTokenGenerator) {
-		g.accessTokenExpiresInGenerator = fn
-	}
-}
-
-func WithRefreshTokenExpiresInGenerator(fn ExpiresInGenerator) JWTBearerTokenGeneratorOption {
-	return func(g *JWTBearerTokenGenerator) {
-		g.refreshTokenExpiresInGenerator = fn
-	}
-}
-
-func WithRefreshTokenLength(l int) JWTBearerTokenGeneratorOption {
-	return func(g *JWTBearerTokenGenerator) {
-		g.refreshTokenLength = l
-	}
-}
-
-func WithAccessTokenExpiresIn(exp time.Duration) JWTBearerTokenGeneratorOption {
-	return func(g *JWTBearerTokenGenerator) {
-		g.accessTokenExpiresIn = exp
-	}
-}
-
-func WithRefreshTokenExpiresIn(exp time.Duration) JWTBearerTokenGeneratorOption {
-	return func(g *JWTBearerTokenGenerator) {
-		g.refreshTokenExpiresIn = exp
-	}
-}
-
-func (g *JWTBearerTokenGenerator) Generate(
-	token models.Token,
+func (g *JWTAccessTokenGenerator) Generate(
 	grantType string,
+	token models.Token,
 	user models.User,
 	client models.Client,
 	scopes []string,
-	includeRefreshToken bool,
-	args ...map[string]interface{},
 ) error {
+	clientID := client.GetClientID()
+	token.SetClientID(clientID)
+
+	sub := user.GetSubjectID()
+	token.SetUserID(sub)
+
 	allowedScopes := client.GetAllowedScopes(scopes)
-	token.SetType(TokenTypeBearer)
-	token.SetJwtID(strings.Replace(uuid.NewString(), "-", "", -1))
-	token.SetClientID(client.GetClientID())
 	token.SetScopes(allowedScopes)
-	token.SetIssuedAt(time.Now())
-	token.SetUserID(user.GetSubjectID())
 
-	accessToken, err := g.generateAccessToken(token, grantType, user, client)
+	issuedAt := time.Now()
+	token.SetIssuedAt(issuedAt)
+
+	expiresIn, err := g.getExpiresIn(grantType, client)
 	if err != nil {
 		return err
 	}
-	token.SetAccessToken(accessToken)
+	token.SetAccessTokenExpiresIn(expiresIn)
 
-	atExpiresIn, err := g.getAccessTokenExpiresIn(grantType, client)
-	if err != nil {
-		return err
-	}
-	token.SetAccessTokenExpiresIn(atExpiresIn)
-
-	if includeRefreshToken {
-		refreshToken, err := g.generateRefreshToken(grantType, user, client, allowedScopes)
+	jwtID := token.GetJwtID()
+	if jwtID == "" {
+		jwtID, err = g.generateJWTID(grantType, client)
 		if err != nil {
 			return err
 		}
-		token.SetRefreshToken(refreshToken)
-
-		rtExpiresIn, err := g.getRefreshTokenExpiresIn(grantType, client)
-		if err != nil {
-			return err
-		}
-		token.SetRefreshTokenExpiresIn(rtExpiresIn)
-	}
-
-	if len(args) > 0 {
-		token.SetExtraData(args[0])
-	}
-
-	return nil
-}
-
-func (g *JWTBearerTokenGenerator) generateAccessToken(t models.Token, grantType string, user models.User, client models.Client) (string, error) {
-	expiresIn, err := g.getAccessTokenExpiresIn(grantType, client)
-	if err != nil {
-		return "", err
+		token.SetJwtID(jwtID)
 	}
 
 	claims := common.JWTClaim{
 		ClaimIssuer:         g.issuer,
-		ClaimExpirationTime: jwt.NewNumericDate(t.GetIssuedAt().Add(expiresIn)),
-		ClaimAudience:       client.GetClientID(),
-		ClaimClientID:       client.GetClientID(),
-		ClaimIssuedAt:       jwt.NewNumericDate(t.GetIssuedAt()),
-		ClaimScope:          strings.Join(t.GetScopes(), " "),
-		ClaimJwtID:          t.GetJwtID(),
+		ClaimExpirationTime: jwt.NewNumericDate(issuedAt.Add(expiresIn)),
+		ClaimAudience:       clientID,
+		ClaimClientID:       clientID,
+		ClaimIssuedAt:       jwt.NewNumericDate(issuedAt),
+		ClaimJwtID:          jwtID,
 	}
 
-	sub := user.GetSubjectID()
 	if sub != "" {
-		claims[ClaimSubject] = user.GetSubjectID()
+		claims[ClaimSubject] = sub
 	} else {
-		claims[ClaimSubject] = client.GetClientID()
+		claims[ClaimSubject] = clientID
 	}
 
 	if g.extraClaimGenerator != nil {
-		extraClaims, err := g.extraClaimGenerator(grantType, user, client, t.GetScopes())
+		extraClaims, err := g.extraClaimGenerator(grantType, user, client, allowedScopes)
 		if err != nil {
-			return "", err
+			return err
 		}
 
 		for k, v := range extraClaims {
@@ -203,27 +170,52 @@ func (g *JWTBearerTokenGenerator) generateAccessToken(t models.Token, grantType 
 		}
 	}
 
-	key, method, keyID, err := g.getSigningKey(grantType, client)
+	signingKey, signingMethod, signingKeyID, err := g.getSigningKey(grantType, client)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	token, err := common.NewJWTToken(key, method, keyID)
+	t, err := common.NewJWTToken(signingKey, signingMethod, signingKeyID)
 	if err != nil {
-		return "", err
+		return err
 	}
-	header := common.JWTHeader{HeaderMediaType: MediaType}
-	return token.Generate(claims, header)
+
+	jwtToken, err := t.Generate(claims, common.JWTHeader{HeaderMediaType: MediaType})
+	if err != nil {
+		return err
+	}
+
+	token.SetAccessToken(jwtToken)
+	return nil
 }
 
-func (g *JWTBearerTokenGenerator) getSigningKey(grantType string, client models.Client) ([]byte, jwt.SigningMethod, string, error) {
-	if g.signingKeyGenerator != nil {
-		signingKey, method, signingKeyID, err := g.signingKeyGenerator(grantType, client)
-		if err != nil {
-			return nil, nil, "", err
-		}
+func (g *JWTAccessTokenGenerator) getIssuer(grantType string, client models.Client) (string, error) {
+	if fn := g.issuerGenerator; fn != nil {
+		return fn(grantType, client)
+	}
 
-		return signingKey, method, signingKeyID, nil
+	if g.issuer == "" {
+		return "", ErrMissingIssuer
+	}
+
+	return g.issuer, nil
+}
+
+func (g *JWTAccessTokenGenerator) getExpiresIn(grantType string, client models.Client) (time.Duration, error) {
+	if fn := g.expiresInGenerator; fn != nil {
+		return fn(grantType, client)
+	}
+
+	if g.expiresIn <= 0 {
+		return 0, ErrInvalidExpiresIn
+	}
+
+	return g.expiresIn, nil
+}
+
+func (g *JWTAccessTokenGenerator) getSigningKey(grantType string, client models.Client) ([]byte, jwt.SigningMethod, string, error) {
+	if fn := g.signingKeyGenerator; fn != nil {
+		return fn(grantType, client)
 	}
 
 	if g.signingKey == nil {
@@ -237,26 +229,10 @@ func (g *JWTBearerTokenGenerator) getSigningKey(grantType string, client models.
 	return g.signingKey, g.signingKeyMethod, g.signingKeyID, nil
 }
 
-func (g *JWTBearerTokenGenerator) generateRefreshToken(grantType string, user models.User, client models.Client, scopes []string) (string, error) {
-	if g.refreshTokenGenerator != nil {
-		return g.refreshTokenGenerator(grantType, user, client, scopes)
+func (g *JWTAccessTokenGenerator) generateJWTID(grantType string, client models.Client) (string, error) {
+	if fn := g.jwtIDGenerator; fn != nil {
+		return fn(grantType, client)
 	}
 
-	return common.GenerateRandString(g.refreshTokenLength, common.SecretCharset)
-}
-
-func (g *JWTBearerTokenGenerator) getAccessTokenExpiresIn(grantType string, client models.Client) (time.Duration, error) {
-	if g.accessTokenExpiresInGenerator != nil {
-		return g.accessTokenExpiresInGenerator(grantType, client)
-	}
-
-	return g.accessTokenExpiresIn, nil
-}
-
-func (g *JWTBearerTokenGenerator) getRefreshTokenExpiresIn(grantType string, client models.Client) (time.Duration, error) {
-	if g.refreshTokenExpiresInGenerator != nil {
-		return g.refreshTokenExpiresInGenerator(grantType, client)
-	}
-
-	return g.refreshTokenExpiresIn, nil
+	return strings.Replace(uuid.NewString(), "-", "", -1), nil
 }
