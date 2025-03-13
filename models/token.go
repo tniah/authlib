@@ -3,8 +3,6 @@ package models
 import "time"
 
 type Token interface {
-	GetJwtID() string
-	SetJwtID(id string)
 	GetType() string
 	SetType(string)
 	GetAccessToken() string
@@ -23,4 +21,6 @@ type Token interface {
 	SetRefreshTokenExpiresIn(exp time.Duration)
 	GetUserID() string
 	SetUserID(userID string)
+	GetJwtID() string
+	SetJwtID(id string)
 }
