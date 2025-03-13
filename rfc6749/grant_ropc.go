@@ -66,5 +66,7 @@ func (grant *ROPCGrant) TokenResponse(rw http.ResponseWriter, r *requests.TokenR
 		return err
 	}
 
-	return grant.HandleTokenResponse(rw, token.GetData())
+	data := grant.StandardTokenData(token)
+	// TODO implement a hook
+	return grant.HandleTokenResponse(rw, data)
 }

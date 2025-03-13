@@ -23,7 +23,4 @@ type Token interface {
 	SetRefreshTokenExpiresIn(exp time.Duration)
 	GetUserID() string
 	SetUserID(userID string)
-	GetExtraData() map[string]interface{}
-	SetExtraData(data map[string]interface{})
-	GetData() map[string]interface{}
 }

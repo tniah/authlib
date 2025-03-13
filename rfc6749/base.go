@@ -7,6 +7,7 @@ import (
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
 	"net/http"
+	"strings"
 )
 
 type AuthorizationGrantMixin struct{}
@@ -31,6 +32,24 @@ func (grant *AuthorizationGrantMixin) ValidateRedirectURI(r *requests.Authorizat
 }
 
 type TokenGrantMixin struct{}
+
+func (grant *TokenGrantMixin) StandardTokenData(token models.Token) map[string]interface{} {
+	data := map[string]interface{}{
+		ParamTokeType:    token.GetType(),
+		ParamAccessToken: token.GetAccessToken(),
+		ParamExpiresIn:   token.GetAccessTokenExpiresIn().Seconds(),
+	}
+
+	if refreshToken := token.GetRefreshToken(); refreshToken != "" {
+		data[ParamRefreshToken] = refreshToken
+	}
+
+	if scopes := token.GetScopes(); len(scopes) > 0 {
+		data[ParamScope] = strings.Join(scopes, " ")
+	}
+
+	return data
+}
 
 func (grant *TokenGrantMixin) HandleTokenResponse(rw http.ResponseWriter, data map[string]interface{}) error {
 	for k, v := range common.DefaultJSONHeader() {

@@ -6,8 +6,13 @@ const (
 	GrantTypeROPC              = "password"
 	GrantTypeRefreshToken      = "refresh_token"
 
-	ParamCode  = "code"
-	ParamState = "state"
+	ParamCode         = "code"
+	ParamState        = "state"
+	ParamTokeType     = "toke_type"
+	ParamAccessToken  = "access_token"
+	ParamRefreshToken = "refresh_token"
+	ParamExpiresIn    = "expires_in"
+	ParamScope        = "scope"
 
 	ErrMissingClientID             = "Missing \"client_id\" in request"
 	ErrClientIDNotFound            = "No client was found that matches \"client_id\" value"

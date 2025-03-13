@@ -165,6 +165,7 @@ func (grant *AuthorizationCodeGrant) TokenResponse(rw http.ResponseWriter, r *re
 		return err
 	}
 
+	data := grant.StandardTokenData(token)
 	// TODO implement a hook
-	return grant.HandleTokenResponse(rw, token.GetData())
+	return grant.HandleTokenResponse(rw, data)
 }
