@@ -15,7 +15,7 @@ const (
 	DefaultExpiresIn        = time.Minute * 5
 )
 
-var ErrNilPointerAuthorizationCode = errors.New("authorization code is a nil pointer")
+var ErrAuthorizationCodeIsNilPointer = errors.New("authorization code is a nil pointer")
 
 type (
 	AuthCodeStrategy struct {
@@ -74,7 +74,7 @@ func (s *AuthCodeStrategy) Generate(grantType string, r *requests.AuthorizationR
 
 	authCode := s.store.New(r.Request.Context())
 	if authCode == nil {
-		return nil, ErrNilPointerAuthorizationCode
+		return nil, ErrAuthorizationCodeIsNilPointer
 	}
 
 	authCode.SetCode(code)
