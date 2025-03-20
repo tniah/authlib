@@ -8,7 +8,7 @@ const (
 
 	ParamCode         = "code"
 	ParamState        = "state"
-	ParamTokeType     = "toke_type"
+	ParamTokeType     = "token_type"
 	ParamAccessToken  = "access_token"
 	ParamRefreshToken = "refresh_token"
 	ParamExpiresIn    = "expires_in"
