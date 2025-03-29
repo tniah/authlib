@@ -12,18 +12,22 @@ import (
 
 type AuthorizationGrantMixin struct{}
 
-func (grant *AuthorizationGrantMixin) ValidateRedirectURI(r *requests.AuthorizationRequest, client models.Client) (redirectURI string, err error) {
-	if r.RedirectURI == "" {
+func (grant *AuthorizationGrantMixin) ValidateRedirectURI(r *requests.AuthorizationRequest, client models.Client) (string, error) {
+	redirectURI := r.RedirectURI
+	if redirectURI == "" {
 		redirectURI = client.GetDefaultRedirectURI()
+
 		if redirectURI == "" {
 			return "", autherrors.InvalidRequestError().WithDescription(ErrMissingRedirectURI).WithState(r.State)
 		}
-	} else {
-		redirectURI = r.RedirectURI
-		if allowed := client.CheckRedirectURI(redirectURI); !allowed {
-			return "", autherrors.InvalidRequestError().WithDescription(ErrUnsupportedRedirectURI).WithState(r.State)
-		}
+
+		return redirectURI, nil
 	}
+
+	if allowed := client.CheckRedirectURI(redirectURI); !allowed {
+		return "", autherrors.InvalidRequestError().WithDescription(ErrUnsupportedRedirectURI).WithState(r.State)
+	}
+
 	return redirectURI, nil
 }
 
