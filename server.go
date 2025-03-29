@@ -24,24 +24,10 @@ const (
 	ParamPassword            = "password"
 )
 
-type (
-	Server struct {
-		authorizationGrants map[AuthorizationGrant]bool
-		tokenGrants         map[TokenGrant]bool
-	}
-
-	AuthorizationGrant interface {
-		CheckResponseType(responseType string) bool
-		ValidateAuthorizationRequest(r *requests.AuthorizationRequest) error
-		AuthorizationResponse(rw http.ResponseWriter, r *requests.AuthorizationRequest) error
-	}
-
-	TokenGrant interface {
-		CheckGrantType(grantType string) bool
-		ValidateTokenRequest(r *requests.TokenRequest) error
-		TokenResponse(rw http.ResponseWriter, r *requests.TokenRequest) error
-	}
-)
+type Server struct {
+	authorizationGrants map[AuthorizationGrant]bool
+	tokenGrants         map[TokenGrant]bool
+}
 
 func NewServer() *Server {
 	return &Server{
