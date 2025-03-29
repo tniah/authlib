@@ -16,3 +16,8 @@ type TokenGrant interface {
 	ValidateTokenRequest(r *requests.TokenRequest) error
 	TokenResponse(rw http.ResponseWriter, r *requests.TokenRequest) error
 }
+
+type Endpoint interface {
+	CheckEndpoint(name string) bool
+	EndpointResponse(r *http.Request, rw http.ResponseWriter) error
+}

@@ -2,8 +2,9 @@ package authlib
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/tniah/authlib/common"
-	"github.com/tniah/authlib/errors"
+	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/requests"
 	"net/http"
 	"strings"
@@ -27,6 +28,7 @@ const (
 type Server struct {
 	authorizationGrants map[AuthorizationGrant]bool
 	tokenGrants         map[TokenGrant]bool
+	endpoints           map[Endpoint]bool
 }
 
 func NewServer() *Server {
@@ -57,7 +59,7 @@ func (srv *Server) GetAuthorizationGrant(r *requests.AuthorizationRequest) (Auth
 		}
 	}
 
-	return nil, errors.UnsupportedResponseTypeError()
+	return nil, autherrors.UnsupportedResponseTypeError()
 }
 
 func (srv *Server) CreateTokenRequest(r *http.Request) *requests.TokenRequest {
@@ -80,7 +82,17 @@ func (srv *Server) GetTokenGrant(r *requests.TokenRequest) (TokenGrant, error) {
 		}
 	}
 
-	return nil, errors.UnsupportedGrantTypeError()
+	return nil, autherrors.UnsupportedGrantTypeError()
+}
+
+func (srv *Server) Endpoint(name string) (Endpoint, error) {
+	for endpoint := range srv.endpoints {
+		if endpoint.CheckEndpoint(name) {
+			return endpoint, nil
+		}
+	}
+
+	return nil, fmt.Errorf("no endpoint was found with \"%s\"", name)
 }
 
 func (srv *Server) RegisterGrant(grant interface{}) {
@@ -112,8 +124,20 @@ func (srv *Server) RegisterTokenGrant(grant interface{}) {
 	}
 }
 
+func (srv *Server) RegisterEndpoint(endpoint interface{}) {
+	switch t := endpoint.(type) {
+	case Endpoint:
+		if srv.endpoints == nil {
+			srv.endpoints = make(map[Endpoint]bool)
+		}
+		srv.endpoints[t] = true
+	default:
+		return
+	}
+}
+
 func (srv *Server) HandleError(rw http.ResponseWriter, err error) error {
-	authErr, err := errors.ToAuthLibError(err)
+	authErr, err := autherrors.ToAuthLibError(err)
 	if err != nil {
 		return err
 	}

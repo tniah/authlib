@@ -11,12 +11,12 @@ import (
 )
 
 type TokenIntrospection struct {
+	endpointName              string
 	clientAuthHandler         ClientAuthHandler
 	clientPermissionHandler   ClientPermissionHandler
 	tokenQueryHandler         TokenQueryHandler
 	tokenIntrospectionHandler TokenIntrospectionHandler
 	clientAuthMethods         map[string]bool
-	endpointName              string
 }
 
 func NewTokenIntrospection() *TokenIntrospection {
@@ -26,6 +26,11 @@ func NewTokenIntrospection() *TokenIntrospection {
 		},
 		endpointName: EndpointNameTokenIntrospection,
 	}
+}
+
+func (t *TokenIntrospection) WithName(name string) *TokenIntrospection {
+	t.endpointName = name
+	return t
 }
 
 func (t *TokenIntrospection) WithClientAuthHandler(h ClientAuthHandler) *TokenIntrospection {
@@ -88,16 +93,16 @@ func (t *TokenIntrospection) RegisterClientAuthMethod(method string) {
 	t.clientAuthMethods[method] = true
 }
 
-func (t *TokenIntrospection) EndpointName() string {
+func (t *TokenIntrospection) CheckEndpoint(name string) bool {
 	if t.endpointName == "" {
-		return EndpointNameTokenIntrospection
+		t.endpointName = EndpointNameTokenIntrospection
 	}
 
-	return t.endpointName
+	return name == t.endpointName
 }
 
 func (t *TokenIntrospection) EndpointResponse(r *http.Request, rw http.ResponseWriter) error {
-	client, err := t.clientAuthHandler(r, t.clientAuthMethods, t.EndpointName())
+	client, err := t.clientAuthHandler(r, t.clientAuthMethods, t.endpointName)
 	if err != nil {
 		return err
 	}
