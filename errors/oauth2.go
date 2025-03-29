@@ -50,13 +50,14 @@ func NewOAuth2Error(code error, args ...string) *OAuth2Error {
 }
 
 func (e *OAuth2Error) Error() string {
-	return fmt.Sprintf("error=%v | description=%s", e.Code, e.Description)
+	return fmt.Sprintf("error=%v, description=%s", e.Code, e.Description)
 }
 
 func (e *OAuth2Error) SetHeader(key, value string) {
 	if e.HttpHeader == nil {
 		e.HttpHeader = make(http.Header)
 	}
+
 	e.HttpHeader.Set(key, value)
 }
 

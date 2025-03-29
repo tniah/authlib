@@ -193,16 +193,15 @@ func (grant *AuthorizationCodeGrant) ValidateAuthorizationRequest(r *requests.Au
 	state := r.State
 
 	if clientID == "" {
-		return autherrors.NewInvalidRequestError(
-			autherrors.WithDescription(ErrMissingClientID),
-			autherrors.WithState(state))
+		return autherrors.InvalidRequestError().WithDescription(ErrMissingClientID).WithState(state)
 	}
 
 	client, err := grant.queryClient(r.Request.Context(), clientID)
 	if err != nil {
-		return autherrors.NewInvalidRequestError(
-			autherrors.WithDescription(ErrClientIDNotFound),
-			autherrors.WithState(state))
+		return err
+	}
+	if client == nil {
+		return autherrors.InvalidRequestError().WithDescription(ErrClientIDNotFound).WithState(state)
 	}
 
 	redirectURI, err := grant.ValidateRedirectURI(r, client)
@@ -212,14 +211,10 @@ func (grant *AuthorizationCodeGrant) ValidateAuthorizationRequest(r *requests.Au
 
 	responseType := r.ResponseType
 	if !grant.CheckResponseType(responseType) {
-		return autherrors.NewUnsupportedResponseTypeError(
-			autherrors.WithState(state),
-			autherrors.WithRedirectURI(redirectURI))
+		return autherrors.UnsupportedResponseTypeError().WithState(state).WithRedirectURI(redirectURI)
 	}
 	if allowed := client.CheckResponseType(responseType); !allowed {
-		return autherrors.NewUnauthorizedClientError(
-			autherrors.WithState(state),
-			autherrors.WithRedirectURI(redirectURI))
+		return autherrors.UnauthorizedClientError().WithState(state).WithRedirectURI(redirectURI)
 	}
 
 	r.Client = client
@@ -231,14 +226,15 @@ func (grant *AuthorizationCodeGrant) ValidateAuthorizationRequest(r *requests.Au
 
 func (grant *AuthorizationCodeGrant) AuthorizationResponse(rw http.ResponseWriter, r *requests.AuthorizationRequest) error {
 	if r.UserID == "" {
-		return autherrors.NewAccessDeniedError(
-			autherrors.WithState(r.State),
-			autherrors.WithRedirectURI(r.RedirectURI))
+		return autherrors.AccessDeniedError().WithState(r.State).WithRedirectURI(r.RedirectURI)
 	}
 
 	authCode, err := grant.generateAuthCode(GrantTypeAuthorizationCode, r)
 	if err != nil {
 		return err
+	}
+	if authCode == nil {
+		return autherrors.AccessDeniedError()
 	}
 
 	params := map[string]interface{}{ParamCode: authCode.GetCode()}
@@ -256,40 +252,40 @@ func (grant *AuthorizationCodeGrant) CheckGrantType(grantType string) bool {
 func (grant *AuthorizationCodeGrant) ValidateTokenRequest(r *requests.TokenRequest) error {
 	client, authMethod, err := grant.authenticateClient(r.Request)
 	if err != nil {
-		return autherrors.NewInvalidClientError()
+		return autherrors.InvalidClientError()
 	}
 
 	if !client.CheckGrantType(GrantTypeAuthorizationCode) {
-		return autherrors.NewUnauthorizedClientError(autherrors.WithDescription(ErrUnsupportedGrantType))
+		return autherrors.UnauthorizedClientError().WithDescription(ErrUnsupportedGrantType)
 	}
 
 	code := r.Code
 	if code == "" {
-		return autherrors.NewInvalidRequestError(autherrors.WithDescription(ErrMissingCode))
+		return autherrors.InvalidRequestError().WithDescription(ErrMissingCode)
 	}
 
 	authCode, err := grant.queryAuthCode(r.Request.Context(), code)
 	if err != nil {
-		return autherrors.NewInvalidGrantError(autherrors.WithDescription(ErrInvalidCode))
+		return autherrors.InvalidGrantError().WithDescription(ErrInvalidCode)
 	}
 
 	if authCode.GetAuthTime().Add(authCode.GetExpiresIn()).Before(time.Now()) {
-		return autherrors.NewInvalidGrantError(autherrors.WithDescription(ErrInvalidCode))
+		return autherrors.InvalidGrantError().WithDescription(ErrInvalidCode)
 	}
 
 	redirectURI := authCode.GetRedirectURI()
 	if redirectURI != "" && redirectURI != r.RedirectURI {
-		return autherrors.NewInvalidGrantError(autherrors.WithDescription(ErrInvalidRedirectURI))
+		return autherrors.InvalidGrantError().WithDescription(ErrInvalidRedirectURI)
 	}
 
 	userID := authCode.GetUserID()
 	if userID == "" {
-		return autherrors.NewInvalidGrantError(autherrors.WithDescription(ErrUserNotFound))
+		return autherrors.InvalidGrantError().WithDescription(ErrUserNotFound)
 	}
 
 	user, err := grant.queryUser(r.Request.Context(), userID)
 	if err != nil {
-		return autherrors.NewInvalidGrantError(autherrors.WithDescription(ErrUserNotFound))
+		return autherrors.InvalidGrantError().WithDescription(ErrUserNotFound)
 	}
 
 	r.Client = client

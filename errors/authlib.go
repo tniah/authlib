@@ -13,16 +13,10 @@ type AuthLibError struct {
 	*OAuth2Error
 }
 
-type AuthLibErrorOption func(*AuthLibError)
-
-func NewAuthLibError(code error, opts ...AuthLibErrorOption) *AuthLibError {
-	e := &AuthLibError{
+func NewAuthLibError(code error) *AuthLibError {
+	return &AuthLibError{
 		OAuth2Error: NewOAuth2Error(code),
 	}
-	for _, opt := range opts {
-		opt(e)
-	}
-	return e
 }
 
 func (e *AuthLibError) Data() map[string]interface{} {
@@ -37,62 +31,68 @@ func (e *AuthLibError) Response() (statusCode int, header http.Header, data map[
 	return e.HttpCode, e.HttpHeader, e.Data()
 }
 
-func WithDescription(desc string) AuthLibErrorOption {
-	return func(e *AuthLibError) {
-		e.Description = desc
-	}
+func (e *AuthLibError) WithDescription(desc string) *AuthLibError {
+	e.Description = desc
+	return e
 }
 
-func WithErrorURI(uri string) AuthLibErrorOption {
-	return func(e *AuthLibError) {
-		e.URI = uri
-	}
+func (e *AuthLibError) WithErrorURI(uri string) *AuthLibError {
+	e.URI = uri
+	return e
 }
 
-func WithState(state string) AuthLibErrorOption {
-	return func(e *AuthLibError) {
-		e.State = state
-	}
+func (e *AuthLibError) WithState(state string) *AuthLibError {
+	e.State = state
+	return e
 }
 
-func WithRedirectURI(redirectURI string) AuthLibErrorOption {
-	return func(e *AuthLibError) {
-		e.RedirectURI = redirectURI
-	}
+func (e *AuthLibError) WithRedirectURI(redirectURI string) *AuthLibError {
+	e.RedirectURI = redirectURI
+	return e
 }
 
 func ToAuthLibError(err error) (*AuthLibError, error) {
 	var authErr *AuthLibError
+
 	if errors.As(err, &authErr) {
 		return authErr, nil
 	}
+
 	return nil, err
 }
 
-func NewInvalidRequestError(opts ...AuthLibErrorOption) *AuthLibError {
-	return NewAuthLibError(ErrInvalidRequest, opts...)
+func InvalidRequestError() *AuthLibError {
+	return NewAuthLibError(ErrInvalidRequest)
 }
 
-func NewInvalidClientError(opts ...AuthLibErrorOption) *AuthLibError {
-	return NewAuthLibError(ErrInvalidClient, opts...)
+func InvalidClientError() *AuthLibError {
+	return NewAuthLibError(ErrInvalidClient)
 }
 
-func NewUnauthorizedClientError(opts ...AuthLibErrorOption) *AuthLibError {
-	return NewAuthLibError(ErrUnauthorizedClient, opts...)
+func UnauthorizedClientError() *AuthLibError {
+	return NewAuthLibError(ErrUnauthorizedClient)
 }
 
-func NewInvalidGrantError(opts ...AuthLibErrorOption) *AuthLibError {
-	return NewAuthLibError(ErrInvalidGrant, opts...)
+func InvalidGrantError() *AuthLibError {
+	return NewAuthLibError(ErrInvalidGrant)
 }
 
-func NewUnsupportedGrantTypeError(opts ...AuthLibErrorOption) *AuthLibError {
-	return NewAuthLibError(ErrUnsupportedGrantType, opts...)
+func UnsupportedGrantTypeError() *AuthLibError {
+	return NewAuthLibError(ErrUnsupportedGrantType)
 }
 
-func NewUnsupportedResponseTypeError(opts ...AuthLibErrorOption) *AuthLibError {
-	return NewAuthLibError(ErrUnsupportedResponseType, opts...)
+func UnsupportedResponseTypeError() *AuthLibError {
+	return NewAuthLibError(ErrUnsupportedResponseType)
 }
 
-func NewAccessDeniedError(opts ...AuthLibErrorOption) *AuthLibError {
-	return NewAuthLibError(ErrAccessDenied, opts...)
+func AccessDeniedError() *AuthLibError {
+	return NewAuthLibError(ErrAccessDenied)
+}
+
+func UnsupportedTokenType() *AuthLibError {
+	return NewAuthLibError(ErrUnsupportedTokenType)
+}
+
+func InternalServerError() *AuthLibError {
+	return NewAuthLibError(ErrServerError)
 }

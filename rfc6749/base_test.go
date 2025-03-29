@@ -12,42 +12,46 @@ import (
 )
 
 func TestValidateRedirectURI(t *testing.T) {
+	g := AuthorizationGrantMixin{}
 	c := models.NewMockClient(t)
 	r := &requests.AuthorizationRequest{
 		State: uuid.NewString(),
 	}
 
-	g := AuthorizationGrantMixin{}
-	var authErr *errors.AuthLibError
-	for _, v := range []struct {
-		RedirectURI        string
-		DefaultRedirectURI string
-		ErrDescription     string
-	}{
-		{
-			RedirectURI:        "",
-			DefaultRedirectURI: "",
-			ErrDescription:     ErrMissingRedirectURI,
-		},
-		{
-			RedirectURI:        "http://example.com",
-			DefaultRedirectURI: "http://example.com",
-			ErrDescription:     ErrUnsupportedRedirectURI,
-		},
-	} {
-		r.RedirectURI = v.RedirectURI
-		if r.RedirectURI == "" {
-			c.EXPECT().GetDefaultRedirectURI().Return(v.DefaultRedirectURI).Once()
-		} else {
-			c.EXPECT().CheckRedirectURI(r.RedirectURI).Return(false).Once()
+	t.Run("error", func(t *testing.T) {
+		cases := []struct {
+			RedirectURI        string
+			DefaultRedirectURI string
+			ErrDescription     string
+		}{
+			{
+				RedirectURI:        "",
+				DefaultRedirectURI: "",
+				ErrDescription:     ErrMissingRedirectURI,
+			},
+			{
+				RedirectURI:        "http://example.com",
+				DefaultRedirectURI: "http://example.com",
+				ErrDescription:     ErrUnsupportedRedirectURI,
+			},
 		}
 
-		actual, err := g.ValidateRedirectURI(r, c)
-		assert.ErrorAs(t, err, &authErr)
-		assert.Empty(t, actual, "expected=\"\", actual=%s", actual)
-		assert.Equal(t, r.State, authErr.State, "expected=%s, actual=%s", r.State, authErr.State)
-		assert.Equal(t, v.ErrDescription, authErr.Description, "expected=%s, actual=%s", v.ErrDescription, actual)
-	}
+		var authErr *errors.AuthLibError
+		for _, v := range cases {
+			r.RedirectURI = v.RedirectURI
+			if r.RedirectURI == "" {
+				c.EXPECT().GetDefaultRedirectURI().Return(v.DefaultRedirectURI).Once()
+			} else {
+				c.EXPECT().CheckRedirectURI(r.RedirectURI).Return(false).Once()
+			}
+
+			actual, err := g.ValidateRedirectURI(r, c)
+			assert.ErrorAs(t, err, &authErr)
+			assert.Emptyf(t, actual, "expected=\"\", actual=%s", actual)
+			assert.Equalf(t, r.State, authErr.State, "expected=%s, actual=%s", r.State, authErr.State)
+			assert.Equalf(t, v.ErrDescription, authErr.Description, "expected=%s, actual=%s", v.ErrDescription, actual)
+		}
+	})
 
 	for _, v := range []struct {
 		RedirectURI        string
@@ -73,8 +77,8 @@ func TestValidateRedirectURI(t *testing.T) {
 		}
 
 		actual, err := g.ValidateRedirectURI(r, c)
-		assert.NoError(t, err, "error = %v", err)
-		assert.Equal(t, v.Expected, actual, "expected = %v, actual = %v", v.Expected, actual)
+		assert.NoErrorf(t, err, "error = %v", err)
+		assert.Equalf(t, v.Expected, actual, "expected = %v, actual = %v", v.Expected, actual)
 	}
 }
 
@@ -94,9 +98,9 @@ func TestStandardTokenData(t *testing.T) {
 
 	g := TokenGrantMixin{}
 	data := g.StandardTokenData(token)
-	assert.Equal(t, tokenType, data[ParamTokeType], "token type: expected=%s, actual=%s", tokenType, data[ParamTokeType])
-	assert.Equal(t, accessToken, data[ParamAccessToken], "access token: expected=%s, actual=%s", accessToken, data[ParamAccessToken])
-	assert.Equal(t, expiresIn.Seconds(), data[ParamExpiresIn], "expires in: expected=%s, actual=%s", expiresIn.Seconds(), data[ParamExpiresIn])
-	assert.Equal(t, refreshToken, data[ParamRefreshToken], "refresh token: expected=%s, actual=%s", refreshToken, data[ParamRefreshToken])
-	assert.Equal(t, strings.Join(scopes, " "), data[ParamScope], "scope: expected=%s, actual=%s", strings.Join(scopes, " "), data[ParamScope])
+	assert.Equalf(t, tokenType, data[ParamTokeType], "token type: expected=%s, actual=%s", tokenType, data[ParamTokeType])
+	assert.Equalf(t, accessToken, data[ParamAccessToken], "access token: expected=%s, actual=%s", accessToken, data[ParamAccessToken])
+	assert.Equalf(t, expiresIn.Seconds(), data[ParamExpiresIn], "expires in: expected=%f, actual=%f", expiresIn.Seconds(), data[ParamExpiresIn])
+	assert.Equalf(t, refreshToken, data[ParamRefreshToken], "refresh token: expected=%s, actual=%s", refreshToken, data[ParamRefreshToken])
+	assert.Equalf(t, strings.Join(scopes, " "), data[ParamScope], "scope: expected=%s, actual=%s", strings.Join(scopes, " "), data[ParamScope])
 }

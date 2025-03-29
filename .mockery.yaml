@@ -1,0 +1,17 @@
+with-expecter: true
+issue-845-fix: True
+resolve-type-alias: False
+filename: "{{ .InterfaceName | snakecase }}.go"
+dir: "mocks/{{ .InterfaceDirRelative }}"
+packages:
+  github.com/tniah/authlib/models:
+    config:
+      outpkg: models
+    interfaces:
+      Client:
+      Token:
+  github.com/tniah/authlib/rfc9068:
+    config:
+      outpkg: rfc9068
+    interfaces:
+      IssuerGenerator:

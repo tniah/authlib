@@ -3,7 +3,7 @@ package rfc6749
 import (
 	"encoding/json"
 	"github.com/tniah/authlib/common"
-	"github.com/tniah/authlib/errors"
+	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
 	"net/http"
@@ -16,16 +16,12 @@ func (grant *AuthorizationGrantMixin) ValidateRedirectURI(r *requests.Authorizat
 	if r.RedirectURI == "" {
 		redirectURI = client.GetDefaultRedirectURI()
 		if redirectURI == "" {
-			return "", errors.NewInvalidRequestError(
-				errors.WithDescription(ErrMissingRedirectURI),
-				errors.WithState(r.State))
+			return "", autherrors.InvalidRequestError().WithDescription(ErrMissingRedirectURI).WithState(r.State)
 		}
 	} else {
 		redirectURI = r.RedirectURI
 		if allowed := client.CheckRedirectURI(redirectURI); !allowed {
-			return "", errors.NewInvalidRequestError(
-				errors.WithDescription(ErrUnsupportedRedirectURI),
-				errors.WithState(r.State))
+			return "", autherrors.InvalidRequestError().WithDescription(ErrUnsupportedRedirectURI).WithState(r.State)
 		}
 	}
 	return redirectURI, nil

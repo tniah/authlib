@@ -1,7 +1,7 @@
 package rfc6749
 
 import (
-	"github.com/tniah/authlib/errors"
+	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/requests"
 	"net/http"
 )
@@ -32,26 +32,26 @@ func (grant *ROPCGrant) CheckGrantType(grantType string) bool {
 func (grant *ROPCGrant) ValidateTokenRequest(r *requests.TokenRequest) error {
 	client, authMethod, err := grant.authenticateClient(r.Request)
 	if err != nil {
-		return errors.NewInvalidClientError()
+		return autherrors.InvalidClientError()
 	}
 
 	if !client.CheckGrantType(GrantTypeROPC) {
-		return errors.NewUnauthorizedClientError(errors.WithDescription(ErrUnsupportedROPCGrant))
+		return autherrors.UnauthorizedClientError().WithDescription(ErrUnsupportedROPCGrant)
 	}
 
 	username := r.Username
 	if username == "" {
-		return errors.NewInvalidRequestError(errors.WithDescription(ErrMissingUsername))
+		return autherrors.InvalidRequestError().WithDescription(ErrMissingUsername)
 	}
 
 	password := r.Password
 	if password == "" {
-		return errors.NewInvalidRequestError(errors.WithDescription(ErrMissingPassword))
+		return autherrors.InvalidRequestError().WithDescription(ErrMissingPassword)
 	}
 
 	user, err := grant.authenticateUser(username, password)
 	if err != nil {
-		return errors.NewInvalidRequestError(errors.WithDescription(ErrUsernameOrPasswordIncorrect))
+		return autherrors.InvalidRequestError().WithDescription(ErrUsernameOrPasswordIncorrect)
 	}
 
 	r.Client = client

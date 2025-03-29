@@ -71,7 +71,7 @@ func (srv *Server) GetAuthorizationGrant(r *requests.AuthorizationRequest) (Auth
 		}
 	}
 
-	return nil, errors.NewUnsupportedResponseTypeError()
+	return nil, errors.UnsupportedResponseTypeError()
 }
 
 func (srv *Server) CreateTokenRequest(r *http.Request) *requests.TokenRequest {
@@ -94,7 +94,7 @@ func (srv *Server) GetTokenGrant(r *requests.TokenRequest) (TokenGrant, error) {
 		}
 	}
 
-	return nil, errors.NewUnsupportedGrantTypeError()
+	return nil, errors.UnsupportedGrantTypeError()
 }
 
 func (srv *Server) RegisterGrant(grant interface{}) {
