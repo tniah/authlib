@@ -23,45 +23,45 @@ func NewROPCGrantManager() *ROPCGrantManager {
 	}
 }
 
-func (opt *ROPCGrantManager) WithGrantType(gt string) *ROPCGrantManager {
-	opt.grantType = gt
-	return opt
+func (m *ROPCGrantManager) WithGrantType(gt string) *ROPCGrantManager {
+	m.grantType = gt
+	return m
 }
 
-func (opt *ROPCGrantManager) WithClientAuthHandler(h ClientAuthenticationHandler) *ROPCGrantManager {
-	opt.clientAuthHandler = h
-	return opt
+func (m *ROPCGrantManager) WithClientAuthHandler(h ClientAuthenticationHandler) *ROPCGrantManager {
+	m.clientAuthHandler = h
+	return m
 }
 
-func (opt *ROPCGrantManager) WithUserAuthHandler(h AuthenticateUser) *ROPCGrantManager {
-	opt.userAuthHandler = h
-	return opt
+func (m *ROPCGrantManager) WithUserAuthHandler(h AuthenticateUser) *ROPCGrantManager {
+	m.userAuthHandler = h
+	return m
 }
 
-func (opt *ROPCGrantManager) WithAccessTokenGenerator(h AccessTokenGenerator) *ROPCGrantManager {
-	opt.accessTokenGenerator = h
-	return opt
+func (m *ROPCGrantManager) WithAccessTokenGenerator(h AccessTokenGenerator) *ROPCGrantManager {
+	m.accessTokenGenerator = h
+	return m
 }
 
-func (opt *ROPCGrantManager) WithSupportedClientAuthMethod(method string) *ROPCGrantManager {
-	if opt.clientAuthMethods == nil {
-		opt.clientAuthMethods = make(map[string]bool)
+func (m *ROPCGrantManager) WithSupportedClientAuthMethod(method string) *ROPCGrantManager {
+	if m.clientAuthMethods == nil {
+		m.clientAuthMethods = make(map[string]bool)
 	}
 
-	opt.clientAuthMethods[method] = true
-	return opt
+	m.clientAuthMethods[method] = true
+	return m
 }
 
-func (opt *ROPCGrantManager) Validate() error {
-	if opt.clientAuthHandler == nil {
+func (m *ROPCGrantManager) Validate() error {
+	if m.clientAuthHandler == nil {
 		return ErrNilClientAuthHandler
 	}
 
-	if opt.userAuthHandler == nil {
+	if m.userAuthHandler == nil {
 		return ErrNilUserAuthHandler
 	}
 
-	if opt.accessTokenGenerator == nil {
+	if m.accessTokenGenerator == nil {
 		return ErrNilAccessTokenGenerator
 	}
 
