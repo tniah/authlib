@@ -3,31 +3,10 @@ package rfc6749
 import (
 	"encoding/json"
 	"github.com/tniah/authlib/common"
-	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
 	"net/http"
 	"strings"
 )
-
-type AuthorizationGrantMixin struct{}
-
-func (grant *AuthorizationGrantMixin) ValidateRedirectURI(redirectURI string, client models.Client) (string, error) {
-	if redirectURI == "" {
-		redirectURI = client.GetDefaultRedirectURI()
-
-		if redirectURI == "" {
-			return "", autherrors.InvalidRequestError().WithDescription(ErrMissingRedirectURI).WithState(r.State)
-		}
-
-		return redirectURI, nil
-	}
-
-	if allowed := client.CheckRedirectURI(redirectURI); !allowed {
-		return "", autherrors.InvalidRequestError().WithDescription(ErrUnsupportedRedirectURI).WithState(r.State)
-	}
-
-	return redirectURI, nil
-}
 
 type TokenGrantMixin struct{}
 
