@@ -52,7 +52,7 @@ func (grant *ROPCGrant) CheckParams(r *http.Request) error {
 }
 
 func (grant *ROPCGrant) AuthenticateClient(r *http.Request) (client models.Client, err error) {
-	if client, err = grant.mgr.clientAuthHandler(r, grant.mgr.clientAuthMethods, EndpointNameToken); err != nil {
+	if client, err = grant.mgr.clientAuthHandler(r, grant.mgr.supportedTokenAuthMethods, EndpointNameToken); err != nil {
 		return nil, err
 	}
 

@@ -9,15 +9,15 @@ var (
 )
 
 type ROPCGrantManager struct {
-	clientAuthHandler    ClientAuthenticationHandler
-	userAuthHandler      AuthenticateUser
-	accessTokenGenerator AccessTokenGenerator
-	clientAuthMethods    map[string]bool
+	clientAuthHandler         ClientAuthenticationHandler
+	userAuthHandler           AuthenticateUser
+	accessTokenGenerator      AccessTokenGenerator
+	supportedTokenAuthMethods map[string]bool
 }
 
 func NewROPCGrantManager() *ROPCGrantManager {
 	return &ROPCGrantManager{
-		clientAuthMethods: map[string]bool{
+		supportedTokenAuthMethods: map[string]bool{
 			AuthMethodClientSecretBasic: true,
 		},
 	}
@@ -38,12 +38,12 @@ func (m *ROPCGrantManager) WithAccessTokenGenerator(h AccessTokenGenerator) *ROP
 	return m
 }
 
-func (m *ROPCGrantManager) WithSupportedClientAuthMethod(method string) *ROPCGrantManager {
-	if m.clientAuthMethods == nil {
-		m.clientAuthMethods = make(map[string]bool)
+func (m *ROPCGrantManager) WithSupportedTokenAuthMethod(method string) *ROPCGrantManager {
+	if m.supportedTokenAuthMethods == nil {
+		m.supportedTokenAuthMethods = make(map[string]bool)
 	}
 
-	m.clientAuthMethods[method] = true
+	m.supportedTokenAuthMethods[method] = true
 	return m
 }
 
