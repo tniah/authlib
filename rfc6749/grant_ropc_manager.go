@@ -1,13 +1,5 @@
 package rfc6749
 
-import "errors"
-
-var (
-	ErrNilClientAuthHandler    = errors.New("\"clientAuthHandler\" cannot be nil")
-	ErrNilUserAuthHandler      = errors.New("\"userAuthHandler\" cannot be nil")
-	ErrNilAccessTokenGenerator = errors.New("\"accessTokenGenerator\" cannot be nil")
-)
-
 type ROPCGrantManager struct {
 	clientAuthHandler         ClientAuthenticationHandler
 	userAuthHandler           AuthenticateUser
@@ -49,15 +41,15 @@ func (m *ROPCGrantManager) WithSupportedTokenAuthMethod(method string) *ROPCGran
 
 func (m *ROPCGrantManager) Validate() error {
 	if m.clientAuthHandler == nil {
-		return ErrNilClientAuthHandler
+		return ErrClientAuthHandlerIsNil
 	}
 
 	if m.userAuthHandler == nil {
-		return ErrNilUserAuthHandler
+		return ErrUserAuthHandlerIsNil
 	}
 
 	if m.accessTokenGenerator == nil {
-		return ErrNilAccessTokenGenerator
+		return ErrAccessTokenGeneratorIsNil
 	}
 
 	return nil
