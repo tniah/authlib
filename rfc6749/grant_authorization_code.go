@@ -32,28 +32,6 @@ func (grant *AuthorizationCodeGrant) CheckResponseType(rt string) bool {
 	return rt == ResponseTypeCode
 }
 
-func (grant *AuthorizationCodeGrant) ValidateAuthorizationRequest(r *http.Request) (client models.Client, redirectURI string, err error) {
-	if r.Method != http.MethodGet && r.Method != http.MethodPost {
-		return nil, "", autherrors.InvalidRequestError().WithDescription(ErrRequestMustBeGetOrPost)
-	}
-
-	state := r.URL.Query().Get(ParamState)
-	if client, err = grant.CheckClient(r, state); err != nil {
-		return nil, "", err
-	}
-
-	redirectURI, err = grant.ValidateRedirectURI(r.URL.Query().Get(ParamRedirectURI), client)
-	if err != nil {
-		return nil, "", err
-	}
-
-	if err = grant.ValidateResponseType(r, client, redirectURI, state); err != nil {
-		return nil, "", err
-	}
-
-	return client, redirectURI, nil
-}
-
 func (grant *AuthorizationCodeGrant) CheckClient(r *http.Request, state string) (client models.Client, err error) {
 	clientID := r.URL.Query().Get(ParamClientID)
 	if clientID == "" {
@@ -86,4 +64,26 @@ func (grant *AuthorizationCodeGrant) ValidateResponseType(r *http.Request, clien
 	}
 
 	return nil
+}
+
+func (grant *AuthorizationCodeGrant) ValidateAuthorizationRequest(r *http.Request) (client models.Client, redirectURI string, err error) {
+	if r.Method != http.MethodGet && r.Method != http.MethodPost {
+		return nil, "", autherrors.InvalidRequestError().WithDescription(ErrRequestMustBeGetOrPost)
+	}
+
+	state := r.URL.Query().Get(ParamState)
+	if client, err = grant.CheckClient(r, state); err != nil {
+		return nil, "", err
+	}
+
+	redirectURI, err = grant.ValidateRedirectURI(r.URL.Query().Get(ParamRedirectURI), client)
+	if err != nil {
+		return nil, "", err
+	}
+
+	if err = grant.ValidateResponseType(r, client, redirectURI, state); err != nil {
+		return nil, "", err
+	}
+
+	return client, redirectURI, nil
 }
