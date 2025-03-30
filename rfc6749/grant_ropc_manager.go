@@ -9,7 +9,6 @@ var (
 )
 
 type ROPCGrantManager struct {
-	grantType            string
 	clientAuthHandler    ClientAuthenticationHandler
 	userAuthHandler      AuthenticateUser
 	accessTokenGenerator AccessTokenGenerator
@@ -18,14 +17,10 @@ type ROPCGrantManager struct {
 
 func NewROPCGrantManager() *ROPCGrantManager {
 	return &ROPCGrantManager{
-		grantType:         GrantTypeROPC,
-		clientAuthMethods: make(map[string]bool),
+		clientAuthMethods: map[string]bool{
+			AuthMethodClientSecretBasic: true,
+		},
 	}
-}
-
-func (m *ROPCGrantManager) WithGrantType(gt string) *ROPCGrantManager {
-	m.grantType = gt
-	return m
 }
 
 func (m *ROPCGrantManager) WithClientAuthHandler(h ClientAuthenticationHandler) *ROPCGrantManager {

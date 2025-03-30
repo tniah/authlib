@@ -25,16 +25,8 @@ func MustROPCGrant(mgr *ROPCGrantManager) *ROPCGrant {
 	return NewROPCGrant(mgr)
 }
 
-func (grant *ROPCGrant) GrantType() string {
-	return grant.mgr.grantType
-}
-
 func (grant *ROPCGrant) CheckGrantType(gt string) bool {
-	if grant.GrantType() == "" {
-		return false
-	}
-
-	return gt == grant.GrantType()
+	return gt == GrantTypeROPC
 }
 
 func (grant *ROPCGrant) CheckParams(r *http.Request) error {
@@ -42,7 +34,7 @@ func (grant *ROPCGrant) CheckParams(r *http.Request) error {
 		return autherrors.InvalidRequestError().WithDescription(ErrRequestMustBePost)
 	}
 
-	if !common.IsXWwwFormUrlencoded(r) {
+	if !common.IsXWwwFormUrlencodedContentType(r) {
 		return autherrors.InvalidRequestError().WithDescription(ErrNotXWwwFormUrlencoded)
 	}
 
@@ -114,7 +106,7 @@ func (grant *ROPCGrant) TokenResponse(r *http.Request, rw http.ResponseWriter) e
 
 	requestedScopes := strings.Fields(r.FormValue(ParamScope))
 	includeRefreshToken := client.CheckGrantType(GrantTypeRefreshToken)
-	token, err := grant.mgr.accessTokenGenerator(r, grant.GrantType(), client, user, requestedScopes, includeRefreshToken)
+	token, err := grant.mgr.accessTokenGenerator(r, GrantTypeROPC, client, user, requestedScopes, includeRefreshToken)
 	if err != nil {
 		return err
 	}
