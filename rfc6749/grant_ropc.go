@@ -106,7 +106,7 @@ func (grant *ROPCGrant) AuthenticateRequest(r *http.Request) (client models.Clie
 	return client, user, nil
 }
 
-func (grant *ROPCGrant) TokenResponse(rw http.ResponseWriter, r *http.Request) error {
+func (grant *ROPCGrant) TokenResponse(r *http.Request, rw http.ResponseWriter) error {
 	client, user, err := grant.AuthenticateRequest(r)
 	if err != nil {
 		return err
