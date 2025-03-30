@@ -10,7 +10,7 @@ import (
 type (
 	QueryClient func(ctx context.Context, clientID string) (models.Client, error)
 
-	AuthenticateClient func(r *http.Request) (models.Client, string, error)
+	ClientAuthenticationHandler func(r *http.Request, supportedMethods map[string]bool, endpoint string) (models.Client, error)
 
 	QueryUser func(ctx context.Context, userID string) (models.User, error)
 
@@ -22,5 +22,5 @@ type (
 
 	DeleteAuthCode func(ctx context.Context, code string) error
 
-	GenerateAccessToken func(grantType string, r *requests.TokenRequest, includeRefreshToken bool) (models.Token, error)
+	AccessTokenGenerator func(r *http.Request, grantType string, client models.Client, user models.User, scopes []string, includeRefreshToken bool) (models.Token, error)
 )
