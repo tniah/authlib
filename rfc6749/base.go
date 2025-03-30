@@ -5,15 +5,13 @@ import (
 	"github.com/tniah/authlib/common"
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
-	"github.com/tniah/authlib/requests"
 	"net/http"
 	"strings"
 )
 
 type AuthorizationGrantMixin struct{}
 
-func (grant *AuthorizationGrantMixin) ValidateRedirectURI(r *requests.AuthorizationRequest, client models.Client) (string, error) {
-	redirectURI := r.RedirectURI
+func (grant *AuthorizationGrantMixin) ValidateRedirectURI(redirectURI string, client models.Client) (string, error) {
 	if redirectURI == "" {
 		redirectURI = client.GetDefaultRedirectURI()
 

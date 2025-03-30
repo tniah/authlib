@@ -82,7 +82,7 @@ func (grant *ROPCGrant) AuthenticateUser(r *http.Request) (user models.User, err
 	return user, nil
 }
 
-func (grant *ROPCGrant) AuthenticateRequest(r *http.Request) (client models.Client, user models.User, err error) {
+func (grant *ROPCGrant) ValidateTokenRequest(r *http.Request) (client models.Client, user models.User, err error) {
 	if err = grant.CheckParams(r); err != nil {
 		return nil, nil, err
 	}
@@ -99,7 +99,7 @@ func (grant *ROPCGrant) AuthenticateRequest(r *http.Request) (client models.Clie
 }
 
 func (grant *ROPCGrant) TokenResponse(r *http.Request, rw http.ResponseWriter) error {
-	client, user, err := grant.AuthenticateRequest(r)
+	client, user, err := grant.ValidateTokenRequest(r)
 	if err != nil {
 		return err
 	}

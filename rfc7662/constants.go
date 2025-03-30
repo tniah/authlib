@@ -7,7 +7,7 @@ const (
 	AuthMethodClientSecretBasic    = "client_secret_basic"
 
 	HeaderContentType             = "Content-Type"
-	ContentTypeXWWWFormUrlEncoded = "application/x-www-form-urlencoded"
+	ContentTypeXWwwFormUrlEncoded = "application/x-www-form-urlencoded"
 
 	ParamToken         = "token"
 	ParamTokenTypeHint = "token_type_hint"

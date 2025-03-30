@@ -144,7 +144,7 @@ func (t *TokenIntrospection) checkParams(r *http.Request) error {
 	if err != nil {
 		return autherrors.InvalidRequestError()
 	}
-	if ct != ContentTypeXWWWFormUrlEncoded {
+	if ct != ContentTypeXWwwFormUrlEncoded {
 		return autherrors.InvalidRequestError().WithDescription(ErrInvalidContentType)
 	}
 

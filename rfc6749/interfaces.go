@@ -8,11 +8,11 @@ import (
 )
 
 type (
-	QueryClient func(ctx context.Context, clientID string) (models.Client, error)
+	ClientQueryHandler func(ctx context.Context, clientID string) (models.Client, error)
 
 	ClientAuthenticationHandler func(r *http.Request, supportedMethods map[string]bool, endpoint string) (models.Client, error)
 
-	QueryUser func(ctx context.Context, userID string) (models.User, error)
+	UserQueryHandler func(ctx context.Context, userID string) (models.User, error)
 
 	AuthenticateUser func(username string, password string) (models.User, error)
 
