@@ -59,10 +59,9 @@ func (grant *ROPCGrant) CheckParams(r *http.Request) error {
 	return nil
 }
 
-func (grant *ROPCGrant) AuthenticateClient(r *http.Request) (models.Client, error) {
-	client, err := grant.mgr.clientAuthHandler(r, grant.mgr.clientAuthMethods, EndpointNameToken)
-	if err != nil {
-		return nil, autherrors.InternalServerError()
+func (grant *ROPCGrant) AuthenticateClient(r *http.Request) (client models.Client, err error) {
+	if client, err = grant.mgr.clientAuthHandler(r, grant.mgr.clientAuthMethods, EndpointNameToken); err != nil {
+		return nil, err
 	}
 
 	if client == nil {
@@ -76,13 +75,12 @@ func (grant *ROPCGrant) AuthenticateClient(r *http.Request) (models.Client, erro
 	return client, nil
 }
 
-func (grant *ROPCGrant) AuthenticateUser(r *http.Request) (models.User, error) {
+func (grant *ROPCGrant) AuthenticateUser(r *http.Request) (user models.User, err error) {
 	username := r.PostFormValue(ParamUsername)
 	password := r.PostFormValue(ParamPassword)
 
-	user, err := grant.mgr.userAuthHandler(username, password)
-	if err != nil {
-		return nil, autherrors.InternalServerError()
+	if user, err = grant.mgr.userAuthHandler(username, password); err != nil {
+		return nil, err
 	}
 
 	if user == nil {
