@@ -4,7 +4,7 @@ import (
 	"github.com/tniah/authlib/common"
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
-	basegrant "github.com/tniah/authlib/rfc6749/base_grant"
+	"github.com/tniah/authlib/rfc6749"
 	"net/http"
 	"strings"
 )
@@ -14,7 +14,7 @@ type Grant struct {
 	userAuthManager            UserAuthManager
 	tokenManager               TokenManager
 	supportedClientAuthMethods map[string]bool
-	*basegrant.TokenGrantMixin
+	*rfc6749.TokenGrantMixin
 }
 
 func NewGrant(clientAuthMgr ClientAuthManager, userAuthMgr UserAuthManager, tokenMgr TokenManager) *Grant {
@@ -35,6 +35,32 @@ func (grant *Grant) WithClientAuthMethods(methods map[string]bool) *Grant {
 
 func (grant *Grant) CheckGrantType(grantType string) bool {
 	return grantType == GrantTypeROPC
+}
+
+func (grant *Grant) TokenResponse(r *http.Request, rw http.ResponseWriter) error {
+	if err := grant.checkParams(r); err != nil {
+		return err
+	}
+
+	client, err := grant.authenticateClient(r)
+	if err != nil {
+		return err
+	}
+
+	user, err := grant.authenticateUser(r, client)
+	if err != nil {
+		return err
+	}
+
+	scopes := strings.Fields(r.FormValue("scope"))
+	includeRefreshToken := client.CheckGrantType(GrantTypeRefreshToken)
+	token, err := grant.tokenManager.GenerateAccessToken(r, GrantTypeROPC, client, user, scopes, includeRefreshToken)
+	if err != nil {
+		return err
+	}
+
+	data := grant.StandardTokenData(token)
+	return grant.HandleTokenResponse(rw, data)
 }
 
 func (grant *Grant) checkParams(r *http.Request) error {
@@ -88,38 +114,4 @@ func (grant *Grant) authenticateUser(r *http.Request, client models.Client) (use
 	}
 
 	return user, nil
-}
-
-func (grant *Grant) validateTokenRequest(r *http.Request) (client models.Client, user models.User, err error) {
-	if err = grant.checkParams(r); err != nil {
-		return nil, nil, err
-	}
-
-	if client, err = grant.authenticateClient(r); err != nil {
-		return nil, nil, err
-	}
-
-	if user, err = grant.authenticateUser(r, client); err != nil {
-		return nil, nil, err
-	}
-
-	return client, user, nil
-}
-
-func (grant *Grant) TokenResponse(r *http.Request, rw http.ResponseWriter) error {
-	client, user, err := grant.validateTokenRequest(r)
-	if err != nil {
-		return err
-	}
-
-	requestedScopes := strings.Fields(r.FormValue("scope"))
-	includeRefreshToken := client.CheckGrantType(GrantTypeRefreshToken)
-	token, err := grant.tokenManager.GenerateAccessToken(r, GrantTypeROPC, client, user, requestedScopes, includeRefreshToken)
-	if err != nil {
-		return err
-	}
-
-	data := grant.StandardTokenData(token)
-	// TODO implement a hook
-	return grant.HandleTokenResponse(rw, data)
 }
