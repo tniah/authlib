@@ -8,6 +8,10 @@ import (
 	"strings"
 )
 
+var defaultClientAuthMethods = map[string]bool{
+	AuthMethodClientSecretBasic: true,
+}
+
 type Grant struct {
 	clientMgr                  ClientManager
 	userMgr                    UserManager
@@ -16,35 +20,69 @@ type Grant struct {
 	*rfc6749.TokenGrantMixin
 }
 
-func New(clientMgr ClientManager, userMgr UserManager, tokenMgr TokenManager) (*Grant, error) {
-	if clientMgr == nil {
-		return nil, ErrNilClientManager
+func New() *Grant {
+	g := &Grant{
+		TokenGrantMixin: &rfc6749.TokenGrantMixin{},
 	}
-
-	if userMgr == nil {
-		return nil, ErrNilUserManager
-	}
-
-	if tokenMgr == nil {
-		return nil, ErrNilTokenManager
-	}
-
-	return &Grant{
-		clientMgr:    clientMgr,
-		userMgr:      userMgr,
-		tokenManager: tokenMgr,
-		supportedClientAuthMethods: map[string]bool{
-			AuthMethodClientSecretBasic: true,
-		},
-		TokenGrantMixin: &rfc6749.TokenGrantMixin{
-			GrantType: GrantTypeROPC,
-		},
-	}, nil
+	g.SetGrantType(GrantTypeROPC)
+	g.SetClientAuthMethods(defaultClientAuthMethods)
+	return g
 }
 
-func (g *Grant) WithClientAuthMethods(methods map[string]bool) *Grant {
-	g.supportedClientAuthMethods = methods
-	return g
+func Must(clientMgr ClientManager, userMgr UserManager, tokenMgr TokenManager) (*Grant, error) {
+	g := New()
+	if err := g.MustClientManager(clientMgr); err != nil {
+		return nil, err
+	}
+
+	if err := g.MustUserManager(userMgr); err != nil {
+		return nil, err
+	}
+
+	if err := g.MustTokenManager(tokenMgr); err != nil {
+		return nil, err
+	}
+
+	return g, nil
+}
+
+func (g *Grant) SetClientManager(mgr ClientManager) {
+	g.clientMgr = mgr
+}
+
+func (g *Grant) MustClientManager(mgr ClientManager) error {
+	if mgr == nil {
+		return ErrNilClientManager
+	}
+
+	g.SetClientManager(mgr)
+	return nil
+}
+
+func (g *Grant) SetUserManager(mgr UserManager) {
+	g.userMgr = mgr
+}
+
+func (g *Grant) MustUserManager(userMgr UserManager) error {
+	if userMgr == nil {
+		return ErrNilUserManager
+	}
+
+	g.SetUserManager(userMgr)
+	return nil
+}
+
+func (g *Grant) SetTokenManager(mgr TokenManager) {
+	g.tokenManager = mgr
+}
+
+func (g *Grant) MustTokenManager(mgr TokenManager) error {
+	if mgr == nil {
+		return ErrNilTokenManager
+	}
+
+	g.SetTokenManager(mgr)
+	return nil
 }
 
 func (g *Grant) TokenResponse(r *http.Request, rw http.ResponseWriter) error {
