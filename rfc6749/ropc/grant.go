@@ -102,7 +102,7 @@ func (g *Grant) TokenResponse(r *http.Request, rw http.ResponseWriter) error {
 
 	scopes := strings.Fields(r.FormValue(ParamScope))
 	includeRefreshToken := client.CheckGrantType(GrantTypeRefreshToken)
-	token, err := g.tokenMgr.GenerateAccessToken(r, GrantTypeROPC, client, user, scopes, includeRefreshToken)
+	token, err := g.tokenMgr.GenerateAccessToken(GrantTypeROPC, client, user, scopes, includeRefreshToken, r)
 	if err != nil {
 		return err
 	}

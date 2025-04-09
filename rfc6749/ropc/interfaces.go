@@ -14,5 +14,5 @@ type UserManager interface {
 }
 
 type TokenManager interface {
-	GenerateAccessToken(r *http.Request, grantType string, client models.Client, user models.User, scopes []string, includeRefreshToken bool) (models.Token, error)
+	GenerateAccessToken(grantType string, client models.Client, user models.User, scopes []string, includeRefreshToken bool, r *http.Request) (models.Token, error)
 }

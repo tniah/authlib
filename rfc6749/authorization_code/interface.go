@@ -13,6 +13,7 @@ type ClientManager interface {
 
 type UserManager interface {
 	Authenticate(r *http.Request, client models.Client) (models.User, error)
+	FetchByUserID(ctx context.Context, userID string) (models.User, error)
 }
 
 type AuthCodeManager interface {
