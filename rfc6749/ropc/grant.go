@@ -15,7 +15,7 @@ var defaultClientAuthMethods = map[string]bool{
 type Grant struct {
 	clientMgr                  ClientManager
 	userMgr                    UserManager
-	tokenManager               TokenManager
+	tokenMgr                   TokenManager
 	supportedClientAuthMethods map[string]bool
 	*rfc6749.TokenGrantMixin
 }
@@ -73,7 +73,7 @@ func (g *Grant) MustUserManager(userMgr UserManager) error {
 }
 
 func (g *Grant) SetTokenManager(mgr TokenManager) {
-	g.tokenManager = mgr
+	g.tokenMgr = mgr
 }
 
 func (g *Grant) MustTokenManager(mgr TokenManager) error {
@@ -102,7 +102,7 @@ func (g *Grant) TokenResponse(r *http.Request, rw http.ResponseWriter) error {
 
 	scopes := strings.Fields(r.FormValue(ParamScope))
 	includeRefreshToken := client.CheckGrantType(GrantTypeRefreshToken)
-	token, err := g.tokenManager.GenerateAccessToken(r, GrantTypeROPC, client, user, scopes, includeRefreshToken)
+	token, err := g.tokenMgr.GenerateAccessToken(r, GrantTypeROPC, client, user, scopes, includeRefreshToken)
 	if err != nil {
 		return err
 	}
@@ -114,6 +114,15 @@ func (g *Grant) TokenResponse(r *http.Request, rw http.ResponseWriter) error {
 func (g *Grant) checkParams(r *http.Request) error {
 	if err := g.CheckTokenRequest(r); err != nil {
 		return err
+	}
+
+	grantType := r.PostFormValue(ParamGrantType)
+	if grantType == "" {
+		return autherrors.InvalidRequestError().WithDescription(ErrMissingGrantType)
+	}
+
+	if !g.CheckGrantType(grantType) {
+		return autherrors.UnsupportedGrantTypeError()
 	}
 
 	username := r.PostFormValue(ParamUsername)
