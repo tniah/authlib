@@ -7,11 +7,22 @@ import (
 )
 
 type NoneAuthHandler struct {
-	store ClientStore
+	*BaseHandler
 }
 
-func NewNoneAuthHandler(store ClientStore) *NoneAuthHandler {
-	return &NoneAuthHandler{store: store}
+func NewNoneAuthHandler() *NoneAuthHandler {
+	return &NoneAuthHandler{
+		BaseHandler: &BaseHandler{},
+	}
+}
+
+func MustNoneAuthHandler(store ClientStore) (*NoneAuthHandler, error) {
+	h := NewNoneAuthHandler()
+	if err := h.MustClientStore(store); err != nil {
+		return nil, err
+	}
+
+	return h, nil
 }
 
 func (h *NoneAuthHandler) Method() string {

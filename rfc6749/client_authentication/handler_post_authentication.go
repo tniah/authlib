@@ -7,11 +7,22 @@ import (
 )
 
 type PostAuthHandler struct {
-	store ClientStore
+	*BaseHandler
 }
 
-func NewPostAuthHandler(store ClientStore) *PostAuthHandler {
-	return &PostAuthHandler{store: store}
+func NewPostAuthHandler() *PostAuthHandler {
+	return &PostAuthHandler{
+		BaseHandler: &BaseHandler{},
+	}
+}
+
+func MustPostAuthHandler(store ClientStore) (*PostAuthHandler, error) {
+	h := NewPostAuthHandler()
+	if err := h.MustClientStore(store); err != nil {
+		return nil, err
+	}
+
+	return h, nil
 }
 
 func (h *PostAuthHandler) Method() string {

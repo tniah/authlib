@@ -6,11 +6,22 @@ import (
 )
 
 type BasicAuthHandler struct {
-	store ClientStore
+	*BaseHandler
 }
 
-func NewBasicAuthHandler(store ClientStore) *BasicAuthHandler {
-	return &BasicAuthHandler{store: store}
+func NewBasicAuthHandler() *BasicAuthHandler {
+	return &BasicAuthHandler{
+		BaseHandler: &BaseHandler{},
+	}
+}
+
+func MustBasicAuthHandler(store ClientStore) (*BasicAuthHandler, error) {
+	h := NewBasicAuthHandler()
+	if err := h.MustClientStore(store); err != nil {
+		return nil, err
+	}
+
+	return h, nil
 }
 
 func (h *BasicAuthHandler) Method() string {
