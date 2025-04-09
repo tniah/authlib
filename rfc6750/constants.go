@@ -13,4 +13,10 @@ const (
 	RefreshTokenLength           = 48
 )
 
-var ErrInvalidExpiresIn = errors.New("invalid 'expiresIn' value")
+var (
+	ErrNilAccessTokenGenerator  = errors.New("access token generator is nil")
+	ErrNilRefreshTokenGenerator = errors.New("refresh token generator is nil")
+	ErrNilExpiresInGenerator    = errors.New("expires in generator is nil")
+	ErrNilRandStringGenerator   = errors.New("random string generator is nil")
+	ErrInvalidExpiresIn         = errors.New("invalid \"expiresIn\" value")
+)

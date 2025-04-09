@@ -6,42 +6,46 @@ import (
 	"time"
 )
 
-type (
-	OpaqueRefreshTokenGenerator struct {
-		expiresIn           time.Duration
-		expiresInGenerator  ExpiresInGenerator
-		randStringGenerator RandStringGenerator
-	}
+type OpaqueRefreshTokenGenerator struct {
+	expiresIn           time.Duration
+	expiresInGenerator  ExpiresInGenerator
+	randStringGenerator RandStringGenerator
+}
 
-	OpaqueRefreshTokenGeneratorOption func(*OpaqueRefreshTokenGenerator)
-)
-
-func NewOpaqueRefreshTokenGenerator(opts ...OpaqueRefreshTokenGeneratorOption) *OpaqueRefreshTokenGenerator {
-	g := &OpaqueRefreshTokenGenerator{
+func NewOpaqueRefreshTokenGenerator() *OpaqueRefreshTokenGenerator {
+	return &OpaqueRefreshTokenGenerator{
 		expiresIn: DefaultRefreshTokenExpiresIn,
 	}
-	for _, opt := range opts {
-		opt(g)
-	}
-	return g
 }
 
-func WithRefreshTokenExpiresIn(exp time.Duration) OpaqueRefreshTokenGeneratorOption {
-	return func(g *OpaqueRefreshTokenGenerator) {
-		g.expiresIn = exp
-	}
+func (g *OpaqueRefreshTokenGenerator) SetExpiresIn(exp time.Duration) {
+	g.expiresIn = exp
 }
 
-func WithRefreshTokenExpiresInGenerator(fn ExpiresInGenerator) OpaqueRefreshTokenGeneratorOption {
-	return func(g *OpaqueRefreshTokenGenerator) {
-		g.expiresInGenerator = fn
-	}
+func (g *OpaqueRefreshTokenGenerator) SetExpiresInGenerator(fn ExpiresInGenerator) {
+	g.expiresInGenerator = fn
 }
 
-func WithRefreshTokenRandStringGenerator(fn RandStringGenerator) OpaqueRefreshTokenGeneratorOption {
-	return func(g *OpaqueRefreshTokenGenerator) {
-		g.randStringGenerator = fn
+func (g *OpaqueRefreshTokenGenerator) MustExpiresInGenerator(fn ExpiresInGenerator) error {
+	if fn == nil {
+		return ErrNilExpiresInGenerator
 	}
+
+	g.SetExpiresInGenerator(fn)
+	return nil
+}
+
+func (g *OpaqueRefreshTokenGenerator) SetRandStringGenerator(fn RandStringGenerator) {
+	g.randStringGenerator = fn
+}
+
+func (g *OpaqueRefreshTokenGenerator) MustRandStringGenerator(fn RandStringGenerator) error {
+	if fn == nil {
+		return ErrNilRandStringGenerator
+	}
+
+	g.SetRandStringGenerator(fn)
+	return nil
 }
 
 func (g *OpaqueRefreshTokenGenerator) Generate(grantType string, token models.Token, user models.User, client models.Client) error {

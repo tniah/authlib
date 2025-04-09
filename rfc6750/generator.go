@@ -4,36 +4,42 @@ import (
 	"github.com/tniah/authlib/models"
 )
 
-type (
-	BearerTokenGenerator struct {
-		accessTokenGenerator  AccessTokenGenerator
-		refreshTokenGenerator RefreshTokenGenerator
-	}
+type BearerTokenGenerator struct {
+	accessTokenGenerator  AccessTokenGenerator
+	refreshTokenGenerator RefreshTokenGenerator
+}
 
-	BearerTokenGeneratorOption func(*BearerTokenGenerator)
-)
-
-func NewBearerTokenGenerator(opts ...BearerTokenGeneratorOption) *BearerTokenGenerator {
-	g := &BearerTokenGenerator{
+func NewBearerTokenGenerator() *BearerTokenGenerator {
+	return &BearerTokenGenerator{
 		accessTokenGenerator:  NewOpaqueAccessTokenGenerator(),
 		refreshTokenGenerator: NewOpaqueRefreshTokenGenerator(),
 	}
-	for _, opt := range opts {
-		opt(g)
-	}
-	return g
 }
 
-func WithAccessTokenGenerator(generator AccessTokenGenerator) BearerTokenGeneratorOption {
-	return func(g *BearerTokenGenerator) {
-		g.accessTokenGenerator = generator
-	}
+func (g *BearerTokenGenerator) SetAccessTokenGenerator(fn AccessTokenGenerator) {
+	g.accessTokenGenerator = fn
 }
 
-func WithRefreshTokenGenerator(generator RefreshTokenGenerator) BearerTokenGeneratorOption {
-	return func(g *BearerTokenGenerator) {
-		g.refreshTokenGenerator = generator
+func (g *BearerTokenGenerator) MustAccessTokenGenerator(fn AccessTokenGenerator) error {
+	if fn == nil {
+		return ErrNilAccessTokenGenerator
 	}
+
+	g.SetAccessTokenGenerator(fn)
+	return nil
+}
+
+func (g *BearerTokenGenerator) SetRefreshTokenGenerator(fn RefreshTokenGenerator) {
+	g.refreshTokenGenerator = fn
+}
+
+func (g *BearerTokenGenerator) MustRefreshTokenGenerator(fn RefreshTokenGenerator) error {
+	if fn == nil {
+		return ErrNilRefreshTokenGenerator
+	}
+
+	g.SetRefreshTokenGenerator(fn)
+	return nil
 }
 
 func (g *BearerTokenGenerator) Generate(

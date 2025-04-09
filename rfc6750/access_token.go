@@ -6,42 +6,46 @@ import (
 	"time"
 )
 
-type (
-	OpaqueAccessTokenGenerator struct {
-		expiresIn           time.Duration
-		expiresInGenerator  ExpiresInGenerator
-		randStringGenerator RandStringGenerator
-	}
+type OpaqueAccessTokenGenerator struct {
+	expiresIn           time.Duration
+	expiresInGenerator  ExpiresInGenerator
+	randStringGenerator RandStringGenerator
+}
 
-	OpaqueAccessTokenGeneratorOption func(*OpaqueAccessTokenGenerator)
-)
-
-func NewOpaqueAccessTokenGenerator(opts ...OpaqueAccessTokenGeneratorOption) *OpaqueAccessTokenGenerator {
-	g := &OpaqueAccessTokenGenerator{
+func NewOpaqueAccessTokenGenerator() *OpaqueAccessTokenGenerator {
+	return &OpaqueAccessTokenGenerator{
 		expiresIn: DefaultAccessTokenExpiresIn,
 	}
-	for _, opt := range opts {
-		opt(g)
-	}
-	return g
 }
 
-func WithAccessTokenExpiresIn(exp time.Duration) OpaqueAccessTokenGeneratorOption {
-	return func(g *OpaqueAccessTokenGenerator) {
-		g.expiresIn = exp
-	}
+func (g *OpaqueAccessTokenGenerator) SetExpiresIn(exp time.Duration) {
+	g.expiresIn = exp
 }
 
-func WithAccessTokenExpiresInGenerator(fn ExpiresInGenerator) OpaqueAccessTokenGeneratorOption {
-	return func(g *OpaqueAccessTokenGenerator) {
-		g.expiresInGenerator = fn
-	}
+func (g *OpaqueAccessTokenGenerator) SetExpiresInGenerator(fn ExpiresInGenerator) {
+	g.expiresInGenerator = fn
 }
 
-func WithAccessTokenRandStringGenerator(fn RandStringGenerator) OpaqueAccessTokenGeneratorOption {
-	return func(g *OpaqueAccessTokenGenerator) {
-		g.randStringGenerator = fn
+func (g *OpaqueAccessTokenGenerator) MustExpiresInGenerator(fn ExpiresInGenerator) error {
+	if fn == nil {
+		return ErrNilExpiresInGenerator
 	}
+
+	g.SetExpiresInGenerator(fn)
+	return nil
+}
+
+func (g *OpaqueAccessTokenGenerator) SetRandStringGenerator(fn RandStringGenerator) {
+	g.randStringGenerator = fn
+}
+
+func (g *OpaqueAccessTokenGenerator) MustRandStringGenerator(fn RandStringGenerator) error {
+	if fn == nil {
+		return ErrNilRandStringGenerator
+	}
+
+	g.SetRandStringGenerator(fn)
+	return nil
 }
 
 func (g *OpaqueAccessTokenGenerator) Generate(grantType string, token models.Token, user models.User, client models.Client, scopes []string) error {
