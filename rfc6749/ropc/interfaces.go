@@ -5,11 +5,11 @@ import (
 	"net/http"
 )
 
-type ClientAuthManager interface {
+type ClientManager interface {
 	Authenticate(r *http.Request, supportedMethods map[string]bool, endpoint string) (models.Client, error)
 }
 
-type UserAuthManager interface {
+type UserManager interface {
 	Authenticate(username string, password string, client models.Client, r *http.Request) (models.User, error)
 }
 

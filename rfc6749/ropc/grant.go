@@ -1,7 +1,6 @@
 package ropc
 
 import (
-	"github.com/tniah/authlib/common"
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/rfc6749"
@@ -10,74 +9,81 @@ import (
 )
 
 type Grant struct {
-	clientAuthManager          ClientAuthManager
-	userAuthManager            UserAuthManager
+	clientMgr                  ClientManager
+	userMgr                    UserManager
 	tokenManager               TokenManager
 	supportedClientAuthMethods map[string]bool
 	*rfc6749.TokenGrantMixin
 }
 
-func NewGrant(clientAuthMgr ClientAuthManager, userAuthMgr UserAuthManager, tokenMgr TokenManager) *Grant {
+func New(clientMgr ClientManager, userMgr UserManager, tokenMgr TokenManager) (*Grant, error) {
+	if clientMgr == nil {
+		return nil, ErrNilClientManager
+	}
+
+	if userMgr == nil {
+		return nil, ErrNilUserManager
+	}
+
+	if tokenMgr == nil {
+		return nil, ErrNilTokenManager
+	}
+
 	return &Grant{
-		clientAuthManager: clientAuthMgr,
-		userAuthManager:   userAuthMgr,
-		tokenManager:      tokenMgr,
+		clientMgr:    clientMgr,
+		userMgr:      userMgr,
+		tokenManager: tokenMgr,
 		supportedClientAuthMethods: map[string]bool{
 			AuthMethodClientSecretBasic: true,
 		},
-	}
+		TokenGrantMixin: &rfc6749.TokenGrantMixin{
+			GrantType: GrantTypeROPC,
+		},
+	}, nil
 }
 
-func (grant *Grant) WithClientAuthMethods(methods map[string]bool) *Grant {
-	grant.supportedClientAuthMethods = methods
-	return grant
+func (g *Grant) WithClientAuthMethods(methods map[string]bool) *Grant {
+	g.supportedClientAuthMethods = methods
+	return g
 }
 
-func (grant *Grant) CheckGrantType(grantType string) bool {
-	return grantType == GrantTypeROPC
-}
-
-func (grant *Grant) TokenResponse(r *http.Request, rw http.ResponseWriter) error {
-	if err := grant.checkParams(r); err != nil {
+func (g *Grant) TokenResponse(r *http.Request, rw http.ResponseWriter) error {
+	if err := g.checkParams(r); err != nil {
 		return err
 	}
 
-	client, err := grant.authenticateClient(r)
+	client, err := g.authenticateClient(r)
 	if err != nil {
 		return err
 	}
 
-	user, err := grant.authenticateUser(r, client)
+	user, err := g.authenticateUser(r, client)
 	if err != nil {
 		return err
 	}
 
-	scopes := strings.Fields(r.FormValue("scope"))
+	scopes := strings.Fields(r.FormValue(ParamScope))
 	includeRefreshToken := client.CheckGrantType(GrantTypeRefreshToken)
-	token, err := grant.tokenManager.GenerateAccessToken(r, GrantTypeROPC, client, user, scopes, includeRefreshToken)
+	token, err := g.tokenManager.GenerateAccessToken(r, GrantTypeROPC, client, user, scopes, includeRefreshToken)
 	if err != nil {
 		return err
 	}
 
-	data := grant.StandardTokenData(token)
-	return grant.HandleTokenResponse(rw, data)
+	data := g.StandardTokenData(token)
+	return g.HandleTokenResponse(rw, data)
 }
 
-func (grant *Grant) checkParams(r *http.Request) error {
-	if r.Method != http.MethodPost {
-		return autherrors.InvalidRequestError().WithDescription(ErrRequestMustBePOST)
+func (g *Grant) checkParams(r *http.Request) error {
+	if err := g.CheckTokenRequest(r); err != nil {
+		return err
 	}
 
-	if !common.IsXWWWFormUrlencodedContentType(r) {
-		return autherrors.InvalidRequestError().WithDescription(ErrNotContentTypeXWWWFormUrlencoded)
-	}
-
-	username := r.PostFormValue("username")
+	username := r.PostFormValue(ParamUsername)
 	if username == "" {
 		return autherrors.InvalidRequestError().WithDescription(ErrMissingUsername)
 	}
 
-	password := r.PostFormValue("password")
+	password := r.PostFormValue(ParamPassword)
 	if password == "" {
 		return autherrors.InvalidRequestError().WithDescription(ErrMissingPassword)
 	}
@@ -85,8 +91,8 @@ func (grant *Grant) checkParams(r *http.Request) error {
 	return nil
 }
 
-func (grant *Grant) authenticateClient(r *http.Request) (client models.Client, err error) {
-	if client, err = grant.clientAuthManager.Authenticate(r, grant.supportedClientAuthMethods, EndpointToken); err != nil {
+func (g *Grant) authenticateClient(r *http.Request) (client models.Client, err error) {
+	if client, err = g.clientMgr.Authenticate(r, g.supportedClientAuthMethods, EndpointToken); err != nil {
 		return nil, err
 	}
 
@@ -101,11 +107,11 @@ func (grant *Grant) authenticateClient(r *http.Request) (client models.Client, e
 	return client, nil
 }
 
-func (grant *Grant) authenticateUser(r *http.Request, client models.Client) (user models.User, err error) {
-	username := r.PostFormValue("username")
-	password := r.PostFormValue("password")
+func (g *Grant) authenticateUser(r *http.Request, client models.Client) (user models.User, err error) {
+	username := r.PostFormValue(ParamUsername)
+	password := r.PostFormValue(ParamPassword)
 
-	if user, err = grant.userAuthManager.Authenticate(username, password, client, r); err != nil {
+	if user, err = g.userMgr.Authenticate(username, password, client, r); err != nil {
 		return nil, err
 	}
 
