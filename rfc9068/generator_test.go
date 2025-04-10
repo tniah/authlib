@@ -75,4 +75,8 @@ func TestJWTAccessTokenGenerator(t *testing.T) {
 	assert.Equal(t, opts.expiresIn, actual.expiresIn)
 	assert.NotEmpty(t, actual.jwtID)
 	assert.NotEmpty(t, actual.accessToken)
+
+	mockClient.AssertExpectations(t)
+	mockUser.AssertExpectations(t)
+	mockToken.AssertExpectations(t)
 }
