@@ -24,19 +24,19 @@ const (
 )
 
 type JWTAccessTokenGenerator struct {
-	cfg *GeneratorOptions
+	*JWTAccessTokenGeneratorConfig
 }
 
-func NewJWTAccessTokenGenerator(opts *GeneratorOptions) *JWTAccessTokenGenerator {
-	return &JWTAccessTokenGenerator{cfg: opts}
+func NewJWTAccessTokenGenerator(cfg *JWTAccessTokenGeneratorConfig) *JWTAccessTokenGenerator {
+	return &JWTAccessTokenGenerator{cfg}
 }
 
-func MustJWTAccessTokenGenerator(opts *GeneratorOptions) (*JWTAccessTokenGenerator, error) {
-	if err := opts.Validate(); err != nil {
+func MustJWTAccessTokenGenerator(cfg *JWTAccessTokenGeneratorConfig) (*JWTAccessTokenGenerator, error) {
+	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
 
-	return NewJWTAccessTokenGenerator(opts), nil
+	return NewJWTAccessTokenGenerator(cfg), nil
 }
 
 func (g *JWTAccessTokenGenerator) Generate(
@@ -59,7 +59,7 @@ func (g *JWTAccessTokenGenerator) Generate(
 	issuedAt := time.Now()
 	token.SetIssuedAt(issuedAt)
 
-	expiresIn, err := g.expiresIn(grantType, client)
+	expiresIn, err := g.getExpiresIn(grantType, client)
 	if err != nil {
 		return err
 	}
@@ -67,14 +67,14 @@ func (g *JWTAccessTokenGenerator) Generate(
 
 	jwtID := token.GetJwtID()
 	if jwtID == "" {
-		jwtID, err = g.jwtID(grantType, client)
+		jwtID, err = g.getJWTID(grantType, client)
 		if err != nil {
 			return err
 		}
 		token.SetJwtID(jwtID)
 	}
 
-	iss, err := g.issuer(grantType, client)
+	iss, err := g.getIssuer(grantType, client)
 	if err != nil {
 		return err
 	}
@@ -94,7 +94,7 @@ func (g *JWTAccessTokenGenerator) Generate(
 		claims[ClaimSubject] = clientID
 	}
 
-	if fn := g.cfg.extraClaimGenerator; fn != nil {
+	if fn := g.extraClaimGenerator; fn != nil {
 		extraClaims, err := fn(grantType, client, user, allowedScopes, r)
 		if err != nil {
 			return err
@@ -105,7 +105,7 @@ func (g *JWTAccessTokenGenerator) Generate(
 		}
 	}
 
-	signingKey, signingMethod, signingKeyID, err := g.signingKey(grantType, client)
+	signingKey, signingMethod, signingKeyID, err := g.getSigningKey(grantType, client)
 	if err != nil {
 		return err
 	}
@@ -124,32 +124,32 @@ func (g *JWTAccessTokenGenerator) Generate(
 	return nil
 }
 
-func (g *JWTAccessTokenGenerator) issuer(grantType string, client models.Client) (string, error) {
-	if fn := g.cfg.issuerGenerator; fn != nil {
+func (g *JWTAccessTokenGenerator) getIssuer(grantType string, client models.Client) (string, error) {
+	if fn := g.issuerGenerator; fn != nil {
 		return fn(grantType, client)
 	}
 
-	return g.cfg.issuer, nil
+	return g.issuer, nil
 }
 
-func (g *JWTAccessTokenGenerator) expiresIn(grantType string, client models.Client) (time.Duration, error) {
-	if fn := g.cfg.expiresInGenerator; fn != nil {
+func (g *JWTAccessTokenGenerator) getExpiresIn(grantType string, client models.Client) (time.Duration, error) {
+	if fn := g.expiresInGenerator; fn != nil {
 		return fn(grantType, client)
 	}
 
-	return g.cfg.expiresIn, nil
+	return g.expiresIn, nil
 }
 
-func (g *JWTAccessTokenGenerator) signingKey(grantType string, client models.Client) ([]byte, jwt.SigningMethod, string, error) {
-	if fn := g.cfg.signingKeyGenerator; fn != nil {
+func (g *JWTAccessTokenGenerator) getSigningKey(grantType string, client models.Client) ([]byte, jwt.SigningMethod, string, error) {
+	if fn := g.signingKeyGenerator; fn != nil {
 		return fn(grantType, client)
 	}
 
-	return g.cfg.signingKey, g.cfg.signingKeyMethod, g.cfg.signingKeyID, nil
+	return g.signingKey, g.signingKeyMethod, g.signingKeyID, nil
 }
 
-func (g *JWTAccessTokenGenerator) jwtID(grantType string, client models.Client) (string, error) {
-	if fn := g.cfg.jwtIDGenerator; fn != nil {
+func (g *JWTAccessTokenGenerator) getJWTID(grantType string, client models.Client) (string, error) {
+	if fn := g.jwtIDGenerator; fn != nil {
 		return fn(grantType, client)
 	}
 

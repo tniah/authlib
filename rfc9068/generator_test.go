@@ -15,7 +15,7 @@ func TestJWTAccessTokenGenerator(t *testing.T) {
 	mockUser := models.NewMockUser(t)
 	mockToken := models.NewMockToken(t)
 
-	opts := NewJWTAccessTokenGeneratorOptions().
+	cfg := NewJWTAccessTokenGeneratorConfig().
 		SetIssuer("https://example.com").
 		SetSigningKey([]byte("my-secret-key"), jwt.SigningMethodHS256, "my-kid-id").
 		SetExpiresIn(time.Hour * 24)
@@ -65,14 +65,14 @@ func TestJWTAccessTokenGenerator(t *testing.T) {
 		actual.accessToken = args.Get(0).(string)
 	})
 
-	generator := NewJWTAccessTokenGenerator(opts)
+	generator := NewJWTAccessTokenGenerator(cfg)
 	err := generator.Generate("password", mockToken, mockClient, mockUser, scopesExpected, httptest.NewRequest("POST", "/", nil))
 	assert.NoError(t, err)
 	assert.Equal(t, clientIDExpected, actual.clientID)
 	assert.Equal(t, userIDExpected, actual.userID)
 	assert.Equal(t, scopesExpected, actual.scopes)
 	assert.Equal(t, false, actual.issuedAt.IsZero())
-	assert.Equal(t, opts.expiresIn, actual.expiresIn)
+	assert.Equal(t, cfg.expiresIn, actual.expiresIn)
 	assert.NotEmpty(t, actual.jwtID)
 	assert.NotEmpty(t, actual.accessToken)
 

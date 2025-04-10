@@ -16,7 +16,7 @@ var (
 )
 
 type (
-	GeneratorOptions struct {
+	JWTAccessTokenGeneratorConfig struct {
 		issuer              string
 		issuerGenerator     IssuerGenerator
 		expiresIn           time.Duration
@@ -40,33 +40,33 @@ type (
 	JWTIDGenerator func(grantType string, client models.Client) (string, error)
 )
 
-func NewJWTAccessTokenGeneratorOptions() *GeneratorOptions {
-	return &GeneratorOptions{
+func NewJWTAccessTokenGeneratorConfig() *JWTAccessTokenGeneratorConfig {
+	return &JWTAccessTokenGeneratorConfig{
 		expiresIn: DefaultExpiresIn,
 	}
 }
 
-func (opt *GeneratorOptions) SetIssuer(iss string) *GeneratorOptions {
+func (opt *JWTAccessTokenGeneratorConfig) SetIssuer(iss string) *JWTAccessTokenGeneratorConfig {
 	opt.issuer = iss
 	return opt
 }
 
-func (opt *GeneratorOptions) SetIssuerGenerator(fn IssuerGenerator) *GeneratorOptions {
+func (opt *JWTAccessTokenGeneratorConfig) SetIssuerGenerator(fn IssuerGenerator) *JWTAccessTokenGeneratorConfig {
 	opt.issuerGenerator = fn
 	return opt
 }
 
-func (opt *GeneratorOptions) SetExpiresIn(exp time.Duration) *GeneratorOptions {
+func (opt *JWTAccessTokenGeneratorConfig) SetExpiresIn(exp time.Duration) *JWTAccessTokenGeneratorConfig {
 	opt.expiresIn = exp
 	return opt
 }
 
-func (opt *GeneratorOptions) SetExpiresInGenerator(fn ExpiresInGenerator) *GeneratorOptions {
+func (opt *JWTAccessTokenGeneratorConfig) SetExpiresInGenerator(fn ExpiresInGenerator) *JWTAccessTokenGeneratorConfig {
 	opt.expiresInGenerator = fn
 	return opt
 }
 
-func (opt *GeneratorOptions) SetSigningKey(key []byte, method jwt.SigningMethod, id ...string) *GeneratorOptions {
+func (opt *JWTAccessTokenGeneratorConfig) SetSigningKey(key []byte, method jwt.SigningMethod, id ...string) *JWTAccessTokenGeneratorConfig {
 	opt.signingKey = key
 	opt.signingKeyMethod = method
 
@@ -77,22 +77,22 @@ func (opt *GeneratorOptions) SetSigningKey(key []byte, method jwt.SigningMethod,
 	return opt
 }
 
-func (opt *GeneratorOptions) SetSigningKeyGenerator(fn SigningKeyGenerator) *GeneratorOptions {
+func (opt *JWTAccessTokenGeneratorConfig) SetSigningKeyGenerator(fn SigningKeyGenerator) *JWTAccessTokenGeneratorConfig {
 	opt.signingKeyGenerator = fn
 	return opt
 }
 
-func (opt *GeneratorOptions) SetExtraClaimGenerator(fn ExtraClaimGenerator) *GeneratorOptions {
+func (opt *JWTAccessTokenGeneratorConfig) SetExtraClaimGenerator(fn ExtraClaimGenerator) *JWTAccessTokenGeneratorConfig {
 	opt.extraClaimGenerator = fn
 	return opt
 }
 
-func (opt *GeneratorOptions) SetJWTIDGenerator(fn JWTIDGenerator) *GeneratorOptions {
+func (opt *JWTAccessTokenGeneratorConfig) SetJWTIDGenerator(fn JWTIDGenerator) *JWTAccessTokenGeneratorConfig {
 	opt.jwtIDGenerator = fn
 	return opt
 }
 
-func (opt *GeneratorOptions) Validate() error {
+func (opt *JWTAccessTokenGeneratorConfig) Validate() error {
 	if opt.issuer == "" && opt.issuerGenerator == nil {
 		return ErrMissingIssuer
 	}
