@@ -11,98 +11,31 @@ import (
 )
 
 type TokenIntrospection struct {
-	endpointName              string
-	clientAuthHandler         ClientAuthHandler
-	clientPermissionHandler   ClientPermissionHandler
-	tokenQueryHandler         TokenQueryHandler
-	tokenIntrospectionHandler TokenIntrospectionHandler
-	clientAuthMethods         map[string]bool
+	*IntrospectionConfig
 }
 
-func NewTokenIntrospection() *TokenIntrospection {
-	return &TokenIntrospection{
-		clientAuthMethods: map[string]bool{
-			AuthMethodClientSecretBasic: true,
-		},
-		endpointName: EndpointNameTokenIntrospection,
-	}
+func NewTokenIntrospection(cfg *IntrospectionConfig) *TokenIntrospection {
+	return &TokenIntrospection{cfg}
 }
 
-func (t *TokenIntrospection) WithName(name string) *TokenIntrospection {
-	t.endpointName = name
-	return t
-}
-
-func (t *TokenIntrospection) WithClientAuthHandler(h ClientAuthHandler) *TokenIntrospection {
-	t.clientAuthHandler = h
-	return t
-}
-
-func (t *TokenIntrospection) MustClientAuthHandler(h ClientAuthHandler) *TokenIntrospection {
-	if h == nil {
-		panic(ErrNilClientAuthHandler)
+func MustTokenIntrospection(cfg *IntrospectionConfig) (*TokenIntrospection, error) {
+	if err := cfg.Validate(); err != nil {
+		return nil, err
 	}
 
-	return t.WithClientAuthHandler(h)
-}
-
-func (t *TokenIntrospection) WithClientPermissionHandler(h ClientPermissionHandler) *TokenIntrospection {
-	t.clientPermissionHandler = h
-	return t
-}
-
-func (t *TokenIntrospection) MustClientPermissionHandler(h ClientPermissionHandler) *TokenIntrospection {
-	if h == nil {
-		panic(ErrNilClientPermissionHandler)
-	}
-
-	return t.WithClientPermissionHandler(h)
-}
-
-func (t *TokenIntrospection) WithTokenQueryHandler(h TokenQueryHandler) *TokenIntrospection {
-	t.tokenQueryHandler = h
-	return t
-}
-
-func (t *TokenIntrospection) MustTokenQueryHandler(h TokenQueryHandler) *TokenIntrospection {
-	if h == nil {
-		panic(ErrNilTokenQueryHandler)
-	}
-
-	return t.WithTokenQueryHandler(h)
-}
-
-func (t *TokenIntrospection) WithTokenIntrospectionHandler(h TokenIntrospectionHandler) *TokenIntrospection {
-	t.tokenIntrospectionHandler = h
-	return t
-}
-
-func (t *TokenIntrospection) MustTokenIntrospectionHandler(h TokenIntrospectionHandler) *TokenIntrospection {
-	if h == nil {
-		panic(ErrNilTokenIntrospectionHandler)
-	}
-
-	return t.WithTokenIntrospectionHandler(h)
-}
-
-func (t *TokenIntrospection) RegisterClientAuthMethod(method string) {
-	if t.clientAuthMethods == nil {
-		t.clientAuthMethods = make(map[string]bool)
-	}
-
-	t.clientAuthMethods[method] = true
+	return NewTokenIntrospection(cfg), nil
 }
 
 func (t *TokenIntrospection) CheckEndpoint(name string) bool {
 	if t.endpointName == "" {
-		t.endpointName = EndpointNameTokenIntrospection
+		return false
 	}
 
 	return name == t.endpointName
 }
 
 func (t *TokenIntrospection) EndpointResponse(r *http.Request, rw http.ResponseWriter) error {
-	client, err := t.clientAuthHandler(r, t.clientAuthMethods, t.endpointName)
+	client, err := t.clientManager.Authenticate(r, t.clientAuthMethods, t.endpointName)
 	if err != nil {
 		return err
 	}
@@ -112,7 +45,7 @@ func (t *TokenIntrospection) EndpointResponse(r *http.Request, rw http.ResponseW
 		return err
 	}
 
-	payload := t.introspectionPayload(token)
+	payload := t.introspectionPayload(token, client)
 	return t.jsonResponse(rw, payload)
 }
 
@@ -121,13 +54,13 @@ func (t *TokenIntrospection) authenticateToken(r *http.Request, client models.Cl
 		return nil, err
 	}
 
-	token, err := t.tokenQueryHandler(r.Context(), r.FormValue(ParamToken), r.PostFormValue(ParamTokenTypeHint))
+	token, err := t.tokenManager.QueryByToken(r.Context(), r.FormValue(ParamToken), r.PostFormValue(ParamTokenTypeHint))
 	if err != nil {
 		return nil, err
 	}
 
-	if fn := t.clientPermissionHandler; fn != nil {
-		if allowed := fn(r, client, token); !allowed {
+	if fn := t.clientManager.CheckPermission; fn != nil {
+		if allowed := fn(client, token, r); !allowed {
 			return nil, autherrors.AccessDeniedError().WithDescription(ErrClientDoesNotHavePermission)
 		}
 	}
@@ -161,7 +94,7 @@ func (t *TokenIntrospection) checkParams(r *http.Request) error {
 	return nil
 }
 
-func (t *TokenIntrospection) introspectionPayload(token models.Token) map[string]interface{} {
+func (t *TokenIntrospection) introspectionPayload(token models.Token, client models.Client) map[string]interface{} {
 	payload := map[string]interface{}{
 		"active": false,
 	}
@@ -173,8 +106,8 @@ func (t *TokenIntrospection) introspectionPayload(token models.Token) map[string
 		return payload
 	}
 
-	if fn := t.tokenIntrospectionHandler; fn != nil {
-		payload = fn(token)
+	if fn := t.tokenManager.Inspect; fn != nil {
+		payload = fn(client, token)
 	}
 
 	payload["active"] = true
