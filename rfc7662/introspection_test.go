@@ -54,8 +54,16 @@ func TestCheckParams(t *testing.T) {
 		assert.Equal(t, ErrRequestMustBePost, authErr.Description)
 	})
 
+	t.Run("error_when_content_type_is_invalid", func(t *testing.T) {
+		r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("token=my-token&token_type_hint=access_token"))
+		err := h.checkParams(r)
+		authErr, err := autherrors.ToAuthLibError(err)
+		assert.NoError(t, err)
+		assert.Equal(t, autherrors.ErrInvalidRequest, authErr.Code)
+	})
+
 	t.Run("error_when_media_type_is_not_supported", func(t *testing.T) {
-		r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("{\"grant\"}"))
+		r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("{\"token\":\"my-token\"}"))
 		r.Header.Set(HeaderContentType, "application/json")
 		err := h.checkParams(r)
 		authErr, err := autherrors.ToAuthLibError(err)
