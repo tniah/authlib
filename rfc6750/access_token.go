@@ -3,6 +3,7 @@ package rfc6750
 import (
 	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/models"
+	"net/http"
 	"time"
 )
 
@@ -10,6 +11,7 @@ type OpaqueAccessTokenGenerator struct {
 	expiresIn           time.Duration
 	expiresInGenerator  ExpiresInGenerator
 	randStringGenerator RandStringGenerator
+	extraClaimGenerator ExtraClaimGenerator
 }
 
 func NewOpaqueAccessTokenGenerator() *OpaqueAccessTokenGenerator {
@@ -18,37 +20,34 @@ func NewOpaqueAccessTokenGenerator() *OpaqueAccessTokenGenerator {
 	}
 }
 
-func (g *OpaqueAccessTokenGenerator) SetExpiresIn(exp time.Duration) {
+func (g *OpaqueAccessTokenGenerator) SetExpiresIn(exp time.Duration) *OpaqueAccessTokenGenerator {
 	g.expiresIn = exp
+	return g
 }
 
-func (g *OpaqueAccessTokenGenerator) SetExpiresInGenerator(fn ExpiresInGenerator) {
+func (g *OpaqueAccessTokenGenerator) SetExpiresInGenerator(fn ExpiresInGenerator) *OpaqueAccessTokenGenerator {
 	g.expiresInGenerator = fn
+	return g
 }
 
-func (g *OpaqueAccessTokenGenerator) MustExpiresInGenerator(fn ExpiresInGenerator) error {
-	if fn == nil {
-		return ErrNilExpiresInGenerator
-	}
-
-	g.SetExpiresInGenerator(fn)
-	return nil
-}
-
-func (g *OpaqueAccessTokenGenerator) SetRandStringGenerator(fn RandStringGenerator) {
+func (g *OpaqueAccessTokenGenerator) SetRandStringGenerator(fn RandStringGenerator) *OpaqueAccessTokenGenerator {
 	g.randStringGenerator = fn
+	return g
 }
 
-func (g *OpaqueAccessTokenGenerator) MustRandStringGenerator(fn RandStringGenerator) error {
-	if fn == nil {
-		return ErrNilRandStringGenerator
-	}
-
-	g.SetRandStringGenerator(fn)
-	return nil
+func (g *OpaqueAccessTokenGenerator) SetExtraClaimGenerator(fn ExtraClaimGenerator) *OpaqueAccessTokenGenerator {
+	g.extraClaimGenerator = fn
+	return g
 }
 
-func (g *OpaqueAccessTokenGenerator) Generate(grantType string, token models.Token, user models.User, client models.Client, scopes []string) error {
+func (g *OpaqueAccessTokenGenerator) Generate(
+	grantType string,
+	token models.Token,
+	client models.Client,
+	user models.User,
+	scopes []string,
+	r *http.Request,
+) error {
 	token.SetClientID(client.GetClientID())
 	token.SetUserID(user.GetSubjectID())
 

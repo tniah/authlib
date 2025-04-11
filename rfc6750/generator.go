@@ -5,19 +5,19 @@ import (
 )
 
 type BearerTokenGenerator struct {
-	accessTokenGenerator  AccessTokenGenerator
-	refreshTokenGenerator RefreshTokenGenerator
+	atGenerator AccessTokenGenerator
+	rtGenerator RefreshTokenGenerator
 }
 
 func NewBearerTokenGenerator() *BearerTokenGenerator {
 	return &BearerTokenGenerator{
-		accessTokenGenerator:  NewOpaqueAccessTokenGenerator(),
-		refreshTokenGenerator: NewOpaqueRefreshTokenGenerator(),
+		atGenerator: NewOpaqueAccessTokenGenerator(),
+		rtGenerator: NewOpaqueRefreshTokenGenerator(),
 	}
 }
 
 func (g *BearerTokenGenerator) SetAccessTokenGenerator(fn AccessTokenGenerator) {
-	g.accessTokenGenerator = fn
+	g.atGenerator = fn
 }
 
 func (g *BearerTokenGenerator) MustAccessTokenGenerator(fn AccessTokenGenerator) error {
@@ -30,7 +30,7 @@ func (g *BearerTokenGenerator) MustAccessTokenGenerator(fn AccessTokenGenerator)
 }
 
 func (g *BearerTokenGenerator) SetRefreshTokenGenerator(fn RefreshTokenGenerator) {
-	g.refreshTokenGenerator = fn
+	g.rtGenerator = fn
 }
 
 func (g *BearerTokenGenerator) MustRefreshTokenGenerator(fn RefreshTokenGenerator) error {

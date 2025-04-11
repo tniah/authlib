@@ -201,17 +201,17 @@ func (_c *MockClient_CheckResponseType_Call) RunAndReturn(run func(string) bool)
 	return _c
 }
 
-// CheckTokenEndpointAuthMethod provides a mock function with given fields: authMethod
-func (_m *MockClient) CheckTokenEndpointAuthMethod(authMethod string) bool {
-	ret := _m.Called(authMethod)
+// CheckTokenEndpointAuthMethod provides a mock function with given fields: authMethod, endpoint
+func (_m *MockClient) CheckTokenEndpointAuthMethod(authMethod string, endpoint string) bool {
+	ret := _m.Called(authMethod, endpoint)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CheckTokenEndpointAuthMethod")
 	}
 
 	var r0 bool
-	if rf, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = rf(authMethod)
+	if rf, ok := ret.Get(0).(func(string, string) bool); ok {
+		r0 = rf(authMethod, endpoint)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
@@ -226,13 +226,14 @@ type MockClient_CheckTokenEndpointAuthMethod_Call struct {
 
 // CheckTokenEndpointAuthMethod is a helper method to define mock.On call
 //   - authMethod string
-func (_e *MockClient_Expecter) CheckTokenEndpointAuthMethod(authMethod interface{}) *MockClient_CheckTokenEndpointAuthMethod_Call {
-	return &MockClient_CheckTokenEndpointAuthMethod_Call{Call: _e.mock.On("CheckTokenEndpointAuthMethod", authMethod)}
+//   - endpoint string
+func (_e *MockClient_Expecter) CheckTokenEndpointAuthMethod(authMethod interface{}, endpoint interface{}) *MockClient_CheckTokenEndpointAuthMethod_Call {
+	return &MockClient_CheckTokenEndpointAuthMethod_Call{Call: _e.mock.On("CheckTokenEndpointAuthMethod", authMethod, endpoint)}
 }
 
-func (_c *MockClient_CheckTokenEndpointAuthMethod_Call) Run(run func(authMethod string)) *MockClient_CheckTokenEndpointAuthMethod_Call {
+func (_c *MockClient_CheckTokenEndpointAuthMethod_Call) Run(run func(authMethod string, endpoint string)) *MockClient_CheckTokenEndpointAuthMethod_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string))
+		run(args[0].(string), args[1].(string))
 	})
 	return _c
 }
@@ -242,7 +243,7 @@ func (_c *MockClient_CheckTokenEndpointAuthMethod_Call) Return(_a0 bool) *MockCl
 	return _c
 }
 
-func (_c *MockClient_CheckTokenEndpointAuthMethod_Call) RunAndReturn(run func(string) bool) *MockClient_CheckTokenEndpointAuthMethod_Call {
+func (_c *MockClient_CheckTokenEndpointAuthMethod_Call) RunAndReturn(run func(string, string) bool) *MockClient_CheckTokenEndpointAuthMethod_Call {
 	_c.Call.Return(run)
 	return _c
 }

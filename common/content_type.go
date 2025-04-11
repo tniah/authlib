@@ -14,6 +14,6 @@ func IsContentType(r *http.Request, contentType string) bool {
 	return ct == contentType
 }
 
-func IsXWwwFormUrlencodedContentType(r *http.Request) bool {
+func IsXWWWFormUrlencodedContentType(r *http.Request) bool {
 	return IsContentType(r, ContentTypeXWwwFormUrlencoded)
 }

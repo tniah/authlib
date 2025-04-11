@@ -13,6 +13,6 @@ type Client interface {
 	CheckRedirectURI(redirectURI string) bool
 	CheckGrantType(grantType string) bool
 	CheckResponseType(responseType string) bool
-	CheckTokenEndpointAuthMethod(authMethod string) bool
+	CheckTokenEndpointAuthMethod(authMethod, endpoint string) bool
 	CheckClientSecret(secret string) bool
 }
