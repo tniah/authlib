@@ -23,6 +23,11 @@ func NewTokenGeneratorOptions() *TokenGeneratorOptions {
 	}
 }
 
+func (opts *TokenGeneratorOptions) SetTokenLength(l int) *TokenGeneratorOptions {
+	opts.tokenLength = l
+	return opts
+}
+
 func (opts *TokenGeneratorOptions) SetExpiresIn(exp time.Duration) *TokenGeneratorOptions {
 	opts.expiresIn = exp
 	return opts

@@ -51,8 +51,8 @@ func (g *BearerTokenGenerator) MustRefreshTokenGenerator(fn TokenGenerator) erro
 func (g *BearerTokenGenerator) Generate(
 	grantType string,
 	token models.Token,
-	user models.User,
 	client models.Client,
+	user models.User,
 	scopes []string,
 	includeRefreshToken bool,
 ) error {
