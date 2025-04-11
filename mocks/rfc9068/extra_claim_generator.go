@@ -3,8 +3,6 @@
 package rfc9068
 
 import (
-	http "net/http"
-
 	mock "github.com/stretchr/testify/mock"
 	models "github.com/tniah/authlib/models"
 )
@@ -22,9 +20,9 @@ func (_m *MockExtraClaimGenerator) EXPECT() *MockExtraClaimGenerator_Expecter {
 	return &MockExtraClaimGenerator_Expecter{mock: &_m.Mock}
 }
 
-// Execute provides a mock function with given fields: grantType, client, user, scopes, r
-func (_m *MockExtraClaimGenerator) Execute(grantType string, client models.Client, user models.User, scopes []string, r *http.Request) (map[string]interface{}, error) {
-	ret := _m.Called(grantType, client, user, scopes, r)
+// Execute provides a mock function with given fields: grantType, client, user, scopes
+func (_m *MockExtraClaimGenerator) Execute(grantType string, client models.Client, user models.User, scopes []string) (map[string]interface{}, error) {
+	ret := _m.Called(grantType, client, user, scopes)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Execute")
@@ -32,19 +30,19 @@ func (_m *MockExtraClaimGenerator) Execute(grantType string, client models.Clien
 
 	var r0 map[string]interface{}
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, models.Client, models.User, []string, *http.Request) (map[string]interface{}, error)); ok {
-		return rf(grantType, client, user, scopes, r)
+	if rf, ok := ret.Get(0).(func(string, models.Client, models.User, []string) (map[string]interface{}, error)); ok {
+		return rf(grantType, client, user, scopes)
 	}
-	if rf, ok := ret.Get(0).(func(string, models.Client, models.User, []string, *http.Request) map[string]interface{}); ok {
-		r0 = rf(grantType, client, user, scopes, r)
+	if rf, ok := ret.Get(0).(func(string, models.Client, models.User, []string) map[string]interface{}); ok {
+		r0 = rf(grantType, client, user, scopes)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(map[string]interface{})
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(string, models.Client, models.User, []string, *http.Request) error); ok {
-		r1 = rf(grantType, client, user, scopes, r)
+	if rf, ok := ret.Get(1).(func(string, models.Client, models.User, []string) error); ok {
+		r1 = rf(grantType, client, user, scopes)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -62,14 +60,13 @@ type MockExtraClaimGenerator_Execute_Call struct {
 //   - client models.Client
 //   - user models.User
 //   - scopes []string
-//   - r *http.Request
-func (_e *MockExtraClaimGenerator_Expecter) Execute(grantType interface{}, client interface{}, user interface{}, scopes interface{}, r interface{}) *MockExtraClaimGenerator_Execute_Call {
-	return &MockExtraClaimGenerator_Execute_Call{Call: _e.mock.On("Execute", grantType, client, user, scopes, r)}
+func (_e *MockExtraClaimGenerator_Expecter) Execute(grantType interface{}, client interface{}, user interface{}, scopes interface{}) *MockExtraClaimGenerator_Execute_Call {
+	return &MockExtraClaimGenerator_Execute_Call{Call: _e.mock.On("Execute", grantType, client, user, scopes)}
 }
 
-func (_c *MockExtraClaimGenerator_Execute_Call) Run(run func(grantType string, client models.Client, user models.User, scopes []string, r *http.Request)) *MockExtraClaimGenerator_Execute_Call {
+func (_c *MockExtraClaimGenerator_Execute_Call) Run(run func(grantType string, client models.Client, user models.User, scopes []string)) *MockExtraClaimGenerator_Execute_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string), args[1].(models.Client), args[2].(models.User), args[3].([]string), args[4].(*http.Request))
+		run(args[0].(string), args[1].(models.Client), args[2].(models.User), args[3].([]string))
 	})
 	return _c
 }
@@ -79,7 +76,7 @@ func (_c *MockExtraClaimGenerator_Execute_Call) Return(_a0 map[string]interface{
 	return _c
 }
 
-func (_c *MockExtraClaimGenerator_Execute_Call) RunAndReturn(run func(string, models.Client, models.User, []string, *http.Request) (map[string]interface{}, error)) *MockExtraClaimGenerator_Execute_Call {
+func (_c *MockExtraClaimGenerator_Execute_Call) RunAndReturn(run func(string, models.Client, models.User, []string) (map[string]interface{}, error)) *MockExtraClaimGenerator_Execute_Call {
 	_c.Call.Return(run)
 	return _c
 }

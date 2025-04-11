@@ -11,6 +11,13 @@ packages:
       Client:
       User:
       Token:
+  github.com/tniah/authlib/rfc6750:
+    config:
+      outpkg: rfc6750
+    interfaces:
+      TokenGenerator:
+      ExpiresInGenerator:
+      RandStringGenerator:
   github.com/tniah/authlib/rfc7662:
     config:
       outpkg: rfc7662
