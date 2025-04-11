@@ -3,51 +3,23 @@ package rfc6750
 import (
 	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/models"
-	"net/http"
 	"time"
 )
 
 type OpaqueAccessTokenGenerator struct {
-	expiresIn           time.Duration
-	expiresInGenerator  ExpiresInGenerator
-	randStringGenerator RandStringGenerator
-	extraClaimGenerator ExtraClaimGenerator
+	*TokenGeneratorOptions
 }
 
-func NewOpaqueAccessTokenGenerator() *OpaqueAccessTokenGenerator {
-	return &OpaqueAccessTokenGenerator{
-		expiresIn: DefaultAccessTokenExpiresIn,
+func NewOpaqueAccessTokenGenerator(opts ...*TokenGeneratorOptions) *OpaqueAccessTokenGenerator {
+	if len(opts) > 0 {
+		return &OpaqueAccessTokenGenerator{opts[0]}
 	}
+
+	defaultOpts := NewTokenGeneratorOptions()
+	return &OpaqueAccessTokenGenerator{defaultOpts}
 }
 
-func (g *OpaqueAccessTokenGenerator) SetExpiresIn(exp time.Duration) *OpaqueAccessTokenGenerator {
-	g.expiresIn = exp
-	return g
-}
-
-func (g *OpaqueAccessTokenGenerator) SetExpiresInGenerator(fn ExpiresInGenerator) *OpaqueAccessTokenGenerator {
-	g.expiresInGenerator = fn
-	return g
-}
-
-func (g *OpaqueAccessTokenGenerator) SetRandStringGenerator(fn RandStringGenerator) *OpaqueAccessTokenGenerator {
-	g.randStringGenerator = fn
-	return g
-}
-
-func (g *OpaqueAccessTokenGenerator) SetExtraClaimGenerator(fn ExtraClaimGenerator) *OpaqueAccessTokenGenerator {
-	g.extraClaimGenerator = fn
-	return g
-}
-
-func (g *OpaqueAccessTokenGenerator) Generate(
-	grantType string,
-	token models.Token,
-	client models.Client,
-	user models.User,
-	scopes []string,
-	r *http.Request,
-) error {
+func (g *OpaqueAccessTokenGenerator) Generate(grantType string, token models.Token, client models.Client, user models.User, scopes []string) error {
 	token.SetClientID(client.GetClientID())
 	token.SetUserID(user.GetSubjectID())
 
@@ -77,10 +49,6 @@ func (g *OpaqueAccessTokenGenerator) getExpiresIn(grantType string, client model
 		return fn(grantType, client)
 	}
 
-	if g.expiresIn <= 0 {
-		return 0, ErrInvalidExpiresIn
-	}
-
 	return g.expiresIn, nil
 }
 
@@ -89,5 +57,5 @@ func (g *OpaqueAccessTokenGenerator) generate() (string, error) {
 		return fn()
 	}
 
-	return common.GenerateRandString(AccessTokenLength, common.SecretCharset)
+	return common.GenerateRandString(g.tokenLength, common.SecretCharset)
 }

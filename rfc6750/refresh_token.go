@@ -7,48 +7,20 @@ import (
 )
 
 type OpaqueRefreshTokenGenerator struct {
-	expiresIn           time.Duration
-	expiresInGenerator  ExpiresInGenerator
-	randStringGenerator RandStringGenerator
+	*TokenGeneratorOptions
 }
 
-func NewOpaqueRefreshTokenGenerator() *OpaqueRefreshTokenGenerator {
-	return &OpaqueRefreshTokenGenerator{
-		expiresIn: DefaultRefreshTokenExpiresIn,
-	}
-}
-
-func (g *OpaqueRefreshTokenGenerator) SetExpiresIn(exp time.Duration) {
-	g.expiresIn = exp
-}
-
-func (g *OpaqueRefreshTokenGenerator) SetExpiresInGenerator(fn ExpiresInGenerator) {
-	g.expiresInGenerator = fn
-}
-
-func (g *OpaqueRefreshTokenGenerator) MustExpiresInGenerator(fn ExpiresInGenerator) error {
-	if fn == nil {
-		return ErrNilExpiresInGenerator
+func NewOpaqueRefreshTokenGenerator(opts ...*TokenGeneratorOptions) *OpaqueRefreshTokenGenerator {
+	if len(opts) > 0 {
+		return &OpaqueRefreshTokenGenerator{TokenGeneratorOptions: opts[0]}
 	}
 
-	g.SetExpiresInGenerator(fn)
-	return nil
+	defaultOpts := NewTokenGeneratorOptions().
+		SetExpiresIn(DefaultRefreshTokenExpiresIn)
+	return &OpaqueRefreshTokenGenerator{defaultOpts}
 }
 
-func (g *OpaqueRefreshTokenGenerator) SetRandStringGenerator(fn RandStringGenerator) {
-	g.randStringGenerator = fn
-}
-
-func (g *OpaqueRefreshTokenGenerator) MustRandStringGenerator(fn RandStringGenerator) error {
-	if fn == nil {
-		return ErrNilRandStringGenerator
-	}
-
-	g.SetRandStringGenerator(fn)
-	return nil
-}
-
-func (g *OpaqueRefreshTokenGenerator) Generate(grantType string, token models.Token, user models.User, client models.Client) error {
+func (g *OpaqueRefreshTokenGenerator) Generate(grantType string, token models.Token, client models.Client, user models.User, scopes []string) error {
 	expiresIn, err := g.getExpiresIn(grantType, client)
 	if err != nil {
 		return err
@@ -69,10 +41,6 @@ func (g *OpaqueRefreshTokenGenerator) getExpiresIn(grantType string, client mode
 		return fn(grantType, client)
 	}
 
-	if g.expiresIn <= 0 {
-		return 0, ErrInvalidExpiresIn
-	}
-
 	return g.expiresIn, nil
 }
 
@@ -81,5 +49,5 @@ func (g *OpaqueRefreshTokenGenerator) generate() (string, error) {
 		return fn()
 	}
 
-	return common.GenerateRandString(RefreshTokenLength, common.SecretCharset)
+	return common.GenerateRandString(g.tokenLength, common.SecretCharset)
 }

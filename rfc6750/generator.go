@@ -1,12 +1,18 @@
 package rfc6750
 
 import (
+	"errors"
 	"github.com/tniah/authlib/models"
 )
 
+var (
+	ErrNilAccessTokenGenerator  = errors.New("access token generator is nil")
+	ErrNilRefreshTokenGenerator = errors.New("refresh token generator is nil")
+)
+
 type BearerTokenGenerator struct {
-	atGenerator AccessTokenGenerator
-	rtGenerator RefreshTokenGenerator
+	atGenerator TokenGenerator
+	rtGenerator TokenGenerator
 }
 
 func NewBearerTokenGenerator() *BearerTokenGenerator {
@@ -16,11 +22,11 @@ func NewBearerTokenGenerator() *BearerTokenGenerator {
 	}
 }
 
-func (g *BearerTokenGenerator) SetAccessTokenGenerator(fn AccessTokenGenerator) {
+func (g *BearerTokenGenerator) SetAccessTokenGenerator(fn TokenGenerator) {
 	g.atGenerator = fn
 }
 
-func (g *BearerTokenGenerator) MustAccessTokenGenerator(fn AccessTokenGenerator) error {
+func (g *BearerTokenGenerator) MustAccessTokenGenerator(fn TokenGenerator) error {
 	if fn == nil {
 		return ErrNilAccessTokenGenerator
 	}
@@ -29,11 +35,11 @@ func (g *BearerTokenGenerator) MustAccessTokenGenerator(fn AccessTokenGenerator)
 	return nil
 }
 
-func (g *BearerTokenGenerator) SetRefreshTokenGenerator(fn RefreshTokenGenerator) {
+func (g *BearerTokenGenerator) SetRefreshTokenGenerator(fn TokenGenerator) {
 	g.rtGenerator = fn
 }
 
-func (g *BearerTokenGenerator) MustRefreshTokenGenerator(fn RefreshTokenGenerator) error {
+func (g *BearerTokenGenerator) MustRefreshTokenGenerator(fn TokenGenerator) error {
 	if fn == nil {
 		return ErrNilRefreshTokenGenerator
 	}
@@ -50,12 +56,12 @@ func (g *BearerTokenGenerator) Generate(
 	scopes []string,
 	includeRefreshToken bool,
 ) error {
-	if err := g.accessTokenGenerator.Generate(grantType, token, user, client, scopes); err != nil {
+	if err := g.atGenerator.Generate(grantType, token, client, user, scopes); err != nil {
 		return err
 	}
 
 	if includeRefreshToken {
-		if err := g.refreshTokenGenerator.Generate(grantType, token, user, client); err != nil {
+		if err := g.rtGenerator.Generate(grantType, token, client, user, scopes); err != nil {
 			return err
 		}
 	}
