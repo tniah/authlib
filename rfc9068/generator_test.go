@@ -5,7 +5,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/tniah/authlib/mocks/models"
-	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -66,7 +65,7 @@ func TestJWTAccessTokenGenerator(t *testing.T) {
 	})
 
 	generator := NewJWTAccessTokenGenerator(cfg)
-	err := generator.Generate("password", mockToken, mockClient, mockUser, scopesExpected, httptest.NewRequest("POST", "/", nil))
+	err := generator.Generate("password", mockToken, mockClient, mockUser, scopesExpected)
 	assert.NoError(t, err)
 	assert.Equal(t, clientIDExpected, actual.clientID)
 	assert.Equal(t, userIDExpected, actual.userID)

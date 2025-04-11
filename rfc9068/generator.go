@@ -5,7 +5,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/models"
-	"net/http"
 	"strings"
 	"time"
 )
@@ -45,7 +44,6 @@ func (g *JWTAccessTokenGenerator) Generate(
 	client models.Client,
 	user models.User,
 	scopes []string,
-	r *http.Request,
 ) error {
 	clientID := client.GetClientID()
 	token.SetClientID(clientID)
@@ -95,7 +93,7 @@ func (g *JWTAccessTokenGenerator) Generate(
 	}
 
 	if fn := g.extraClaimGenerator; fn != nil {
-		extraClaims, err := fn(grantType, client, user, allowedScopes, r)
+		extraClaims, err := fn(grantType, client, user, allowedScopes)
 		if err != nil {
 			return err
 		}

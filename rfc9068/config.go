@@ -4,7 +4,6 @@ import (
 	"errors"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/tniah/authlib/models"
-	"net/http"
 	"time"
 )
 
@@ -35,7 +34,7 @@ type (
 
 	SigningKeyGenerator func(grantType string, client models.Client) ([]byte, jwt.SigningMethod, string, error)
 
-	ExtraClaimGenerator func(grantType string, client models.Client, user models.User, scopes []string, r *http.Request) (map[string]interface{}, error)
+	ExtraClaimGenerator func(grantType string, client models.Client, user models.User, scopes []string) (map[string]interface{}, error)
 
 	JWTIDGenerator func(grantType string, client models.Client) (string, error)
 )
