@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	DefaultCodeExpiresIn  = 5 * time.Minute
-	DefaultAuthCodeLength = 48
+	DefaultExpiresIn  = 5 * time.Minute
+	DefaultCodeLength = 48
 )
 
 type (
@@ -25,8 +25,8 @@ type (
 
 func NewOptions() *Options {
 	return &Options{
-		codeLength: DefaultAuthCodeLength,
-		expiresIn:  DefaultCodeExpiresIn,
+		codeLength: DefaultCodeLength,
+		expiresIn:  DefaultExpiresIn,
 	}
 }
 
