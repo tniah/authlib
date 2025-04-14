@@ -9,14 +9,20 @@ type BasicAuthHandler struct {
 	*BaseHandler
 }
 
-func NewBasicAuthHandler() *BasicAuthHandler {
-	return &BasicAuthHandler{
+func NewBasicAuthHandler(store ClientStore) *BasicAuthHandler {
+	h := &BasicAuthHandler{
 		BaseHandler: &BaseHandler{},
 	}
+
+	h.SetClientStore(store)
+	return h
 }
 
 func MustBasicAuthHandler(store ClientStore) (*BasicAuthHandler, error) {
-	h := NewBasicAuthHandler()
+	h := &BasicAuthHandler{
+		BaseHandler: &BaseHandler{},
+	}
+
 	if err := h.MustClientStore(store); err != nil {
 		return nil, err
 	}

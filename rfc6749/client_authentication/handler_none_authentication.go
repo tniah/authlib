@@ -10,18 +10,23 @@ type NoneAuthHandler struct {
 	*BaseHandler
 }
 
-func NewNoneAuthHandler() *NoneAuthHandler {
-	return &NoneAuthHandler{
+func NewNoneAuthHandler(store ClientStore) *NoneAuthHandler {
+	h := &NoneAuthHandler{
 		BaseHandler: &BaseHandler{},
 	}
+
+	h.SetClientStore(store)
+	return h
 }
 
 func MustNoneAuthHandler(store ClientStore) (*NoneAuthHandler, error) {
-	h := NewNoneAuthHandler()
+	h := &NoneAuthHandler{
+		BaseHandler: &BaseHandler{},
+	}
+
 	if err := h.MustClientStore(store); err != nil {
 		return nil, err
 	}
-
 	return h, nil
 }
 

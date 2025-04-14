@@ -10,14 +10,20 @@ type PostAuthHandler struct {
 	*BaseHandler
 }
 
-func NewPostAuthHandler() *PostAuthHandler {
-	return &PostAuthHandler{
+func NewPostAuthHandler(store ClientStore) *PostAuthHandler {
+	h := &PostAuthHandler{
 		BaseHandler: &BaseHandler{},
 	}
+
+	h.SetClientStore(store)
+	return h
 }
 
 func MustPostAuthHandler(store ClientStore) (*PostAuthHandler, error) {
-	h := NewPostAuthHandler()
+	h := &PostAuthHandler{
+		BaseHandler: &BaseHandler{},
+	}
+
 	if err := h.MustClientStore(store); err != nil {
 		return nil, err
 	}
