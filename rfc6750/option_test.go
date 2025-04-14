@@ -7,6 +7,23 @@ import (
 	"time"
 )
 
+func TestBearerTokenGeneratorOptions(t *testing.T) {
+	opts := NewBearerTokenGeneratorOptions()
+	opts.SetAccessTokenGenerator(rfc6750.NewMockTokenGenerator(t))
+	opts.SetRefreshTokenGenerator(rfc6750.NewMockTokenGenerator(t))
+	assert.NotNil(t, opts.atGen)
+	assert.NotNil(t, opts.rfGen)
+
+	opts.SetAccessTokenGenerator(nil)
+	err := opts.Validate()
+	assert.ErrorIs(t, err, ErrNilAccessTokenGenerator)
+
+	opts.SetAccessTokenGenerator(rfc6750.NewMockTokenGenerator(t))
+	opts.SetRefreshTokenGenerator(nil)
+	err = opts.Validate()
+	assert.ErrorIs(t, err, ErrNilRefreshTokenGenerator)
+}
+
 func TestTokenGeneratorOptions(t *testing.T) {
 	opts := NewTokenGeneratorOptions()
 	expected := &TokenGeneratorOptions{

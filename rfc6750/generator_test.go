@@ -8,21 +8,6 @@ import (
 	"testing"
 )
 
-func TestBearerTokenGeneratorConfig(t *testing.T) {
-	g := NewBearerTokenGenerator()
-	g.SetAccessTokenGenerator(rfc6750.NewMockTokenGenerator(t))
-	g.SetRefreshTokenGenerator(rfc6750.NewMockTokenGenerator(t))
-
-	assert.NotNil(t, g.atGenerator)
-	assert.NotNil(t, g.rtGenerator)
-
-	err := g.MustAccessTokenGenerator(nil)
-	assert.ErrorIs(t, err, ErrNilAccessTokenGenerator)
-
-	err = g.MustRefreshTokenGenerator(nil)
-	assert.ErrorIs(t, err, ErrNilRefreshTokenGenerator)
-}
-
 func TestTestBearerTokenGenerator(t *testing.T) {
 	g := NewBearerTokenGenerator()
 	atGenerator := rfc6750.NewMockTokenGenerator(t)

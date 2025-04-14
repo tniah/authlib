@@ -1,51 +1,30 @@
 package rfc6750
 
 import (
-	"errors"
 	"github.com/tniah/authlib/models"
 )
 
-var (
-	ErrNilAccessTokenGenerator  = errors.New("access token generator is nil")
-	ErrNilRefreshTokenGenerator = errors.New("refresh token generator is nil")
-)
+const TokenTypeBearer = "Bearer"
 
 type BearerTokenGenerator struct {
-	atGenerator TokenGenerator
-	rtGenerator TokenGenerator
+	*BearerTokenGeneratorOptions
 }
 
-func NewBearerTokenGenerator() *BearerTokenGenerator {
-	return &BearerTokenGenerator{
-		atGenerator: NewOpaqueAccessTokenGenerator(),
-		rtGenerator: NewOpaqueRefreshTokenGenerator(),
-	}
-}
-
-func (g *BearerTokenGenerator) SetAccessTokenGenerator(fn TokenGenerator) {
-	g.atGenerator = fn
-}
-
-func (g *BearerTokenGenerator) MustAccessTokenGenerator(fn TokenGenerator) error {
-	if fn == nil {
-		return ErrNilAccessTokenGenerator
+func NewBearerTokenGenerator(opts ...*BearerTokenGeneratorOptions) *BearerTokenGenerator {
+	if len(opts) > 0 {
+		return &BearerTokenGenerator{opts[0]}
 	}
 
-	g.SetAccessTokenGenerator(fn)
-	return nil
+	defaultOpts := NewBearerTokenGeneratorOptions()
+	return &BearerTokenGenerator{defaultOpts}
 }
 
-func (g *BearerTokenGenerator) SetRefreshTokenGenerator(fn TokenGenerator) {
-	g.rtGenerator = fn
-}
-
-func (g *BearerTokenGenerator) MustRefreshTokenGenerator(fn TokenGenerator) error {
-	if fn == nil {
-		return ErrNilRefreshTokenGenerator
+func MustBearerTokenGenerator(opts *BearerTokenGeneratorOptions) (*BearerTokenGenerator, error) {
+	if err := opts.Validate(); err != nil {
+		return nil, err
 	}
 
-	g.SetRefreshTokenGenerator(fn)
-	return nil
+	return NewBearerTokenGenerator(opts), nil
 }
 
 func (g *BearerTokenGenerator) Generate(
@@ -56,12 +35,12 @@ func (g *BearerTokenGenerator) Generate(
 	scopes []string,
 	includeRefreshToken bool,
 ) error {
-	if err := g.atGenerator.Generate(grantType, token, client, user, scopes); err != nil {
+	if err := g.atGen.Generate(grantType, token, client, user, scopes); err != nil {
 		return err
 	}
 
 	if includeRefreshToken {
-		if err := g.rtGenerator.Generate(grantType, token, client, user, scopes); err != nil {
+		if err := g.rfGen.Generate(grantType, token, client, user, scopes); err != nil {
 			return err
 		}
 	}

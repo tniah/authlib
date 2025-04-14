@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+const DefaultRefreshTokenExpiresIn = time.Hour * 24
+
 type OpaqueRefreshTokenGenerator struct {
 	*TokenGeneratorOptions
 }
@@ -15,19 +17,18 @@ func NewOpaqueRefreshTokenGenerator(opts ...*TokenGeneratorOptions) *OpaqueRefre
 		return &OpaqueRefreshTokenGenerator{TokenGeneratorOptions: opts[0]}
 	}
 
-	defaultOpts := NewTokenGeneratorOptions().
-		SetExpiresIn(DefaultRefreshTokenExpiresIn)
+	defaultOpts := NewTokenGeneratorOptions().SetExpiresIn(DefaultRefreshTokenExpiresIn)
 	return &OpaqueRefreshTokenGenerator{defaultOpts}
 }
 
 func (g *OpaqueRefreshTokenGenerator) Generate(grantType string, token models.Token, client models.Client, user models.User, scopes []string) error {
-	expiresIn, err := g.getExpiresIn(grantType, client)
+	expiresIn, err := g.expiresInHandler(grantType, client)
 	if err != nil {
 		return err
 	}
 	token.SetRefreshTokenExpiresIn(expiresIn)
 
-	refreshToken, err := g.generate()
+	refreshToken, err := g.genToken(grantType, client)
 	if err != nil {
 		return err
 	}
@@ -36,7 +37,7 @@ func (g *OpaqueRefreshTokenGenerator) Generate(grantType string, token models.To
 	return nil
 }
 
-func (g *OpaqueRefreshTokenGenerator) getExpiresIn(grantType string, client models.Client) (time.Duration, error) {
+func (g *OpaqueRefreshTokenGenerator) expiresInHandler(grantType string, client models.Client) (time.Duration, error) {
 	if fn := g.expiresInGenerator; fn != nil {
 		return fn(grantType, client)
 	}
@@ -44,9 +45,9 @@ func (g *OpaqueRefreshTokenGenerator) getExpiresIn(grantType string, client mode
 	return g.expiresIn, nil
 }
 
-func (g *OpaqueRefreshTokenGenerator) generate() (string, error) {
+func (g *OpaqueRefreshTokenGenerator) genToken(gt string, c models.Client) (string, error) {
 	if fn := g.randStringGenerator; fn != nil {
-		return fn()
+		return fn(gt, c)
 	}
 
 	return common.GenerateRandString(g.tokenLength, common.SecretCharset)

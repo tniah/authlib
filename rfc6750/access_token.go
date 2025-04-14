@@ -29,13 +29,13 @@ func (g *OpaqueAccessTokenGenerator) Generate(grantType string, token models.Tok
 	issuedAt := time.Now()
 	token.SetIssuedAt(issuedAt)
 
-	expiresIn, err := g.getExpiresIn(grantType, client)
+	expiresIn, err := g.expiresInHandler(grantType, client)
 	if err != nil {
 		return err
 	}
 	token.SetAccessTokenExpiresIn(expiresIn)
 
-	opaqueToken, err := g.generate()
+	opaqueToken, err := g.genToken(grantType, client)
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func (g *OpaqueAccessTokenGenerator) Generate(grantType string, token models.Tok
 	return nil
 }
 
-func (g *OpaqueAccessTokenGenerator) getExpiresIn(grantType string, client models.Client) (time.Duration, error) {
+func (g *OpaqueAccessTokenGenerator) expiresInHandler(grantType string, client models.Client) (time.Duration, error) {
 	if fn := g.expiresInGenerator; fn != nil {
 		return fn(grantType, client)
 	}
@@ -52,9 +52,9 @@ func (g *OpaqueAccessTokenGenerator) getExpiresIn(grantType string, client model
 	return g.expiresIn, nil
 }
 
-func (g *OpaqueAccessTokenGenerator) generate() (string, error) {
+func (g *OpaqueAccessTokenGenerator) genToken(grantType string, c models.Client) (string, error) {
 	if fn := g.randStringGenerator; fn != nil {
-		return fn()
+		return fn(grantType, c)
 	}
 
 	return common.GenerateRandString(g.tokenLength, common.SecretCharset)
