@@ -1,16 +1,7 @@
 package authorizationcode
 
-import "errors"
-
-var (
-	ErrNilClientManager   = errors.New("client manager is nil")
-	ErrNilUserManager     = errors.New("user manager is nil")
-	ErrNilAuthCodeManager = errors.New("auth code manager is be nil")
-	ErrNilTokenManager    = errors.New("token manager is be nil")
-	ErrNilAuthCode        = errors.New("auth code is nil")
-)
-
 const (
+	AuthCodeLength             = 48
 	GrantTypeAuthorizationCode = "authorization_code"
 	GrantTypeRefreshToken      = "refresh_token"
 	ResponseTypeCode           = "code"

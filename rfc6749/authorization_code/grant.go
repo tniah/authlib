@@ -1,6 +1,7 @@
 package authorizationcode
 
 import (
+	"errors"
 	"github.com/tniah/authlib/common"
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
@@ -10,102 +11,34 @@ import (
 	"time"
 )
 
-var defaultClientAuthMethods = map[string]bool{
-	AuthMethodClientSecretBasic: true,
-	AuthMethodNone:              true,
-}
+var (
+	ErrNilAuthCode = errors.New("authorization code is nil")
+	ErrNilToken    = errors.New("token is nil")
+)
 
 type Grant struct {
-	clientMgr                  ClientManager
-	userMgr                    UserManager
-	authCodeMgr                AuthCodeManager
-	tokenMgr                   TokenManager
-	supportedClientAuthMethods map[string]bool
+	*Config
 	*rfc6749.TokenGrantMixin
 }
 
-func New() *Grant {
-	g := &Grant{
-		TokenGrantMixin: &rfc6749.TokenGrantMixin{},
-	}
-
-	g.SetGrantType(GrantTypeAuthorizationCode)
-	g.SetClientAuthMethods(defaultClientAuthMethods)
-
-	return g
+func New(cfg *Config) *Grant {
+	return &Grant{Config: cfg}
 }
 
-func Must(clientMgr ClientManager, userMgr UserManager, authCodeMgr AuthCodeManager, tokenMgr TokenManager) (*Grant, error) {
-	g := New()
-	if err := g.MustClientManager(clientMgr); err != nil {
+func Must(cfg *Config) (*Grant, error) {
+	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
 
-	if err := g.MustUserManager(userMgr); err != nil {
-		return nil, err
+	return New(cfg), nil
+}
+
+func (g *Grant) CheckGrantType(gt string) bool {
+	if gt == "" {
+		return false
 	}
 
-	if err := g.MustAuthCodeManager(authCodeMgr); err != nil {
-		return nil, err
-	}
-
-	if err := g.MustTokenManager(tokenMgr); err != nil {
-		return nil, err
-	}
-
-	return g, nil
-}
-
-func (g *Grant) SetClientManager(mgr ClientManager) {
-	g.clientMgr = mgr
-}
-
-func (g *Grant) MustClientManager(mgr ClientManager) error {
-	if mgr == nil {
-		return ErrNilClientManager
-	}
-
-	g.SetClientManager(mgr)
-	return nil
-}
-
-func (g *Grant) SetUserManager(mgr UserManager) {
-	g.userMgr = mgr
-}
-
-func (g *Grant) MustUserManager(userMgr UserManager) error {
-	if userMgr == nil {
-		return ErrNilUserManager
-	}
-
-	g.SetUserManager(userMgr)
-	return nil
-}
-
-func (g *Grant) SetAuthCodeManager(mgr AuthCodeManager) {
-	g.authCodeMgr = mgr
-}
-
-func (g *Grant) MustAuthCodeManager(mgr AuthCodeManager) error {
-	if mgr == nil {
-		return ErrNilAuthCodeManager
-	}
-
-	g.SetAuthCodeManager(mgr)
-	return nil
-}
-
-func (g *Grant) SetTokenManager(mgr TokenManager) {
-	g.tokenMgr = mgr
-}
-
-func (g *Grant) MustTokenManager(mgr TokenManager) error {
-	if mgr == nil {
-		return ErrNilTokenManager
-	}
-
-	g.SetTokenManager(mgr)
-	return nil
+	return gt == GrantTypeAuthorizationCode
 }
 
 func (g *Grant) CheckResponseType(rt string) bool {
@@ -133,8 +66,17 @@ func (g *Grant) AuthorizationResponse(r *http.Request, rw http.ResponseWriter) e
 		return err
 	}
 
-	authCode, err := g.generateAuthCode(r, client, user)
-	if err != nil {
+	authCode := g.authCodeMgr.New()
+	if authCode == nil {
+		return ErrNilAuthCode
+	}
+
+	scopes := strings.Fields(r.URL.Query().Get(ParamScope))
+	if err = g.authCodeMgr.Generate(GrantTypeAuthorizationCode, authCode, client, user, scopes, redirectURI, ResponseTypeCode, state); err != nil {
+		return err
+	}
+
+	if err = g.authCodeMgr.Save(r.Context(), authCode); err != nil {
 		return err
 	}
 
@@ -142,7 +84,7 @@ func (g *Grant) AuthorizationResponse(r *http.Request, rw http.ResponseWriter) e
 		ParamCode: authCode.GetCode(),
 	}
 	if state != "" {
-		params[state] = state
+		params[ParamState] = state
 	}
 
 	return common.Redirect(rw, redirectURI, params)
@@ -170,8 +112,16 @@ func (g *Grant) TokenResponse(r *http.Request, rw http.ResponseWriter) error {
 
 	scopes := strings.Fields(r.FormValue(ParamScope))
 	includeRefreshToken := client.CheckGrantType(GrantTypeRefreshToken)
-	token, err := g.tokenMgr.GenerateAccessToken(GrantTypeAuthorizationCode, client, user, scopes, includeRefreshToken, r)
-	if err != nil {
+	token := g.tokenMgr.New()
+	if token == nil {
+		return ErrNilToken
+	}
+
+	if err = g.tokenMgr.Generate(GrantTypeAuthorizationCode, token, client, user, scopes, includeRefreshToken); err != nil {
+		return err
+	}
+
+	if err = g.tokenMgr.Save(r.Context(), token); err != nil {
 		return err
 	}
 
@@ -189,7 +139,7 @@ func (g *Grant) checkClient(r *http.Request, state string) (client models.Client
 		return nil, autherrors.InvalidRequestError().WithDescription(ErrMissingClientID).WithState(state)
 	}
 
-	if client, err = g.clientMgr.FetchByClientID(r.Context(), clientID); err != nil {
+	if client, err = g.clientMgr.QueryByClientID(r.Context(), clientID); err != nil {
 		return nil, err
 	}
 
@@ -250,19 +200,6 @@ func (g *Grant) authenticateUser(r *http.Request, client models.Client, redirect
 	return user, nil
 }
 
-func (g *Grant) generateAuthCode(r *http.Request, client models.Client, user models.User) (models.AuthorizationCode, error) {
-	authCode, err := g.authCodeMgr.Generate(GrantTypeAuthorizationCode, client, user, r)
-	if err != nil {
-		return nil, err
-	}
-
-	if authCode == nil {
-		return nil, ErrNilAuthCode
-	}
-
-	return authCode, nil
-}
-
 func (g *Grant) checkTokenRequestParams(r *http.Request) error {
 	if err := g.CheckTokenRequest(r); err != nil {
 		return err
@@ -299,7 +236,7 @@ func (g *Grant) authenticateClient(r *http.Request) (models.Client, error) {
 }
 
 func (g *Grant) validateAuthCode(r *http.Request) (models.AuthorizationCode, error) {
-	authCode, err := g.authCodeMgr.FetchByCode(r.Context(), r.PostFormValue(ParamCode))
+	authCode, err := g.authCodeMgr.QueryByCode(r.Context(), r.PostFormValue(ParamCode))
 	if err != nil {
 		return nil, err
 	}
@@ -326,7 +263,7 @@ func (g *Grant) queryUserByAuthCode(r *http.Request, authCode models.Authorizati
 		return nil, autherrors.InvalidGrantError().WithDescription(ErrUserNotFound)
 	}
 
-	user, err := g.userMgr.FetchByUserID(r.Context(), userID)
+	user, err := g.userMgr.QueryByUserID(r.Context(), userID)
 	if err != nil {
 		return nil, err
 	}
