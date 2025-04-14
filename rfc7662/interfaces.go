@@ -13,7 +13,7 @@ type (
 	}
 
 	TokenManager interface {
-		QueryByToken(ctx context.Context, token string, hint string) (models.Token, error)
+		QueryByToken(ctx context.Context, token, hint string) (models.Token, error)
 		Inspect(client models.Client, token models.Token) map[string]interface{}
 	}
 )
