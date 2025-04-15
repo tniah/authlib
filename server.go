@@ -5,24 +5,12 @@ import (
 	"fmt"
 	"github.com/tniah/authlib/common"
 	autherrors "github.com/tniah/authlib/errors"
-	"github.com/tniah/authlib/requests"
 	"net/http"
-	"strings"
 )
 
 const (
-	ParamCode                = "code"
-	ParamResponseType        = "response_type"
-	ParamRedirectURI         = "redirect_uri"
-	ParamScope               = "scope"
-	ParamState               = "state"
-	ParamNonce               = "nonce"
-	ParamCodeChallenge       = "code_challenge"
-	ParamCodeChallengeMethod = "code_challenge_method"
-	ParamClientID            = "client_id"
-	ParamGrantType           = "grant_type"
-	ParamUsername            = "username"
-	ParamPassword            = "password"
+	ParamResponseType = "response_type"
+	ParamGrantType    = "grant_type"
 )
 
 type Server struct {
@@ -38,23 +26,11 @@ func NewServer() *Server {
 	}
 }
 
-func (srv *Server) CreateAuthorizationRequest(r *http.Request) *requests.AuthorizationRequest {
-	return &requests.AuthorizationRequest{
-		ResponseType:        r.FormValue(ParamResponseType),
-		ClientID:            r.FormValue(ParamClientID),
-		RedirectURI:         r.FormValue(ParamRedirectURI),
-		Scopes:              strings.Fields(r.FormValue(ParamScope)),
-		State:               r.FormValue(ParamState),
-		Nonce:               r.FormValue(ParamNonce),
-		CodeChallenge:       r.FormValue(ParamCodeChallenge),
-		CodeChallengeMethod: r.FormValue(ParamCodeChallengeMethod),
-		Request:             r,
-	}
-}
+func (srv *Server) GetAuthorizationGrant(r *http.Request) (AuthorizationGrant, error) {
+	respTyp := r.FormValue(ParamResponseType)
 
-func (srv *Server) GetAuthorizationGrant(r *requests.AuthorizationRequest) (AuthorizationGrant, error) {
 	for grant := range srv.authorizationGrants {
-		if grant.CheckResponseType(r.ResponseType) {
+		if grant.CheckResponseType(respTyp) {
 			return grant, nil
 		}
 	}
@@ -62,22 +38,11 @@ func (srv *Server) GetAuthorizationGrant(r *requests.AuthorizationRequest) (Auth
 	return nil, autherrors.UnsupportedResponseTypeError()
 }
 
-func (srv *Server) CreateTokenRequest(r *http.Request) *requests.TokenRequest {
-	return &requests.TokenRequest{
-		GrantType:   r.FormValue(ParamGrantType),
-		ClientID:    r.FormValue(ParamClientID),
-		Code:        r.FormValue(ParamCode),
-		RedirectURI: r.FormValue(ParamRedirectURI),
-		Scopes:      strings.Fields(r.FormValue(ParamScope)),
-		Username:    r.FormValue(ParamUsername),
-		Password:    r.FormValue(ParamPassword),
-		Request:     r,
-	}
-}
+func (srv *Server) GetTokenGrant(r *http.Request) (TokenGrant, error) {
+	gt := r.FormValue(ParamGrantType)
 
-func (srv *Server) GetTokenGrant(r *requests.TokenRequest) (TokenGrant, error) {
 	for grant := range srv.tokenGrants {
-		if grant.CheckGrantType(r.GrantType) {
+		if grant.CheckGrantType(gt) {
 			return grant, nil
 		}
 	}

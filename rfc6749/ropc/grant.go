@@ -32,6 +32,13 @@ func (g *Grant) GrantType() string {
 	return GrantTypeROPC
 }
 
+func (g *Grant) CheckGrantType(gt string) bool {
+	if gt == "" {
+		return false
+	}
+	return gt == g.GrantType()
+}
+
 func (g *Grant) TokenResponse(r *http.Request, rw http.ResponseWriter) error {
 	if err := g.checkParams(r); err != nil {
 		return err
@@ -76,7 +83,7 @@ func (g *Grant) checkParams(r *http.Request) error {
 		return autherrors.InvalidRequestError().WithDescription(ErrMissingGrantType)
 	}
 
-	if grantType != g.GrantType() {
+	if !g.CheckGrantType(grantType) {
 		return autherrors.UnsupportedGrantTypeError()
 	}
 

@@ -37,8 +37,22 @@ func (g *Grant) GrantType() string {
 	return GrantTypeAuthorizationCode
 }
 
+func (g *Grant) CheckGrantType(gt string) bool {
+	if gt == "" {
+		return false
+	}
+	return gt == g.GrantType()
+}
+
 func (g *Grant) ResponseType() string {
 	return ResponseTypeCode
+}
+
+func (g *Grant) CheckResponseType(typ string) bool {
+	if typ == "" {
+		return false
+	}
+	return typ == g.ResponseType()
 }
 
 func (g *Grant) AuthorizationResponse(r *http.Request, rw http.ResponseWriter) error {
@@ -210,7 +224,7 @@ func (g *Grant) checkTokenRequestParams(r *http.Request) error {
 		return autherrors.InvalidRequestError().WithDescription(ErrMissingGrantType)
 	}
 
-	if grantType != g.GrantType() {
+	if !g.CheckGrantType(grantType) {
 		return autherrors.UnsupportedGrantTypeError()
 	}
 
