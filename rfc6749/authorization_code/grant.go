@@ -176,7 +176,7 @@ func (g *Grant) validateResponseType(r *http.Request, client models.Client, redi
 		return autherrors.InvalidRequestError().WithDescription(ErrMissingResponseType).WithRedirectURI(redirectURI).WithState(state)
 	}
 
-	if !g.CheckResponseType(responseType) {
+	if responseType != g.ResponseType() {
 		return autherrors.UnsupportedResponseTypeError().WithRedirectURI(redirectURI).WithState(state)
 	}
 
@@ -210,7 +210,7 @@ func (g *Grant) checkTokenRequestParams(r *http.Request) error {
 		return autherrors.InvalidRequestError().WithDescription(ErrMissingGrantType)
 	}
 
-	if !g.CheckGrantType(grantType) {
+	if grantType != g.GrantType() {
 		return autherrors.UnsupportedGrantTypeError()
 	}
 
