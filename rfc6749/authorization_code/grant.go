@@ -33,16 +33,12 @@ func Must(cfg *Config) (*Grant, error) {
 	return New(cfg), nil
 }
 
-func (g *Grant) CheckGrantType(gt string) bool {
-	if gt == "" {
-		return false
-	}
-
-	return gt == GrantTypeAuthorizationCode
+func (g *Grant) GrantType() string {
+	return GrantTypeAuthorizationCode
 }
 
-func (g *Grant) CheckResponseType(rt string) bool {
-	return rt == ResponseTypeCode
+func (g *Grant) ResponseType() string {
+	return ResponseTypeCode
 }
 
 func (g *Grant) AuthorizationResponse(r *http.Request, rw http.ResponseWriter) error {
@@ -72,7 +68,11 @@ func (g *Grant) AuthorizationResponse(r *http.Request, rw http.ResponseWriter) e
 	}
 
 	scopes := strings.Fields(r.URL.Query().Get(ParamScope))
-	if err = g.authCodeMgr.Generate(GrantTypeAuthorizationCode, authCode, client, user, scopes, redirectURI, ResponseTypeCode, state); err != nil {
+	if err = g.authCodeMgr.Generate(
+		GrantTypeAuthorizationCode,
+		ResponseTypeCode,
+		authCode, client, user, scopes, redirectURI, state, r,
+	); err != nil {
 		return err
 	}
 

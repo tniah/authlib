@@ -3,6 +3,7 @@ package codegen
 import (
 	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/models"
+	"net/http"
 	"time"
 )
 
@@ -19,13 +20,7 @@ func New(opts ...*Options) *Generator {
 	return &Generator{defaultOpts}
 }
 
-func (g *Generator) Generate(
-	authCode models.AuthorizationCode,
-	client models.Client,
-	user models.User,
-	scopes []string,
-	grantType, redirectURI, responseType, state string,
-) error {
+func (g *Generator) Generate(grantType, responseType string, authCode models.AuthorizationCode, client models.Client, user models.User, scopes []string, redirectURI, state string, r *http.Request) error {
 	code, err := g.genCode(grantType, client)
 	if err != nil {
 		return err
@@ -45,6 +40,14 @@ func (g *Generator) Generate(
 		return err
 	}
 	authCode.SetExpiresIn(exp)
+
+	if fn := g.extraDataGenerator; fn != nil {
+		data, err := fn(grantType, client, r)
+		if err != nil {
+			return err
+		}
+		authCode.SetExtraData(data)
+	}
 
 	return nil
 }

@@ -20,26 +20,7 @@ const (
 	ErrNotContentTypeXWWWFormUrlencoded = "content type must be \"application/x-www-form-urlencoded\""
 )
 
-type TokenGrantMixin struct {
-	grantType                  string
-	supportedClientAuthMethods map[string]bool
-}
-
-func (g *TokenGrantMixin) SetGrantType(grantType string) {
-	g.grantType = grantType
-}
-
-func (g *TokenGrantMixin) SetClientAuthMethods(methods map[string]bool) {
-	g.supportedClientAuthMethods = methods
-}
-
-func (g *TokenGrantMixin) CheckGrantType(grantType string) bool {
-	if g.grantType == "" {
-		return false
-	}
-
-	return grantType == g.grantType
-}
+type TokenGrantMixin struct{}
 
 func (g *TokenGrantMixin) CheckTokenRequest(r *http.Request) error {
 	if r.Method != http.MethodPost {

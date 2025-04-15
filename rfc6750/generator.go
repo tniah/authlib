@@ -27,14 +27,7 @@ func MustBearerTokenGenerator(opts *BearerTokenGeneratorOptions) (*BearerTokenGe
 	return NewBearerTokenGenerator(opts), nil
 }
 
-func (g *BearerTokenGenerator) Generate(
-	grantType string,
-	token models.Token,
-	client models.Client,
-	user models.User,
-	scopes []string,
-	includeRefreshToken bool,
-) error {
+func (g *BearerTokenGenerator) Generate(grantType string, token models.Token, client models.Client, user models.User, scopes []string, includeRefreshToken bool) error {
 	if err := g.atGen.Generate(grantType, token, client, user, scopes); err != nil {
 		return err
 	}

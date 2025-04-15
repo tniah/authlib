@@ -19,7 +19,7 @@ type UserManager interface {
 type AuthCodeManager interface {
 	New() models.AuthorizationCode
 	QueryByCode(ctx context.Context, code string) (models.AuthorizationCode, error)
-	Generate(grantType string, authCode models.AuthorizationCode, client models.Client, user models.User, scopes []string, redirectURI, responseType, state string) error
+	Generate(grantType, responseType string, authCode models.AuthorizationCode, client models.Client, user models.User, scopes []string, redirectURI, state string, r *http.Request) error
 	Save(ctx context.Context, code models.AuthorizationCode) error
 	DeleteByCode(ctx context.Context, code string) error
 }

@@ -2,6 +2,7 @@ package codegen
 
 import (
 	"github.com/tniah/authlib/models"
+	"net/http"
 	"time"
 )
 
@@ -16,11 +17,14 @@ type (
 		expiresIn           time.Duration
 		expiresInGenerator  ExpiresInGenerator
 		randStringGenerator RandStringGenerator
+		extraDataGenerator  ExtraDataGenerator
 	}
 
 	ExpiresInGenerator func(grantType string, client models.Client) (time.Duration, error)
 
 	RandStringGenerator func(grantType string, client models.Client) (string, error)
+
+	ExtraDataGenerator func(grantType string, client models.Client, r *http.Request) (map[string]interface{}, error)
 )
 
 func NewOptions() *Options {
@@ -47,5 +51,10 @@ func (opts *Options) SetExpiresInGenerator(fn ExpiresInGenerator) *Options {
 
 func (opts *Options) SetRandStringGenerator(fn RandStringGenerator) *Options {
 	opts.randStringGenerator = fn
+	return opts
+}
+
+func (opts *Options) SetExtraDataGenerator(fn ExtraDataGenerator) *Options {
+	opts.extraDataGenerator = fn
 	return opts
 }
