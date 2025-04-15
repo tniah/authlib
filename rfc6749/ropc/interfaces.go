@@ -1,6 +1,7 @@
 package ropc
 
 import (
+	"context"
 	"github.com/tniah/authlib/models"
 	"net/http"
 )
@@ -14,5 +15,7 @@ type UserManager interface {
 }
 
 type TokenManager interface {
-	GenerateAccessToken(grantType string, client models.Client, user models.User, scopes []string, includeRefreshToken bool, r *http.Request) (models.Token, error)
+	New() models.Token
+	Generate(grantType string, token models.Token, client models.Client, user models.User, scopes []string, includeRefreshToken bool) error
+	Save(ctx context.Context, token models.Token) error
 }

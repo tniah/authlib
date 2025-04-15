@@ -1,6 +1,7 @@
 package ropc
 
 import (
+	"errors"
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/rfc6749"
@@ -8,81 +9,27 @@ import (
 	"strings"
 )
 
-var defaultClientAuthMethods = map[string]bool{
-	AuthMethodClientSecretBasic: true,
-}
+var ErrNilToken = errors.New("token is nil")
 
 type Grant struct {
-	clientMgr                  ClientManager
-	userMgr                    UserManager
-	tokenMgr                   TokenManager
-	supportedClientAuthMethods map[string]bool
+	*Config
 	*rfc6749.TokenGrantMixin
 }
 
-func New() *Grant {
-	g := &Grant{
-		TokenGrantMixin: &rfc6749.TokenGrantMixin{},
-	}
-	g.SetGrantType(GrantTypeROPC)
-	g.SetClientAuthMethods(defaultClientAuthMethods)
-	return g
+func New(cfg *Config) *Grant {
+	return &Grant{Config: cfg}
 }
 
-func Must(clientMgr ClientManager, userMgr UserManager, tokenMgr TokenManager) (*Grant, error) {
-	g := New()
-	if err := g.MustClientManager(clientMgr); err != nil {
+func Must(cfg *Config) (*Grant, error) {
+	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
 
-	if err := g.MustUserManager(userMgr); err != nil {
-		return nil, err
-	}
-
-	if err := g.MustTokenManager(tokenMgr); err != nil {
-		return nil, err
-	}
-
-	return g, nil
+	return New(cfg), nil
 }
 
-func (g *Grant) SetClientManager(mgr ClientManager) {
-	g.clientMgr = mgr
-}
-
-func (g *Grant) MustClientManager(mgr ClientManager) error {
-	if mgr == nil {
-		return ErrNilClientManager
-	}
-
-	g.SetClientManager(mgr)
-	return nil
-}
-
-func (g *Grant) SetUserManager(mgr UserManager) {
-	g.userMgr = mgr
-}
-
-func (g *Grant) MustUserManager(userMgr UserManager) error {
-	if userMgr == nil {
-		return ErrNilUserManager
-	}
-
-	g.SetUserManager(userMgr)
-	return nil
-}
-
-func (g *Grant) SetTokenManager(mgr TokenManager) {
-	g.tokenMgr = mgr
-}
-
-func (g *Grant) MustTokenManager(mgr TokenManager) error {
-	if mgr == nil {
-		return ErrNilTokenManager
-	}
-
-	g.SetTokenManager(mgr)
-	return nil
+func (g *Grant) GrantType() string {
+	return GrantTypeROPC
 }
 
 func (g *Grant) TokenResponse(r *http.Request, rw http.ResponseWriter) error {
@@ -102,8 +49,16 @@ func (g *Grant) TokenResponse(r *http.Request, rw http.ResponseWriter) error {
 
 	scopes := strings.Fields(r.FormValue(ParamScope))
 	includeRefreshToken := client.CheckGrantType(GrantTypeRefreshToken)
-	token, err := g.tokenMgr.GenerateAccessToken(GrantTypeROPC, client, user, scopes, includeRefreshToken, r)
-	if err != nil {
+	token := g.tokenMgr.New()
+	if token == nil {
+		return ErrNilToken
+	}
+
+	if err = g.tokenMgr.Generate(GrantTypeROPC, token, client, user, scopes, includeRefreshToken); err != nil {
+		return err
+	}
+
+	if err = g.tokenMgr.Save(r.Context(), token); err != nil {
 		return err
 	}
 
@@ -121,7 +76,7 @@ func (g *Grant) checkParams(r *http.Request) error {
 		return autherrors.InvalidRequestError().WithDescription(ErrMissingGrantType)
 	}
 
-	if !g.CheckGrantType(grantType) {
+	if grantType != g.GrantType() {
 		return autherrors.UnsupportedGrantTypeError()
 	}
 
