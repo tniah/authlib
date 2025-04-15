@@ -1,5 +1,15 @@
 package authorizationcode
 
+import "errors"
+
+var (
+	ErrNilClientManager       = errors.New("client manager is nil")
+	ErrNilUserManager         = errors.New("user manager is nil")
+	ErrNilAuthCodeManager     = errors.New("auth code manager is nil")
+	ErrNilTokenManager        = errors.New("token manager is nil")
+	ErrEmptyClientAuthMethods = errors.New("client auth methods are empty")
+)
+
 type Config struct {
 	clientMgr                  ClientManager
 	userMgr                    UserManager
@@ -43,5 +53,25 @@ func (cfg *Config) SetSupportedClientAuthMethods(methods map[string]bool) *Confi
 }
 
 func (cfg *Config) Validate() error {
+	if cfg.clientMgr == nil {
+		return ErrNilClientManager
+	}
+
+	if cfg.userMgr == nil {
+		return ErrNilUserManager
+	}
+
+	if cfg.authCodeMgr == nil {
+		return ErrNilAuthCodeManager
+	}
+
+	if cfg.tokenMgr == nil {
+		return ErrNilTokenManager
+	}
+
+	if cfg.supportedClientAuthMethods == nil || len(cfg.supportedClientAuthMethods) == 0 {
+		return ErrEmptyClientAuthMethods
+	}
+
 	return nil
 }
