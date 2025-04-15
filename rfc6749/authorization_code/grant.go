@@ -184,17 +184,17 @@ func (g *Grant) ValidateRedirectURI(r *http.Request, client models.Client, state
 }
 
 func (g *Grant) validateResponseType(r *http.Request, client models.Client, redirectURI, state string) error {
-	responseType := r.URL.Query().Get(ParamResponseType)
+	typ := r.URL.Query().Get(ParamResponseType)
 
-	if responseType == "" {
+	if typ == "" {
 		return autherrors.InvalidRequestError().WithDescription(ErrMissingResponseType).WithRedirectURI(redirectURI).WithState(state)
 	}
 
-	if responseType != g.ResponseType() {
+	if typ != g.ResponseType() {
 		return autherrors.UnsupportedResponseTypeError().WithRedirectURI(redirectURI).WithState(state)
 	}
 
-	if allowed := client.CheckResponseType(responseType); !allowed {
+	if allowed := client.CheckResponseType(typ); !allowed {
 		return autherrors.UnauthorizedClientError().WithRedirectURI(redirectURI).WithState(state)
 	}
 
