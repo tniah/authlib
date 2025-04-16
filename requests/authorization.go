@@ -19,6 +19,7 @@ const (
 )
 
 type AuthorizationRequest struct {
+	GrantType    string
 	ResponseType ResponseType
 	ClientID     string
 	RedirectURI  string
@@ -79,7 +80,7 @@ func (r *AuthorizationRequest) ValidateResponseType(expected string, opts ...boo
 	}
 
 	if r.ResponseType != "" && r.ResponseType != ResponseType(expected) {
-		return autherrors.UnsupportedResponseTypeError()
+		return autherrors.UnsupportedResponseTypeError().WithState(r.State).WithRedirectURI(r.RedirectURI)
 	}
 
 	return nil
