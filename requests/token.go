@@ -14,19 +14,20 @@ type TokenRequest struct {
 	ClientID    string
 	Scopes      []string
 
-	Client models.Client
-	User   models.User
+	Client   models.Client
+	User     models.User
+	AuthCode models.AuthorizationCode
 
 	Request *http.Request
 }
 
 func NewTokenRequestFromHttp(r *http.Request) (*TokenRequest, error) {
 	tokenReq := &TokenRequest{
-		GrantType:   r.FormValue("grant_type"),
-		Code:        r.FormValue("code"),
-		RedirectURI: r.FormValue("redirect_uri"),
-		ClientID:    r.FormValue("client_id"),
-		Scopes:      strings.Fields(r.FormValue("scope")),
+		GrantType:   r.PostFormValue("grant_type"),
+		Code:        r.PostFormValue("code"),
+		RedirectURI: r.PostFormValue("redirect_uri"),
+		ClientID:    r.PostFormValue("client_id"),
+		Scopes:      strings.Fields(r.PostFormValue("scope")),
 		Request:     r,
 	}
 
@@ -36,6 +37,10 @@ func NewTokenRequestFromHttp(r *http.Request) (*TokenRequest, error) {
 func (r *TokenRequest) ValidateGrantType(expected string, opts ...bool) error {
 	if isRequired(true, opts...) && r.GrantType == "" {
 		return autherrors.InvalidRequestError().WithDescription(ErrMissingGrantType)
+	}
+
+	if r.GrantType != expected {
+		return autherrors.UnsupportedGrantTypeError()
 	}
 
 	return nil

@@ -2,7 +2,7 @@ package codegen
 
 import (
 	"github.com/tniah/authlib/models"
-	"net/http"
+	"github.com/tniah/authlib/requests"
 	"time"
 )
 
@@ -24,7 +24,7 @@ type (
 
 	RandStringGenerator func(grantType string, client models.Client) (string, error)
 
-	ExtraDataGenerator func(grantType string, client models.Client, r *http.Request) (map[string]interface{}, error)
+	ExtraDataGenerator func(r *requests.AuthorizationRequest) (map[string]interface{}, error)
 )
 
 func NewOptions() *Options {

@@ -1,10 +1,16 @@
 package codegen
 
 import (
+	"errors"
 	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/models"
-	"net/http"
+	"github.com/tniah/authlib/requests"
 	"time"
+)
+
+var (
+	ErrNilClient = errors.New("client is nil")
+	ErrNilUser   = errors.New("user is nil")
 )
 
 type Generator struct {
@@ -20,8 +26,18 @@ func New(opts ...*Options) *Generator {
 	return &Generator{defaultOpts}
 }
 
-func (g *Generator) Generate(grantType, responseType string, authCode models.AuthorizationCode, client models.Client, user models.User, scopes []string, redirectURI, state string, r *http.Request) error {
-	code, err := g.genCode(grantType, client)
+func (g *Generator) Generate(authCode models.AuthorizationCode, r *requests.AuthorizationRequest) error {
+	client := r.Client
+	if client == nil {
+		return ErrNilClient
+	}
+
+	user := r.User
+	if user == nil {
+		return ErrNilUser
+	}
+
+	code, err := g.genCode(r.GrantType, client)
 	if err != nil {
 		return err
 	}
@@ -29,20 +45,20 @@ func (g *Generator) Generate(grantType, responseType string, authCode models.Aut
 
 	authCode.SetClientID(client.GetClientID())
 	authCode.SetUserID(user.GetSubjectID())
-	authCode.SetRedirectURI(redirectURI)
-	authCode.SetResponseType(responseType)
-	authCode.SetScopes(scopes)
-	authCode.SetState(state)
+	authCode.SetRedirectURI(r.RedirectURI)
+	authCode.SetResponseType(string(r.ResponseType))
+	authCode.SetScopes(r.Scopes)
+	authCode.SetState(r.State)
 	authCode.SetAuthTime(time.Now())
 
-	exp, err := g.expiresInHandler(grantType, client)
+	exp, err := g.expiresInHandler(r.GrantType, client)
 	if err != nil {
 		return err
 	}
 	authCode.SetExpiresIn(exp)
 
 	if fn := g.extraDataGenerator; fn != nil {
-		data, err := fn(grantType, client, r)
+		data, err := fn(r)
 		if err != nil {
 			return err
 		}

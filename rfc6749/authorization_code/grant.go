@@ -8,7 +8,6 @@ import (
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/rfc6749"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -95,42 +94,33 @@ func (g *Grant) AuthorizationResponse(r *requests.AuthorizationRequest, rw http.
 	return common.Redirect(rw, r.RedirectURI, params)
 }
 
-func (g *Grant) TokenResponse(r *http.Request, rw http.ResponseWriter) error {
+func (g *Grant) ValidateTokenRequest(r *requests.TokenRequest) error {
 	if err := g.checkTokenRequestParams(r); err != nil {
 		return err
 	}
 
-	client, err := g.authenticateClient(r)
+	if err := g.authenticateClient(r); err != nil {
+		return err
+	}
+
+	if err := g.validateAuthCode(r); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (g *Grant) TokenResponse(r *requests.TokenRequest, rw http.ResponseWriter) error {
+	if err := g.queryUserByAuthCode(r); err != nil {
+		return err
+	}
+
+	token, err := g.genToken(r)
 	if err != nil {
 		return err
 	}
 
-	authCode, err := g.validateAuthCode(r)
-	if err != nil {
-		return err
-	}
-
-	user, err := g.queryUserByAuthCode(r, authCode)
-	if err != nil {
-		return err
-	}
-
-	scopes := strings.Fields(r.FormValue(ParamScope))
-	includeRefreshToken := client.CheckGrantType(GrantTypeRefreshToken)
-	token := g.tokenMgr.New()
-	if token == nil {
-		return ErrNilToken
-	}
-
-	if err = g.tokenMgr.Generate(GrantTypeAuthorizationCode, token, client, user, scopes, includeRefreshToken); err != nil {
-		return err
-	}
-
-	if err = g.tokenMgr.Save(r.Context(), token); err != nil {
-		return err
-	}
-
-	if err = g.authCodeMgr.DeleteByCode(r.Context(), authCode.GetCode()); err != nil {
+	if err = g.authCodeMgr.DeleteByCode(r.Request.Context(), r.AuthCode.GetCode()); err != nil {
 		return err
 	}
 
@@ -203,90 +193,91 @@ func (g *Grant) genAuthCode(r *requests.AuthorizationRequest) (models.Authorizat
 	return authCode, nil
 }
 
-func (g *Grant) authenticateUser(r *http.Request, client models.Client, redirectURI, state string) (models.User, error) {
-	user, err := g.userMgr.Authenticate(r, client)
-	if err != nil {
-		return nil, err
-	}
-
-	if user == nil {
-		return nil, autherrors.AccessDeniedError().WithState(state).WithRedirectURI(redirectURI)
-	}
-
-	return user, nil
-}
-
-func (g *Grant) checkTokenRequestParams(r *http.Request) error {
-	if err := g.CheckTokenRequest(r); err != nil {
+func (g *Grant) checkTokenRequestParams(r *requests.TokenRequest) error {
+	if err := g.CheckTokenRequest(r.Request); err != nil {
 		return err
 	}
 
-	grantType := r.PostFormValue(ParamGrantType)
-	if grantType == "" {
-		return autherrors.InvalidRequestError().WithDescription(ErrMissingGrantType)
+	if err := r.ValidateGrantType(g.GrantType()); err != nil {
+		return err
 	}
 
-	if !g.CheckGrantType(grantType) {
-		return autherrors.UnsupportedGrantTypeError()
-	}
-
-	code := r.PostFormValue(ParamCode)
-	if code == "" {
-		return autherrors.InvalidRequestError().WithDescription(ErrMissingAuthCode)
+	if err := r.ValidateCode(); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (g *Grant) authenticateClient(r *http.Request) (models.Client, error) {
-	client, err := g.clientMgr.Authenticate(r, g.supportedClientAuthMethods, EndpointToken)
+func (g *Grant) authenticateClient(r *requests.TokenRequest) error {
+	client, err := g.clientMgr.Authenticate(r.Request, g.supportedClientAuthMethods, EndpointToken)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if client == nil {
-		return nil, autherrors.InvalidClientError()
+		return autherrors.InvalidClientError()
 	}
 
-	return client, nil
+	r.Client = client
+	return nil
 }
 
-func (g *Grant) validateAuthCode(r *http.Request) (models.AuthorizationCode, error) {
-	authCode, err := g.authCodeMgr.QueryByCode(r.Context(), r.PostFormValue(ParamCode))
+func (g *Grant) validateAuthCode(r *requests.TokenRequest) error {
+	authCode, err := g.authCodeMgr.QueryByCode(r.Request.Context(), r.Code)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if authCode == nil {
-		return nil, autherrors.InvalidGrantError().WithDescription(ErrInvalidAuthCode)
+		return autherrors.InvalidGrantError().WithDescription(ErrInvalidAuthCode)
 	}
 
 	if authCode.GetAuthTime().Add(authCode.GetExpiresIn()).Before(time.Now()) {
-		return nil, autherrors.InvalidGrantError().WithDescription(ErrInvalidAuthCode)
+		return autherrors.InvalidGrantError().WithDescription(ErrInvalidAuthCode)
 	}
 
 	redirectURI := authCode.GetRedirectURI()
-	if redirectURI != "" && redirectURI != r.PostFormValue(ParamRedirectURI) {
-		return nil, autherrors.InvalidGrantError().WithDescription(ErrInvalidRedirectURI)
+	if redirectURI != "" && redirectURI != r.RedirectURI {
+		return autherrors.InvalidGrantError().WithDescription(ErrInvalidRedirectURI)
 	}
 
-	return authCode, nil
+	r.AuthCode = authCode
+	return nil
 }
 
-func (g *Grant) queryUserByAuthCode(r *http.Request, authCode models.AuthorizationCode) (models.User, error) {
-	userID := authCode.GetUserID()
+func (g *Grant) queryUserByAuthCode(r *requests.TokenRequest) error {
+	userID := r.AuthCode.GetUserID()
 	if userID == "" {
-		return nil, autherrors.InvalidGrantError().WithDescription(ErrUserNotFound)
+		return autherrors.InvalidGrantError().WithDescription(ErrUserNotFound)
 	}
 
-	user, err := g.userMgr.QueryByUserID(r.Context(), userID)
+	user, err := g.userMgr.QueryByUserID(r.Request.Context(), userID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if user == nil {
-		return nil, autherrors.InvalidGrantError().WithDescription(ErrUserNotFound)
+		return autherrors.InvalidGrantError().WithDescription(ErrUserNotFound)
 	}
 
-	return user, nil
+	r.User = user
+	return nil
+}
+
+func (g *Grant) genToken(r *requests.TokenRequest) (models.Token, error) {
+	token := g.tokenMgr.New()
+	if token == nil {
+		return nil, ErrNilToken
+	}
+
+	if err := g.tokenMgr.Generate(token, r); err != nil {
+		return nil, err
+	}
+
+	if err := g.tokenMgr.Save(r.Request.Context(), token); err != nil {
+		return nil, err
+	}
+
+	return token, nil
 }
