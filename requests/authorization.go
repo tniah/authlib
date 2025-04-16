@@ -74,16 +74,8 @@ func NewAuthorizationRequestFromHttp(r *http.Request) (*AuthorizationRequest, er
 }
 
 func (r *AuthorizationRequest) ValidateResponseType(expected string, opts ...bool) error {
-	if r.isRequired(true, opts...) {
-		if r.ResponseType == "" {
-			return autherrors.InvalidRequestError().WithDescription(ErrMissingResponseType).WithState(r.State)
-		}
-
-		if r.ResponseType != ResponseType(expected) {
-			return autherrors.UnsupportedResponseTypeError().WithState(r.State)
-		}
-
-		return nil
+	if r.isRequired(true, opts...) && r.ResponseType == "" {
+		return autherrors.InvalidRequestError().WithDescription(ErrMissingResponseType).WithState(r.State)
 	}
 
 	if r.ResponseType != "" && r.ResponseType != ResponseType(expected) {
