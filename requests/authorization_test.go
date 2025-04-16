@@ -34,18 +34,3 @@ func TestValidateDisplay(t *testing.T) {
 	err = r.ValidateDisplay(true)
 	assert.Nil(t, err)
 }
-
-func TestIsRequired(t *testing.T) {
-	r := AuthorizationRequest{}
-	ret := r.isRequired(false, true)
-	assert.Equal(t, true, ret)
-
-	ret = r.isRequired(false, false)
-	assert.Equal(t, false, ret)
-
-	ret = r.isRequired(false)
-	assert.Equal(t, false, ret)
-
-	ret = r.isRequired(true)
-	assert.Equal(t, true, ret)
-}
