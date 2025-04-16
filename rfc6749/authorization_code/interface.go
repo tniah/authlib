@@ -3,6 +3,7 @@ package authorizationcode
 import (
 	"context"
 	"github.com/tniah/authlib/models"
+	"github.com/tniah/authlib/requests"
 	"net/http"
 )
 
@@ -19,7 +20,7 @@ type UserManager interface {
 type AuthCodeManager interface {
 	New() models.AuthorizationCode
 	QueryByCode(ctx context.Context, code string) (models.AuthorizationCode, error)
-	Generate(grantType, responseType string, authCode models.AuthorizationCode, client models.Client, user models.User, scopes []string, redirectURI, state string, r *http.Request) error
+	Generate(authCode models.AuthorizationCode, r *requests.AuthorizationRequest) error
 	Save(ctx context.Context, code models.AuthorizationCode) error
 	DeleteByCode(ctx context.Context, code string) error
 }

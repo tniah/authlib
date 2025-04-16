@@ -70,42 +70,29 @@ func (g *Grant) ValidateAuthorizationRequest(r *requests.AuthorizationRequest) e
 		return err
 	}
 
+	r.GrantType = g.GrantType()
 	return nil
 }
 
-func (g *Grant) AuthorizationResponse(r *http.Request, rw http.ResponseWriter) error {
+func (g *Grant) AuthorizationResponse(r *requests.AuthorizationRequest, rw http.ResponseWriter) error {
+	if r.User == nil {
+		return autherrors.AccessDeniedError().WithState(r.State).WithRedirectURI(r.RedirectURI)
+	}
 
-	user, err := g.authenticateUser(r, client, redirectURI, state)
+	authCode, err := g.genAuthCode(r)
 	if err != nil {
-		return err
-	}
-
-	authCode := g.authCodeMgr.New()
-	if authCode == nil {
-		return ErrNilAuthCode
-	}
-
-	scopes := strings.Fields(r.URL.Query().Get(ParamScope))
-	if err = g.authCodeMgr.Generate(
-		GrantTypeAuthorizationCode,
-		ResponseTypeCode,
-		authCode, client, user, scopes, redirectURI, state, r,
-	); err != nil {
-		return err
-	}
-
-	if err = g.authCodeMgr.Save(r.Context(), authCode); err != nil {
 		return err
 	}
 
 	params := map[string]interface{}{
 		ParamCode: authCode.GetCode(),
 	}
-	if state != "" {
-		params[ParamState] = state
+
+	if r.State != "" {
+		params[ParamState] = r.State
 	}
 
-	return common.Redirect(rw, redirectURI, params)
+	return common.Redirect(rw, r.RedirectURI, params)
 }
 
 func (g *Grant) TokenResponse(r *http.Request, rw http.ResponseWriter) error {
@@ -197,6 +184,23 @@ func (g *Grant) validateResponseType(r *requests.AuthorizationRequest) error {
 	}
 
 	return nil
+}
+
+func (g *Grant) genAuthCode(r *requests.AuthorizationRequest) (models.AuthorizationCode, error) {
+	authCode := g.authCodeMgr.New()
+	if authCode == nil {
+		return nil, ErrNilAuthCode
+	}
+
+	if err := g.authCodeMgr.Generate(authCode, r); err != nil {
+		return nil, err
+	}
+
+	if err := g.authCodeMgr.Save(r.Request.Context(), authCode); err != nil {
+		return nil, err
+	}
+
+	return authCode, nil
 }
 
 func (g *Grant) authenticateUser(r *http.Request, client models.Client, redirectURI, state string) (models.User, error) {
