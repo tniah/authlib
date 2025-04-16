@@ -5,6 +5,7 @@ import (
 	"github.com/tniah/authlib/common"
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
+	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/rfc6749"
 	"net/http"
 	"strings"
@@ -52,24 +53,27 @@ func (g *Grant) CheckResponseType(typ string) bool {
 	if typ == "" {
 		return false
 	}
+
 	return typ == g.ResponseType()
 }
 
+func (g *Grant) ValidateAuthorizationRequest(r *requests.AuthorizationRequest) error {
+	if err := g.checkClient(r); err != nil {
+		return err
+	}
+
+	if err := g.validateRedirectURI(r); err != nil {
+		return err
+	}
+
+	if err := g.validateResponseType(r); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (g *Grant) AuthorizationResponse(r *http.Request, rw http.ResponseWriter) error {
-	state := r.URL.Query().Get(ParamState)
-	client, err := g.checkClient(r, state)
-	if err != nil {
-		return err
-	}
-
-	redirectURI, err := g.ValidateRedirectURI(r, client, state)
-	if err != nil {
-		return err
-	}
-
-	if err = g.validateResponseType(r, client, redirectURI, state); err != nil {
-		return err
-	}
 
 	user, err := g.authenticateUser(r, client, redirectURI, state)
 	if err != nil {
@@ -147,55 +151,49 @@ func (g *Grant) TokenResponse(r *http.Request, rw http.ResponseWriter) error {
 	return g.HandleTokenResponse(rw, data)
 }
 
-func (g *Grant) checkClient(r *http.Request, state string) (client models.Client, err error) {
-	clientID := r.URL.Query().Get(ParamClientID)
-	if clientID == "" {
-		return nil, autherrors.InvalidRequestError().WithDescription(ErrMissingClientID).WithState(state)
+func (g *Grant) checkClient(r *requests.AuthorizationRequest) error {
+	if err := r.ValidateClientID(true); err != nil {
+		return err
 	}
 
-	if client, err = g.clientMgr.QueryByClientID(r.Context(), clientID); err != nil {
-		return nil, err
+	client, err := g.clientMgr.QueryByClientID(r.Request.Context(), r.ClientID)
+	if err != nil {
+		return err
 	}
 
 	if client == nil {
-		return nil, autherrors.InvalidRequestError().WithDescription(ErrClientNotFound).WithState(state)
+		return autherrors.InvalidRequestError().WithDescription(ErrClientNotFound).WithState(r.State)
 	}
 
-	return client, nil
+	r.Client = client
+	return nil
 }
 
-func (g *Grant) ValidateRedirectURI(r *http.Request, client models.Client, state string) (string, error) {
-	redirectURI := r.URL.Query().Get(ParamRedirectURI)
-	if redirectURI == "" {
-		redirectURI = client.GetDefaultRedirectURI()
+func (g *Grant) validateRedirectURI(r *requests.AuthorizationRequest) error {
+	if r.RedirectURI == "" {
+		r.RedirectURI = r.Client.GetDefaultRedirectURI()
 
-		if redirectURI == "" {
-			return "", autherrors.InvalidRequestError().WithDescription(ErrMissingRedirectURI).WithState(state)
+		if r.RedirectURI == "" {
+			return autherrors.InvalidRequestError().WithDescription(ErrMissingRedirectURI).WithState(r.State)
 		}
 
-		return redirectURI, nil
+		return nil
 	}
 
-	if allowed := client.CheckRedirectURI(redirectURI); !allowed {
-		return "", autherrors.InvalidRequestError().WithDescription(ErrUnsupportedRedirectURI).WithState(state)
+	if allowed := r.Client.CheckRedirectURI(r.RedirectURI); !allowed {
+		return autherrors.InvalidRequestError().WithDescription(ErrUnsupportedRedirectURI).WithState(r.State)
 	}
 
-	return redirectURI, nil
+	return nil
 }
 
-func (g *Grant) validateResponseType(r *http.Request, client models.Client, redirectURI, state string) error {
-	typ := r.URL.Query().Get(ParamResponseType)
-
-	if typ == "" {
-		return autherrors.InvalidRequestError().WithDescription(ErrMissingResponseType).WithRedirectURI(redirectURI).WithState(state)
+func (g *Grant) validateResponseType(r *requests.AuthorizationRequest) error {
+	if err := r.ValidateResponseType(ResponseTypeCode); err != nil {
+		return err
 	}
 
-	if typ != g.ResponseType() {
-		return autherrors.UnsupportedResponseTypeError().WithRedirectURI(redirectURI).WithState(state)
-	}
-
-	if allowed := client.CheckResponseType(typ); !allowed {
-		return autherrors.UnauthorizedClientError().WithRedirectURI(redirectURI).WithState(state)
+	if allowed := r.Client.CheckResponseType(string(r.ResponseType)); !allowed {
+		return autherrors.UnauthorizedClientError().WithState(r.State).WithRedirectURI(r.RedirectURI)
 	}
 
 	return nil
