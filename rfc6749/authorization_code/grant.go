@@ -271,6 +271,7 @@ func (g *Grant) genToken(r *requests.TokenRequest) (models.Token, error) {
 		return nil, ErrNilToken
 	}
 
+	r.Scopes = r.AuthCode.GetScopes()
 	if err := g.tokenMgr.Generate(token, r); err != nil {
 		return nil, err
 	}
