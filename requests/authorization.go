@@ -8,16 +8,6 @@ import (
 	"strings"
 )
 
-const (
-	ErrMissingClientID     = "missing \"client_id\" in request"
-	ErrMissingRedirectURI  = "missing \"redirect_uri\" in request"
-	ErrMissingNonce        = "missing \"nonce\" in request"
-	ErrMissingResponseMode = "missing \"response_mode\" in request"
-	ErrMissingResponseType = "missing \"response_type\" in request"
-	ErrMissingDisplay      = "missing \"display\" in request"
-	ErrInvalidDisplay      = "invalid \"display\" in request"
-)
-
 type AuthorizationRequest struct {
 	GrantType    string
 	ResponseType ResponseType
@@ -50,7 +40,7 @@ func NewAuthorizationRequestFromHttp(r *http.Request) (*AuthorizationRequest, er
 		ResponseType:        ResponseType(r.FormValue("response_type")),
 		ClientID:            r.FormValue("client_id"),
 		RedirectURI:         r.FormValue("redirect_uri"),
-		Scopes:              strings.Fields(r.FormValue("scopes")),
+		Scopes:              strings.Fields(r.FormValue("scope")),
 		State:               r.FormValue("state"),
 		Nonce:               r.FormValue("nonce"),
 		ResponseMode:        ResponseMode(r.FormValue("response_mode")),
@@ -75,7 +65,7 @@ func NewAuthorizationRequestFromHttp(r *http.Request) (*AuthorizationRequest, er
 }
 
 func (r *AuthorizationRequest) ValidateResponseType(expected string, opts ...bool) error {
-	if r.isRequired(true, opts...) && r.ResponseType == "" {
+	if isRequired(true, opts...) && r.ResponseType == "" {
 		return autherrors.InvalidRequestError().WithDescription(ErrMissingResponseType).WithState(r.State)
 	}
 
@@ -87,7 +77,7 @@ func (r *AuthorizationRequest) ValidateResponseType(expected string, opts ...boo
 }
 
 func (r *AuthorizationRequest) ValidateClientID(opts ...bool) error {
-	if r.isRequired(true, opts...) && r.ClientID == "" {
+	if isRequired(true, opts...) && r.ClientID == "" {
 		return autherrors.InvalidRequestError().WithDescription(ErrMissingClientID).WithState(r.State)
 	}
 
@@ -95,7 +85,7 @@ func (r *AuthorizationRequest) ValidateClientID(opts ...bool) error {
 }
 
 func (r *AuthorizationRequest) ValidateRedirectURI(opts ...bool) error {
-	if r.isRequired(true, opts...) && r.RedirectURI == "" {
+	if isRequired(true, opts...) && r.RedirectURI == "" {
 		return autherrors.InvalidRequestError().WithDescription(ErrMissingRedirectURI).WithState(r.State)
 	}
 
@@ -117,7 +107,7 @@ func (r *AuthorizationRequest) ContainOpenIDScope() bool {
 }
 
 func (r *AuthorizationRequest) ValidateNonce(opts ...bool) error {
-	if r.isRequired(true, opts...) && r.Nonce == "" {
+	if isRequired(true, opts...) && r.Nonce == "" {
 		return autherrors.InvalidRequestError().
 			WithDescription(ErrMissingNonce).
 			WithState(r.State).
@@ -128,7 +118,7 @@ func (r *AuthorizationRequest) ValidateNonce(opts ...bool) error {
 }
 
 func (r *AuthorizationRequest) ValidateResponseMode(opts ...bool) error {
-	if r.isRequired(false, opts...) && r.ResponseMode == "" {
+	if isRequired(false, opts...) && r.ResponseMode == "" {
 		return autherrors.InvalidRequestError().
 			WithDescription(ErrMissingResponseMode).
 			WithState(r.State).
@@ -139,7 +129,7 @@ func (r *AuthorizationRequest) ValidateResponseMode(opts ...bool) error {
 }
 
 func (r *AuthorizationRequest) ValidateDisplay(opts ...bool) error {
-	if r.isRequired(false, opts...) && r.Display == "" {
+	if isRequired(false, opts...) && r.Display == "" {
 		return autherrors.InvalidRequestError().
 			WithDescription(ErrMissingDisplay).
 			WithState(r.State).
@@ -158,12 +148,4 @@ func (r *AuthorizationRequest) ValidateDisplay(opts ...bool) error {
 	}
 
 	return nil
-}
-
-func (r *AuthorizationRequest) isRequired(defaultValue bool, opts ...bool) bool {
-	if len(opts) > 0 {
-		return opts[0]
-	}
-
-	return defaultValue
 }
