@@ -13,7 +13,7 @@ var ErrNilToken = errors.New("token is nil")
 
 type Grant struct {
 	*Config
-	*rfc6749.TokenGrantMixin
+	*rfc6749.TokenFlowMixin
 }
 
 func New(cfg *Config) *Grant {

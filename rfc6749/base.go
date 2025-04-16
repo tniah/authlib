@@ -20,9 +20,9 @@ const (
 	ErrNotContentTypeXWWWFormUrlencoded = "content type must be \"application/x-www-form-urlencoded\""
 )
 
-type TokenGrantMixin struct{}
+type TokenFlowMixin struct{}
 
-func (g *TokenGrantMixin) CheckTokenRequest(r *http.Request) error {
+func (f *TokenFlowMixin) CheckTokenRequest(r *http.Request) error {
 	if r.Method != http.MethodPost {
 		return autherrors.InvalidRequestError().WithDescription(ErrRequestMustBePOST)
 	}
@@ -34,7 +34,7 @@ func (g *TokenGrantMixin) CheckTokenRequest(r *http.Request) error {
 	return nil
 }
 
-func (g *TokenGrantMixin) StandardTokenData(token models.Token) map[string]interface{} {
+func (f *TokenFlowMixin) StandardTokenData(token models.Token) map[string]interface{} {
 	data := map[string]interface{}{
 		ParamTokenType:   token.GetType(),
 		ParamAccessToken: token.GetAccessToken(),
@@ -52,7 +52,7 @@ func (g *TokenGrantMixin) StandardTokenData(token models.Token) map[string]inter
 	return data
 }
 
-func (g *TokenGrantMixin) HandleTokenResponse(rw http.ResponseWriter, data map[string]interface{}) error {
+func (f *TokenFlowMixin) HandleTokenResponse(rw http.ResponseWriter, data map[string]interface{}) error {
 	for k, v := range common.DefaultJSONHeader() {
 		rw.Header().Set(k, v)
 	}
