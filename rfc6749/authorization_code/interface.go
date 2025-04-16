@@ -14,7 +14,6 @@ type ClientManager interface {
 
 type UserManager interface {
 	QueryByUserID(ctx context.Context, userID string) (models.User, error)
-	Authenticate(r *http.Request, client models.Client) (models.User, error)
 }
 
 type AuthCodeManager interface {
