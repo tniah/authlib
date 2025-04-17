@@ -24,6 +24,7 @@ type Server struct {
 func NewServer() *Server {
 	return &Server{
 		authorizationGrants: make(map[AuthorizationGrant]bool),
+		consentGrants:       make(map[ConsentGrant]bool),
 		tokenGrants:         make(map[TokenGrant]bool),
 	}
 }
