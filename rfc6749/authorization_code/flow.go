@@ -112,7 +112,7 @@ func (f *Flow) AuthorizationResponse(r *requests.AuthorizationRequest, rw http.R
 	}
 
 	for h, _ := range f.authCodeProcessors {
-		if err = h.ProcessAuthorizationCode(r, authCode, &params); err != nil {
+		if err = h.ProcessAuthorizationCode(r, authCode, params); err != nil {
 			return err
 		}
 	}
@@ -158,7 +158,7 @@ func (f *Flow) TokenResponse(r *requests.TokenRequest, rw http.ResponseWriter) e
 
 	data := f.StandardTokenData(token)
 	for h, _ := range f.tokenProcessors {
-		if err = h.ProcessToken(r, token, &data); err != nil {
+		if err = h.ProcessToken(r, token, data); err != nil {
 			return err
 		}
 	}
