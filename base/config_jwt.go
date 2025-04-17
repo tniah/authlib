@@ -111,7 +111,7 @@ func (cfg *JWTConfig) SetExtraClaimGenerator(fn ExtraClaimGenerator) *JWTConfig 
 	return cfg
 }
 
-func (cfg *JWTConfig) Validate() error {
+func (cfg *JWTConfig) ValidateConfig() error {
 	if cfg.issuer == "" && cfg.issuerGenerator == nil {
 		return ErrMissingIssuer
 	}
