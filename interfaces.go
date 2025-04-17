@@ -1,17 +1,26 @@
 package authlib
 
 import (
+	"github.com/tniah/authlib/requests"
 	"net/http"
 )
 
 type AuthorizationGrant interface {
 	CheckResponseType(typ string) bool
-	AuthorizationResponse(r *http.Request, rw http.ResponseWriter) error
+	ValidateAuthorizationRequest(r *requests.AuthorizationRequest) error
+	AuthorizationResponse(r *requests.AuthorizationRequest, rw http.ResponseWriter) error
+}
+
+type ConsentGrant interface {
+	CheckResponseType(typ string) bool
+	ValidateConsentRequest(r *requests.AuthorizationRequest) error
+	AuthorizationResponse(r *requests.AuthorizationRequest, rw http.ResponseWriter) error
 }
 
 type TokenGrant interface {
 	CheckGrantType(gt string) bool
-	TokenResponse(r *http.Request, rw http.ResponseWriter) error
+	ValidateTokenRequest(r *requests.TokenRequest) error
+	TokenResponse(r *requests.TokenRequest, rw http.ResponseWriter) error
 }
 
 type Endpoint interface {

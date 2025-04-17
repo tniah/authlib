@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/tniah/authlib/common"
 	autherrors "github.com/tniah/authlib/errors"
+	"github.com/tniah/authlib/requests"
 	"net/http"
 )
 
@@ -15,6 +16,7 @@ const (
 
 type Server struct {
 	authorizationGrants map[AuthorizationGrant]bool
+	consentGrants       map[ConsentGrant]bool
 	tokenGrants         map[TokenGrant]bool
 	endpoints           map[Endpoint]bool
 }
@@ -26,11 +28,17 @@ func NewServer() *Server {
 	}
 }
 
-func (srv *Server) GetAuthorizationGrant(r *http.Request) (AuthorizationGrant, error) {
-	respTyp := r.FormValue(ParamResponseType)
+func (srv *Server) CreateAuthorizationRequest(r *http.Request) (*requests.AuthorizationRequest, error) {
+	return requests.NewAuthorizationRequestFromHttp(r)
+}
 
+func (srv *Server) CreateTokenRequest(r *http.Request) (*requests.TokenRequest, error) {
+	return requests.NewTokenRequestFromHttp(r)
+}
+
+func (srv *Server) GetAuthorizationGrant(r *requests.AuthorizationRequest) (AuthorizationGrant, error) {
 	for grant := range srv.authorizationGrants {
-		if grant.CheckResponseType(respTyp) {
+		if grant.CheckResponseType(string(r.ResponseType)) {
 			return grant, nil
 		}
 	}
@@ -38,11 +46,9 @@ func (srv *Server) GetAuthorizationGrant(r *http.Request) (AuthorizationGrant, e
 	return nil, autherrors.UnsupportedResponseTypeError()
 }
 
-func (srv *Server) GetTokenGrant(r *http.Request) (TokenGrant, error) {
-	gt := r.FormValue(ParamGrantType)
-
+func (srv *Server) GetTokenGrant(r *requests.TokenRequest) (TokenGrant, error) {
 	for grant := range srv.tokenGrants {
-		if grant.CheckGrantType(gt) {
+		if grant.CheckGrantType(r.GrantType) {
 			return grant, nil
 		}
 	}
@@ -66,38 +72,38 @@ func (srv *Server) RegisterGrant(grant interface{}) {
 }
 
 func (srv *Server) RegisterAuthorizationGrant(grant interface{}) {
-	switch t := grant.(type) {
-	case AuthorizationGrant:
+	if g, ok := grant.(AuthorizationGrant); ok {
 		if srv.authorizationGrants == nil {
 			srv.authorizationGrants = make(map[AuthorizationGrant]bool)
 		}
-		srv.authorizationGrants[t] = true
-	default:
-		return
+		srv.authorizationGrants[g] = true
+	}
+}
+
+func (srv *Server) RegisterConsentGrant(grant interface{}) {
+	if g, ok := grant.(ConsentGrant); ok {
+		if srv.consentGrants == nil {
+			srv.consentGrants = make(map[ConsentGrant]bool)
+		}
+		srv.consentGrants[g] = true
 	}
 }
 
 func (srv *Server) RegisterTokenGrant(grant interface{}) {
-	switch t := grant.(type) {
-	case TokenGrant:
+	if g, ok := grant.(TokenGrant); ok {
 		if srv.tokenGrants == nil {
 			srv.tokenGrants = make(map[TokenGrant]bool)
 		}
-		srv.tokenGrants[t] = true
-	default:
-		return
+		srv.tokenGrants[g] = true
 	}
 }
 
 func (srv *Server) RegisterEndpoint(endpoint interface{}) {
-	switch t := endpoint.(type) {
-	case Endpoint:
+	if g, ok := endpoint.(Endpoint); ok {
 		if srv.endpoints == nil {
 			srv.endpoints = make(map[Endpoint]bool)
 		}
-		srv.endpoints[t] = true
-	default:
-		return
+		srv.endpoints[g] = true
 	}
 }
 
