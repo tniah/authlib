@@ -2,16 +2,16 @@ package authorizationcode
 
 import (
 	"github.com/tniah/authlib/base"
-	"net/http"
+	"github.com/tniah/authlib/requests"
 )
 
 type Config struct {
-	requireNonce   bool
-	nonceValidator NonceValidator
+	requireNonce bool
+	existNonce   ExistNonce
 	*base.JWTConfig
 }
 
-type NonceValidator func(nonce string, r *http.Request) bool
+type ExistNonce func(nonce string, r *requests.AuthorizationRequest) bool
 
 func NewConfig() *Config {
 	return &Config{
