@@ -1,11 +1,16 @@
 package authorizationcode
 
 import (
+	"errors"
 	"github.com/tniah/authlib/attributes"
+	"github.com/tniah/authlib/common"
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
+	"time"
 )
+
+var ErrNilAuthorizationCode = errors.New("authorization code is nil")
 
 type Flow struct {
 	*Config
@@ -61,6 +66,24 @@ func (f *Flow) ProcessAuthorizationCode(r *requests.AuthorizationRequest, authCo
 	return nil
 }
 
+func (f *Flow) ProcessToken(r *requests.TokenRequest, token models.Token, data map[string]interface{}) error {
+	if !f.containOpenIDScope(token.GetScopes()) {
+		return nil
+	}
+
+	if r.AuthCode == nil {
+		return ErrNilAuthorizationCode
+	}
+
+	idToken, err := f.genIDToken(r)
+	if err != nil {
+		return err
+	}
+
+	data["id_token"] = idToken
+	return nil
+}
+
 func (f *Flow) validateNonce(r *requests.AuthorizationRequest) error {
 	if err := r.ValidateNonce(true); err != nil {
 		return err
@@ -97,4 +120,59 @@ func (f *Flow) validatePrompt(r *requests.AuthorizationRequest) error {
 	}
 
 	return nil
+}
+
+func (f *Flow) containOpenIDScope(scopes []string) bool {
+	if len(scopes) == 0 {
+		return false
+	}
+
+	for _, scope := range scopes {
+		if scope == attributes.ScopeOpenID {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (f *Flow) genIDToken(r *requests.TokenRequest) (string, error) {
+	client := r.Client
+	user := r.User
+	authCode := r.AuthCode
+
+	now := time.Now()
+	claims := common.JWTClaim{
+		"iss": f.Issuer(client),
+		"aud": []string{client.GetClientID()},
+		"exp": now.Add(f.ExpiresIn(r.GrantType, client)),
+		"iat": now,
+	}
+
+	authTime := authCode.GetAuthTime()
+	if authTime.IsZero() {
+		authTime = now
+	}
+	claims["auth_time"] = authTime
+
+	if nonce := authCode.GetNonce(); nonce != "" {
+		claims["nonce"] = nonce
+	}
+
+	if userID := user.GetSubjectID(); userID != "" {
+		claims["sub"] = userID
+	}
+
+	key, method, keyID := f.SigningKey(client)
+	t, err := common.NewJWTToken(key, method, keyID)
+	if err != nil {
+		return "", err
+	}
+
+	idToken, err := t.Generate(claims, common.JWTHeader{})
+	if err != nil {
+		return "", err
+	}
+
+	return idToken, nil
 }
