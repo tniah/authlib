@@ -1,17 +1,17 @@
-package rfc9068
+package base
 
 import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
-	mock "github.com/tniah/authlib/mocks/rfc9068"
+	mock "github.com/tniah/authlib/mocks/base"
 	"testing"
 	"time"
 )
 
-func TestGeneratorOptions(t *testing.T) {
+func TestJWTConfig(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		cfg := NewJWTAccessTokenGeneratorConfig()
-		expected := &JWTAccessTokenGeneratorConfig{
+		cfg := &JWTConfig{}
+		expected := &JWTConfig{
 			issuer:              "https://example.com/",
 			issuerGenerator:     mock.NewMockIssuerGenerator(t).Execute,
 			expiresIn:           time.Minute * 60 * 24,
@@ -21,7 +21,6 @@ func TestGeneratorOptions(t *testing.T) {
 			signingKeyID:        "my-key-id",
 			signingKeyGenerator: mock.NewMockSigningKeyGenerator(t).Execute,
 			extraClaimGenerator: mock.NewMockExtraClaimGenerator(t).Execute,
-			jwtIDGenerator:      mock.NewMockJWTIDGenerator(t).Execute,
 		}
 
 		cfg.SetIssuer(expected.issuer)
@@ -31,7 +30,6 @@ func TestGeneratorOptions(t *testing.T) {
 		cfg.SetSigningKey(expected.signingKey, expected.signingKeyMethod, expected.signingKeyID)
 		cfg.SetSigningKeyGenerator(expected.signingKeyGenerator)
 		cfg.SetExtraClaimGenerator(expected.extraClaimGenerator)
-		cfg.SetJWTIDGenerator(expected.jwtIDGenerator)
 
 		assert.Equal(t, expected.issuer, cfg.issuer)
 		assert.NotNil(t, cfg.issuerGenerator)
@@ -42,11 +40,10 @@ func TestGeneratorOptions(t *testing.T) {
 		assert.Equal(t, expected.signingKeyID, cfg.signingKeyID)
 		assert.NotNil(t, cfg.signingKeyGenerator)
 		assert.NotNil(t, cfg.extraClaimGenerator)
-		assert.NotNil(t, cfg.jwtIDGenerator)
 	})
 
 	t.Run("error", func(t *testing.T) {
-		cfg := NewJWTAccessTokenGeneratorConfig()
+		cfg := &JWTConfig{}
 		err := cfg.Validate()
 		assert.ErrorIs(t, err, ErrMissingIssuer)
 

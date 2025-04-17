@@ -9,11 +9,6 @@ import (
 	"net/http"
 )
 
-const (
-	ParamResponseType = "response_type"
-	ParamGrantType    = "grant_type"
-)
-
 type Server struct {
 	authorizationGrants map[AuthorizationGrant]bool
 	consentGrants       map[ConsentGrant]bool
@@ -33,10 +28,6 @@ func (srv *Server) CreateAuthorizationRequest(r *http.Request) (*requests.Author
 	return requests.NewAuthorizationRequestFromHttp(r)
 }
 
-func (srv *Server) CreateTokenRequest(r *http.Request) (*requests.TokenRequest, error) {
-	return requests.NewTokenRequestFromHttp(r)
-}
-
 func (srv *Server) GetAuthorizationGrant(r *requests.AuthorizationRequest) (AuthorizationGrant, error) {
 	for grant := range srv.authorizationGrants {
 		if grant.CheckResponseType(string(r.ResponseType)) {
@@ -45,6 +36,10 @@ func (srv *Server) GetAuthorizationGrant(r *requests.AuthorizationRequest) (Auth
 	}
 
 	return nil, autherrors.UnsupportedResponseTypeError()
+}
+
+func (srv *Server) CreateTokenRequest(r *http.Request) (*requests.TokenRequest, error) {
+	return requests.NewTokenRequestFromHttp(r)
 }
 
 func (srv *Server) GetTokenGrant(r *requests.TokenRequest) (TokenGrant, error) {

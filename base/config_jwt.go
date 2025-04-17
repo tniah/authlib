@@ -26,19 +26,25 @@ type JWTConfig struct {
 	extraClaimGenerator ExtraClaimGenerator
 }
 
-type (
-	IssuerGenerator func(client models.Client) string
+type IssuerGenerator func(client models.Client) string
 
-	ExpiresInGenerator func(grantType string, client models.Client) time.Duration
+type ExpiresInGenerator func(grantType string, client models.Client) time.Duration
 
-	SigningKeyGenerator func(client models.Client) ([]byte, jwt.SigningMethod, string)
+type SigningKeyGenerator func(client models.Client) ([]byte, jwt.SigningMethod, string)
 
-	ExtraClaimGenerator func(grantType string, client models.Client, user models.User, scopes []string) (map[string]interface{}, error)
-)
+type ExtraClaimGenerator func(grantType string, client models.Client, user models.User, scopes []string) (map[string]interface{}, error)
+
+func (cfg *JWTConfig) Issuer() string {
+	return cfg.issuer
+}
 
 func (cfg *JWTConfig) SetIssuer(iss string) *JWTConfig {
 	cfg.issuer = iss
 	return cfg
+}
+
+func (cfg *JWTConfig) IssuerGenerator() IssuerGenerator {
+	return cfg.issuerGenerator
 }
 
 func (cfg *JWTConfig) SetIssuerGenerator(fn IssuerGenerator) *JWTConfig {
@@ -46,14 +52,34 @@ func (cfg *JWTConfig) SetIssuerGenerator(fn IssuerGenerator) *JWTConfig {
 	return cfg
 }
 
+func (cfg *JWTConfig) ExpiresIn() time.Duration {
+	return cfg.expiresIn
+}
+
 func (cfg *JWTConfig) SetExpiresIn(exp time.Duration) *JWTConfig {
 	cfg.expiresIn = exp
 	return cfg
 }
 
+func (cfg *JWTConfig) ExpiresInGenerator() ExpiresInGenerator {
+	return cfg.expiresInGenerator
+}
+
 func (cfg *JWTConfig) SetExpiresInGenerator(fn ExpiresInGenerator) *JWTConfig {
 	cfg.expiresInGenerator = fn
 	return cfg
+}
+
+func (cfg *JWTConfig) SigningKey() []byte {
+	return cfg.signingKey
+}
+
+func (cfg *JWTConfig) SigningKeyMethod() jwt.SigningMethod {
+	return cfg.signingKeyMethod
+}
+
+func (cfg *JWTConfig) SigningKeyID() string {
+	return cfg.signingKeyID
 }
 
 func (cfg *JWTConfig) SetSigningKey(key []byte, method jwt.SigningMethod, id ...string) *JWTConfig {
@@ -67,38 +93,22 @@ func (cfg *JWTConfig) SetSigningKey(key []byte, method jwt.SigningMethod, id ...
 	return cfg
 }
 
+func (cfg *JWTConfig) SigningKeyGenerator() SigningKeyGenerator {
+	return cfg.signingKeyGenerator
+}
+
 func (cfg *JWTConfig) SetSigningKeyGenerator(fn SigningKeyGenerator) *JWTConfig {
 	cfg.signingKeyGenerator = fn
 	return cfg
 }
 
+func (cfg *JWTConfig) ExtraClaimGenerator() ExtraClaimGenerator {
+	return cfg.extraClaimGenerator
+}
+
 func (cfg *JWTConfig) SetExtraClaimGenerator(fn ExtraClaimGenerator) *JWTConfig {
 	cfg.extraClaimGenerator = fn
 	return cfg
-}
-
-func (cfg *JWTConfig) Issuer(client models.Client) string {
-	if fn := cfg.issuerGenerator; fn != nil {
-		return fn(client)
-	}
-
-	return cfg.issuer
-}
-
-func (cfg *JWTConfig) ExpiresIn(grantType string, client models.Client) time.Duration {
-	if fn := cfg.expiresInGenerator; fn != nil {
-		return fn(grantType, client)
-	}
-
-	return cfg.expiresIn
-}
-
-func (cfg *JWTConfig) SigningKey(client models.Client) ([]byte, jwt.SigningMethod, string) {
-	if fn := cfg.signingKeyGenerator; fn != nil {
-		return fn(client)
-	}
-
-	return cfg.signingKey, cfg.signingKeyMethod, cfg.signingKeyID
 }
 
 func (cfg *JWTConfig) Validate() error {
