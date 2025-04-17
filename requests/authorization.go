@@ -1,6 +1,7 @@
 package requests
 
 import (
+	"github.com/tniah/authlib/attributes"
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
 	"net/http"
@@ -10,24 +11,24 @@ import (
 
 type AuthorizationRequest struct {
 	GrantType    string
-	ResponseType ResponseType
+	ResponseType attributes.ResponseType
 	ClientID     string
 	RedirectURI  string
-	Scopes       SpaceDelimitedArray
+	Scopes       attributes.SpaceDelimitedArray
 	State        string
 
 	Nonce        string
-	ResponseMode ResponseMode
-	Display      Display
-	Prompt       SpaceDelimitedArray
+	ResponseMode attributes.ResponseMode
+	Display      attributes.Display
+	Prompts      attributes.SpaceDelimitedArray
 	MaxAge       *uint
-	UILocales    Locales
+	UILocales    attributes.Locales
 	IDTokenHint  string
 	LoginHint    string
-	ACRValues    SpaceDelimitedArray
+	ACRValues    attributes.SpaceDelimitedArray
 
 	CodeChallenge       string
-	CodeChallengeMethod CodeChallengeMethod
+	CodeChallengeMethod attributes.CodeChallengeMethod
 
 	Client models.Client
 	User   models.User
@@ -37,21 +38,21 @@ type AuthorizationRequest struct {
 
 func NewAuthorizationRequestFromHttp(r *http.Request) (*AuthorizationRequest, error) {
 	authReq := &AuthorizationRequest{
-		ResponseType:        ResponseType(r.FormValue("response_type")),
+		ResponseType:        attributes.ResponseType(r.FormValue("response_type")),
 		ClientID:            r.FormValue("client_id"),
 		RedirectURI:         r.FormValue("redirect_uri"),
 		Scopes:              strings.Fields(r.FormValue("scope")),
 		State:               r.FormValue("state"),
 		Nonce:               r.FormValue("nonce"),
-		ResponseMode:        ResponseMode(r.FormValue("response_mode")),
-		Display:             Display(r.FormValue("display")),
-		Prompt:              strings.Fields(r.FormValue("prompt")),
-		UILocales:           NewLocales(strings.Fields(r.FormValue("ui_locales"))),
+		ResponseMode:        attributes.ResponseMode(r.FormValue("response_mode")),
+		Display:             attributes.Display(r.FormValue("display")),
+		Prompts:             strings.Fields(r.FormValue("prompt")),
+		UILocales:           attributes.NewLocales(strings.Fields(r.FormValue("ui_locales"))),
 		IDTokenHint:         r.FormValue("id_token_hint"),
 		LoginHint:           r.FormValue("login_hint"),
 		ACRValues:           strings.Fields(r.FormValue("acr_values")),
 		CodeChallenge:       r.FormValue("code_challenge"),
-		CodeChallengeMethod: CodeChallengeMethod(r.FormValue("code_challenge_method")),
+		CodeChallengeMethod: attributes.CodeChallengeMethod(r.FormValue("code_challenge_method")),
 		Request:             r,
 	}
 
@@ -59,7 +60,7 @@ func NewAuthorizationRequestFromHttp(r *http.Request) (*AuthorizationRequest, er
 	if err != nil {
 		return nil, err
 	}
-	authReq.MaxAge = NewMaxAge(uint(maxAge))
+	authReq.MaxAge = attributes.NewMaxAge(uint(maxAge))
 
 	return authReq, nil
 }
@@ -69,7 +70,7 @@ func (r *AuthorizationRequest) ValidateResponseType(expected string, opts ...boo
 		return autherrors.InvalidRequestError().WithDescription(ErrMissingResponseType).WithState(r.State)
 	}
 
-	if r.ResponseType != "" && r.ResponseType != ResponseType(expected) {
+	if r.ResponseType != "" && r.ResponseType != attributes.ResponseType(expected) {
 		return autherrors.UnsupportedResponseTypeError().WithState(r.State).WithRedirectURI(r.RedirectURI)
 	}
 
@@ -98,7 +99,7 @@ func (r *AuthorizationRequest) ContainOpenIDScope() bool {
 	}
 
 	for _, scope := range r.Scopes {
-		if scope == ScopeOpenID {
+		if scope == attributes.ScopeOpenID {
 			return true
 		}
 	}
@@ -137,15 +138,37 @@ func (r *AuthorizationRequest) ValidateDisplay(opts ...bool) error {
 	}
 
 	if r.Display != "" &&
-		r.Display != DisplayPage &&
-		r.Display != DisplayPopup &&
-		r.Display != DisplayTouch &&
-		r.Display != DisplayWap {
+		r.Display != attributes.DisplayPage &&
+		r.Display != attributes.DisplayPopup &&
+		r.Display != attributes.DisplayTouch &&
+		r.Display != attributes.DisplayWap {
 		return autherrors.InvalidRequestError().
 			WithDescription(ErrInvalidDisplay).
 			WithState(r.State).
 			WithRedirectURI(r.RedirectURI)
 	}
 
+	return nil
+}
+
+func (r *AuthorizationRequest) ValidatePrompts(opts ...bool) error {
+	if isRequired(false, opts...) && (r.Prompts == nil || len(r.Prompts) == 0) {
+		return autherrors.InvalidRequestError().
+			WithDescription(ErrMissingPrompt).
+			WithState(r.State).
+			WithRedirectURI(r.RedirectURI)
+	}
+
+	prompts := make(attributes.SpaceDelimitedArray, 0)
+	for _, prompt := range r.Prompts {
+		if prompt == attributes.PromptNone ||
+			prompt == attributes.PromptLogin ||
+			prompt == attributes.PromptConsent ||
+			prompt == attributes.PromptSelectAccount {
+			prompts = append(prompts, prompt)
+		}
+	}
+
+	r.Prompts = prompts
 	return nil
 }

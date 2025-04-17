@@ -71,6 +71,26 @@ func (f *Flow) ValidateAuthorizationRequest(r *requests.AuthorizationRequest) er
 	}
 
 	r.GrantType = f.GrantType()
+	for h, _ := range f.authReqValidators {
+		if err := h.ValidateAuthorizationRequest(r); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (f *Flow) ValidateConsentRequest(r *requests.AuthorizationRequest) error {
+	if err := f.ValidateAuthorizationRequest(r); err != nil {
+		return err
+	}
+
+	for h, _ := range f.consentReqValidators {
+		if err := h.ValidateConsentRequest(r); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -87,9 +107,18 @@ func (f *Flow) AuthorizationResponse(r *requests.AuthorizationRequest, rw http.R
 	params := map[string]interface{}{
 		ParamCode: authCode.GetCode(),
 	}
-
 	if r.State != "" {
 		params[ParamState] = r.State
+	}
+
+	for h, _ := range f.authCodeProcessors {
+		if err = h.ProcessAuthorizationCode(authCode, &params); err != nil {
+			return err
+		}
+	}
+
+	if err = f.authCodeMgr.Save(r.Request.Context(), authCode); err != nil {
+		return err
 	}
 
 	return common.Redirect(rw, r.RedirectURI, params)
@@ -184,10 +213,6 @@ func (f *Flow) genAuthCode(r *requests.AuthorizationRequest) (models.Authorizati
 	}
 
 	if err := f.authCodeMgr.Generate(authCode, r); err != nil {
-		return nil, err
-	}
-
-	if err := f.authCodeMgr.Save(r.Request.Context(), authCode); err != nil {
 		return nil, err
 	}
 

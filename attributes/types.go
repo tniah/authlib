@@ -1,4 +1,4 @@
-package requests
+package attributes
 
 import "golang.org/x/text/language"
 

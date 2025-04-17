@@ -15,6 +15,9 @@ type Config struct {
 	userMgr                    UserManager
 	authCodeMgr                AuthCodeManager
 	tokenMgr                   TokenManager
+	authReqValidators          map[AuthorizationRequestValidator]bool
+	consentReqValidators       map[ConsentRequestValidator]bool
+	authCodeProcessors         map[AuthCodeProcessor]bool
 	supportedClientAuthMethods map[string]bool
 }
 
@@ -24,6 +27,9 @@ func NewConfig() *Config {
 			AuthMethodClientSecretBasic: true,
 			AuthMethodNone:              true,
 		},
+		authReqValidators:    map[AuthorizationRequestValidator]bool{},
+		consentReqValidators: map[ConsentRequestValidator]bool{},
+		authCodeProcessors:   map[AuthCodeProcessor]bool{},
 	}
 }
 
@@ -45,6 +51,32 @@ func (cfg *Config) SetAuthCodeManager(mgr AuthCodeManager) *Config {
 func (cfg *Config) SetTokenManager(mgr TokenManager) *Config {
 	cfg.tokenMgr = mgr
 	return cfg
+}
+
+func (cfg *Config) RegisterExtension(ext interface{}) {
+	if h, ok := ext.(AuthorizationRequestValidator); ok {
+		if cfg.authReqValidators == nil {
+			cfg.authReqValidators = map[AuthorizationRequestValidator]bool{}
+		}
+
+		cfg.authReqValidators[h] = true
+	}
+
+	if h, ok := ext.(ConsentRequestValidator); ok {
+		if cfg.consentReqValidators == nil {
+			cfg.consentReqValidators = map[ConsentRequestValidator]bool{}
+		}
+
+		cfg.consentReqValidators[h] = true
+	}
+
+	if h, ok := ext.(AuthCodeProcessor); ok {
+		if cfg.authCodeProcessors == nil {
+			cfg.authCodeProcessors = map[AuthCodeProcessor]bool{}
+		}
+
+		cfg.authCodeProcessors[h] = true
+	}
 }
 
 func (cfg *Config) SetSupportedClientAuthMethods(methods map[string]bool) *Config {

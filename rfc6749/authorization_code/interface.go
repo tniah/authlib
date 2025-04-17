@@ -29,3 +29,15 @@ type TokenManager interface {
 	Generate(token models.Token, r *requests.TokenRequest) error
 	Save(ctx context.Context, token models.Token) error
 }
+
+type AuthorizationRequestValidator interface {
+	ValidateAuthorizationRequest(r *requests.AuthorizationRequest) error
+}
+
+type ConsentRequestValidator interface {
+	ValidateConsentRequest(r *requests.AuthorizationRequest) error
+}
+
+type AuthCodeProcessor interface {
+	ProcessAuthorizationCode(authCode models.AuthorizationCode, data *map[string]interface{}) error
+}
