@@ -57,7 +57,7 @@ func (cfg *Config) SetTokenManager(mgr TokenManager) *Config {
 	return cfg
 }
 
-func (cfg *Config) RegisterExtension(ext interface{}) {
+func (cfg *Config) RegisterExtension(ext interface{}) *Config {
 	if h, ok := ext.(AuthorizationRequestValidator); ok {
 		if cfg.authReqValidators == nil {
 			cfg.authReqValidators = map[AuthorizationRequestValidator]bool{}
@@ -97,6 +97,8 @@ func (cfg *Config) RegisterExtension(ext interface{}) {
 
 		cfg.tokenProcessors[h] = true
 	}
+
+	return cfg
 }
 
 func (cfg *Config) SetSupportedClientAuthMethods(methods map[string]bool) *Config {
