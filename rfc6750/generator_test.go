@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/tniah/authlib/mocks/models"
 	"github.com/tniah/authlib/mocks/rfc6750"
+	"github.com/tniah/authlib/requests"
 	"testing"
 )
 
@@ -43,7 +44,14 @@ func TestTestBearerTokenGenerator(t *testing.T) {
 		actual.tokenType = args.Get(0).(string)
 	})
 
-	err := g.Generate("password", mockToken, mockClient, mockUser, scopes, true)
+	r := &requests.TokenRequest{
+		GrantType: "password",
+		Client:    mockClient,
+		User:      mockUser,
+		Scopes:    scopes,
+	}
+
+	err := g.Generate(mockToken, r, true)
 	assert.NoError(t, err)
 	assert.Equal(t, TokenTypeBearer, actual.tokenType)
 }

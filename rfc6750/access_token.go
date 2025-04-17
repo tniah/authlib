@@ -3,6 +3,7 @@ package rfc6750
 import (
 	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/models"
+	"github.com/tniah/authlib/requests"
 	"time"
 )
 
@@ -19,23 +20,26 @@ func NewOpaqueAccessTokenGenerator(opts ...*TokenGeneratorOptions) *OpaqueAccess
 	return &OpaqueAccessTokenGenerator{defaultOpts}
 }
 
-func (g *OpaqueAccessTokenGenerator) Generate(grantType string, token models.Token, client models.Client, user models.User, scopes []string) error {
+func (g *OpaqueAccessTokenGenerator) Generate(token models.Token, r *requests.TokenRequest) error {
+	client := r.Client
+	user := r.User
+
 	token.SetClientID(client.GetClientID())
 	token.SetUserID(user.GetSubjectID())
 
-	allowedScopes := client.GetAllowedScopes(scopes)
+	allowedScopes := client.GetAllowedScopes(r.Scopes)
 	token.SetScopes(allowedScopes)
 
 	issuedAt := time.Now()
 	token.SetIssuedAt(issuedAt)
 
-	expiresIn, err := g.expiresInHandler(grantType, client)
+	expiresIn, err := g.expiresInHandler(r.GrantType, client)
 	if err != nil {
 		return err
 	}
 	token.SetAccessTokenExpiresIn(expiresIn)
 
-	opaqueToken, err := g.genToken(grantType, client)
+	opaqueToken, err := g.genToken(r.GrantType, client)
 	if err != nil {
 		return err
 	}

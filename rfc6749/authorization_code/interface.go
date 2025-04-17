@@ -26,7 +26,7 @@ type AuthCodeManager interface {
 
 type TokenManager interface {
 	New() models.Token
-	Generate(token models.Token, r *requests.TokenRequest) error
+	Generate(token models.Token, r *requests.TokenRequest, includeRefreshToken bool) error
 	Save(ctx context.Context, token models.Token) error
 }
 

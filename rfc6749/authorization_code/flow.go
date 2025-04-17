@@ -314,7 +314,7 @@ func (f *Flow) genToken(r *requests.TokenRequest) (models.Token, error) {
 	}
 
 	r.Scopes = r.AuthCode.GetScopes()
-	if err := f.tokenMgr.Generate(token, r); err != nil {
+	if err := f.tokenMgr.Generate(token, r, r.Client.CheckGrantType(GrantTypeRefreshToken)); err != nil {
 		return nil, err
 	}
 

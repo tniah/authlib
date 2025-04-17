@@ -5,6 +5,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/models"
+	"github.com/tniah/authlib/requests"
 	"strings"
 	"time"
 )
@@ -38,26 +39,23 @@ func MustJWTAccessTokenGenerator(cfg *JWTAccessTokenGeneratorConfig) (*JWTAccess
 	return NewJWTAccessTokenGenerator(cfg), nil
 }
 
-func (g *JWTAccessTokenGenerator) Generate(
-	grantType string,
-	token models.Token,
-	client models.Client,
-	user models.User,
-	scopes []string,
-) error {
+func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.TokenRequest) error {
+	client := r.Client
+	user := r.User
+
 	clientID := client.GetClientID()
 	token.SetClientID(clientID)
 
 	sub := user.GetSubjectID()
 	token.SetUserID(sub)
 
-	allowedScopes := client.GetAllowedScopes(scopes)
+	allowedScopes := client.GetAllowedScopes(r.Scopes)
 	token.SetScopes(allowedScopes)
 
 	issuedAt := time.Now()
 	token.SetIssuedAt(issuedAt)
 
-	expiresIn, err := g.expiresInHandler(grantType, client)
+	expiresIn, err := g.expiresInHandler(r.GrantType, client)
 	if err != nil {
 		return err
 	}
@@ -65,14 +63,14 @@ func (g *JWTAccessTokenGenerator) Generate(
 
 	jwtID := token.GetJwtID()
 	if jwtID == "" {
-		jwtID, err = g.jwtIDHandler(grantType, client)
+		jwtID, err = g.jwtIDHandler(r.GrantType, client)
 		if err != nil {
 			return err
 		}
 		token.SetJwtID(jwtID)
 	}
 
-	iss, err := g.issuerHandler(grantType, client)
+	iss, err := g.issuerHandler(r.GrantType, client)
 	if err != nil {
 		return err
 	}
@@ -93,7 +91,7 @@ func (g *JWTAccessTokenGenerator) Generate(
 	}
 
 	if fn := g.extraClaimGenerator; fn != nil {
-		extraClaims, err := fn(grantType, client, user, allowedScopes)
+		extraClaims, err := fn(r.GrantType, client, user, allowedScopes)
 		if err != nil {
 			return err
 		}
@@ -103,7 +101,7 @@ func (g *JWTAccessTokenGenerator) Generate(
 		}
 	}
 
-	signingKey, signingMethod, signingKeyID, err := g.signingKeyHandler(grantType, client)
+	signingKey, signingMethod, signingKeyID, err := g.signingKeyHandler(r.GrantType, client)
 	if err != nil {
 		return err
 	}

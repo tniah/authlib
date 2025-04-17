@@ -2,6 +2,7 @@ package rfc6750
 
 import (
 	"github.com/tniah/authlib/models"
+	"github.com/tniah/authlib/requests"
 )
 
 const TokenTypeBearer = "Bearer"
@@ -27,13 +28,13 @@ func MustBearerTokenGenerator(opts *BearerTokenGeneratorOptions) (*BearerTokenGe
 	return NewBearerTokenGenerator(opts), nil
 }
 
-func (g *BearerTokenGenerator) Generate(grantType string, token models.Token, client models.Client, user models.User, scopes []string, includeRefreshToken bool) error {
-	if err := g.atGen.Generate(grantType, token, client, user, scopes); err != nil {
+func (g *BearerTokenGenerator) Generate(token models.Token, r *requests.TokenRequest, includeRefreshToken bool) error {
+	if err := g.atGen.Generate(token, r); err != nil {
 		return err
 	}
 
 	if includeRefreshToken {
-		if err := g.rfGen.Generate(grantType, token, client, user, scopes); err != nil {
+		if err := g.rfGen.Generate(token, r); err != nil {
 			return err
 		}
 	}

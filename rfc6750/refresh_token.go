@@ -3,6 +3,7 @@ package rfc6750
 import (
 	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/models"
+	"github.com/tniah/authlib/requests"
 	"time"
 )
 
@@ -21,14 +22,14 @@ func NewOpaqueRefreshTokenGenerator(opts ...*TokenGeneratorOptions) *OpaqueRefre
 	return &OpaqueRefreshTokenGenerator{defaultOpts}
 }
 
-func (g *OpaqueRefreshTokenGenerator) Generate(grantType string, token models.Token, client models.Client, user models.User, scopes []string) error {
-	expiresIn, err := g.expiresInHandler(grantType, client)
+func (g *OpaqueRefreshTokenGenerator) Generate(token models.Token, r *requests.TokenRequest) error {
+	expiresIn, err := g.expiresInHandler(r.GrantType, r.Client)
 	if err != nil {
 		return err
 	}
 	token.SetRefreshTokenExpiresIn(expiresIn)
 
-	refreshToken, err := g.genToken(grantType, client)
+	refreshToken, err := g.genToken(r.GrantType, r.Client)
 	if err != nil {
 		return err
 	}
