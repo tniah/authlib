@@ -61,7 +61,7 @@ func (f *Flow) ValidateConsentRequest(r *requests.AuthorizationRequest) error {
 	return nil
 }
 
-func (f *Flow) ProcessAuthorizationCode(r *requests.AuthorizationRequest, authCode models.AuthorizationCode, params *map[string]interface{}) error {
+func (f *Flow) ProcessAuthorizationCode(r *requests.AuthorizationRequest, authCode models.AuthorizationCode, params map[string]interface{}) error {
 	authCode.SetNonce(r.Nonce)
 	return nil
 }
