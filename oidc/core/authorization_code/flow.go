@@ -3,6 +3,7 @@ package authorizationcode
 import (
 	"github.com/tniah/authlib/attributes"
 	autherrors "github.com/tniah/authlib/errors"
+	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
 )
 
@@ -52,6 +53,11 @@ func (f *Flow) ValidateConsentRequest(r *requests.AuthorizationRequest) error {
 		r.Prompts = attributes.SpaceDelimitedArray{attributes.PromptLogin}
 	}
 
+	return nil
+}
+
+func (f *Flow) ProcessAuthorizationCode(r *requests.AuthorizationRequest, authCode models.AuthorizationCode, params *map[string]interface{}) error {
+	authCode.SetNonce(r.Nonce)
 	return nil
 }
 

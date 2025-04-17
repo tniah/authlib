@@ -39,5 +39,13 @@ type ConsentRequestValidator interface {
 }
 
 type AuthCodeProcessor interface {
-	ProcessAuthorizationCode(authCode models.AuthorizationCode, data *map[string]interface{}) error
+	ProcessAuthorizationCode(r *requests.AuthorizationRequest, authCode models.AuthorizationCode, params *map[string]interface{}) error
+}
+
+type TokenRequestValidator interface {
+	ValidateTokenRequest(r *requests.TokenRequest) error
+}
+
+type TokenProcessor interface {
+	ProcessToken(r *requests.TokenRequest, token models.Token, data *map[string]interface{}) error
 }

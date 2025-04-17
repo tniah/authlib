@@ -112,7 +112,7 @@ func (f *Flow) AuthorizationResponse(r *requests.AuthorizationRequest, rw http.R
 	}
 
 	for h, _ := range f.authCodeProcessors {
-		if err = h.ProcessAuthorizationCode(authCode, &params); err != nil {
+		if err = h.ProcessAuthorizationCode(r, authCode, &params); err != nil {
 			return err
 		}
 	}
@@ -137,6 +137,12 @@ func (f *Flow) ValidateTokenRequest(r *requests.TokenRequest) error {
 		return err
 	}
 
+	for h, _ := range f.tokenReqValidators {
+		if err := h.ValidateTokenRequest(r); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -150,11 +156,21 @@ func (f *Flow) TokenResponse(r *requests.TokenRequest, rw http.ResponseWriter) e
 		return err
 	}
 
+	data := f.StandardTokenData(token)
+	for h, _ := range f.tokenProcessors {
+		if err = h.ProcessToken(r, token, &data); err != nil {
+			return err
+		}
+	}
+
+	if err = f.tokenMgr.Save(r.Request.Context(), token); err != nil {
+		return err
+	}
+
 	if err = f.authCodeMgr.DeleteByCode(r.Request.Context(), r.AuthCode.GetCode()); err != nil {
 		return err
 	}
 
-	data := f.StandardTokenData(token)
 	return f.HandleTokenResponse(rw, data)
 }
 
@@ -299,10 +315,6 @@ func (f *Flow) genToken(r *requests.TokenRequest) (models.Token, error) {
 
 	r.Scopes = r.AuthCode.GetScopes()
 	if err := f.tokenMgr.Generate(token, r); err != nil {
-		return nil, err
-	}
-
-	if err := f.tokenMgr.Save(r.Request.Context(), token); err != nil {
 		return nil, err
 	}
 

@@ -18,6 +18,8 @@ type Config struct {
 	authReqValidators          map[AuthorizationRequestValidator]bool
 	consentReqValidators       map[ConsentRequestValidator]bool
 	authCodeProcessors         map[AuthCodeProcessor]bool
+	tokenReqValidators         map[TokenRequestValidator]bool
+	tokenProcessors            map[TokenProcessor]bool
 	supportedClientAuthMethods map[string]bool
 }
 
@@ -30,6 +32,8 @@ func NewConfig() *Config {
 		authReqValidators:    map[AuthorizationRequestValidator]bool{},
 		consentReqValidators: map[ConsentRequestValidator]bool{},
 		authCodeProcessors:   map[AuthCodeProcessor]bool{},
+		tokenReqValidators:   map[TokenRequestValidator]bool{},
+		tokenProcessors:      map[TokenProcessor]bool{},
 	}
 }
 
@@ -76,6 +80,22 @@ func (cfg *Config) RegisterExtension(ext interface{}) {
 		}
 
 		cfg.authCodeProcessors[h] = true
+	}
+
+	if h, ok := ext.(TokenRequestValidator); ok {
+		if cfg.tokenReqValidators == nil {
+			cfg.tokenReqValidators = map[TokenRequestValidator]bool{}
+		}
+
+		cfg.tokenReqValidators[h] = true
+	}
+
+	if h, ok := ext.(TokenProcessor); ok {
+		if cfg.tokenProcessors == nil {
+			cfg.tokenProcessors = map[TokenProcessor]bool{}
+		}
+
+		cfg.tokenProcessors[h] = true
 	}
 }
 
