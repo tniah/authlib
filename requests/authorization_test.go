@@ -2,6 +2,7 @@ package requests
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/tniah/authlib/attributes"
 	autherrors "github.com/tniah/authlib/errors"
 	"testing"
 )
@@ -12,7 +13,7 @@ func TestValidateDisplay(t *testing.T) {
 	assert.Error(t, err)
 	authErr, err := autherrors.ToAuthLibError(err)
 	assert.NoError(t, err)
-	assert.Equal(t, ErrMissingDisplay, authErr.Description)
+	assert.Equal(t, "missing \"display\" in request", authErr.Description)
 
 	err = r.ValidateDisplay(false)
 	assert.NoError(t, err)
@@ -22,15 +23,15 @@ func TestValidateDisplay(t *testing.T) {
 	assert.Error(t, err)
 	authErr, err = autherrors.ToAuthLibError(err)
 	assert.NoError(t, err)
-	assert.Equal(t, ErrInvalidDisplay, authErr.Description)
+	assert.Equal(t, "invalid \"display\" in request", authErr.Description)
 
 	err = r.ValidateDisplay(false)
 	assert.Error(t, err)
 	authErr, err = autherrors.ToAuthLibError(err)
 	assert.NoError(t, err)
-	assert.Equal(t, ErrInvalidDisplay, authErr.Description)
+	assert.Equal(t, "invalid \"display\" in request", authErr.Description)
 
-	r.Display = DisplayTouch
+	r.Display = attributes.DisplayTouch
 	err = r.ValidateDisplay(true)
 	assert.Nil(t, err)
 }

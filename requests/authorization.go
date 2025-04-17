@@ -67,7 +67,9 @@ func NewAuthorizationRequestFromHttp(r *http.Request) (*AuthorizationRequest, er
 
 func (r *AuthorizationRequest) ValidateResponseType(expected string, opts ...bool) error {
 	if isRequired(true, opts...) && r.ResponseType == "" {
-		return autherrors.InvalidRequestError().WithDescription(ErrMissingResponseType).WithState(r.State)
+		return autherrors.InvalidRequestError().
+			WithDescription("missing \"response_type\" in request").
+			WithState(r.State)
 	}
 
 	if r.ResponseType != "" && r.ResponseType != attributes.ResponseType(expected) {
@@ -79,7 +81,9 @@ func (r *AuthorizationRequest) ValidateResponseType(expected string, opts ...boo
 
 func (r *AuthorizationRequest) ValidateClientID(opts ...bool) error {
 	if isRequired(true, opts...) && r.ClientID == "" {
-		return autherrors.InvalidRequestError().WithDescription(ErrMissingClientID).WithState(r.State)
+		return autherrors.InvalidRequestError().
+			WithDescription("missing \"client_id\" in request").
+			WithState(r.State)
 	}
 
 	return nil
@@ -87,7 +91,9 @@ func (r *AuthorizationRequest) ValidateClientID(opts ...bool) error {
 
 func (r *AuthorizationRequest) ValidateRedirectURI(opts ...bool) error {
 	if isRequired(true, opts...) && r.RedirectURI == "" {
-		return autherrors.InvalidRequestError().WithDescription(ErrMissingRedirectURI).WithState(r.State)
+		return autherrors.InvalidRequestError().
+			WithDescription("missing \"redirect_uri\" in request").
+			WithState(r.State)
 	}
 
 	return nil
@@ -110,7 +116,7 @@ func (r *AuthorizationRequest) ContainOpenIDScope() bool {
 func (r *AuthorizationRequest) ValidateNonce(opts ...bool) error {
 	if isRequired(true, opts...) && r.Nonce == "" {
 		return autherrors.InvalidRequestError().
-			WithDescription(ErrMissingNonce).
+			WithDescription("missing \"nonce\" in request").
 			WithState(r.State).
 			WithRedirectURI(r.RedirectURI)
 	}
@@ -121,7 +127,7 @@ func (r *AuthorizationRequest) ValidateNonce(opts ...bool) error {
 func (r *AuthorizationRequest) ValidateResponseMode(opts ...bool) error {
 	if isRequired(false, opts...) && r.ResponseMode == "" {
 		return autherrors.InvalidRequestError().
-			WithDescription(ErrMissingResponseMode).
+			WithDescription("missing \"response_mode\" in request").
 			WithState(r.State).
 			WithRedirectURI(r.RedirectURI)
 	}
@@ -132,7 +138,7 @@ func (r *AuthorizationRequest) ValidateResponseMode(opts ...bool) error {
 func (r *AuthorizationRequest) ValidateDisplay(opts ...bool) error {
 	if isRequired(false, opts...) && r.Display == "" {
 		return autherrors.InvalidRequestError().
-			WithDescription(ErrMissingDisplay).
+			WithDescription("missing \"display\" in request").
 			WithState(r.State).
 			WithRedirectURI(r.RedirectURI)
 	}
@@ -143,7 +149,7 @@ func (r *AuthorizationRequest) ValidateDisplay(opts ...bool) error {
 		r.Display != attributes.DisplayTouch &&
 		r.Display != attributes.DisplayWap {
 		return autherrors.InvalidRequestError().
-			WithDescription(ErrInvalidDisplay).
+			WithDescription("invalid \"display\" in request").
 			WithState(r.State).
 			WithRedirectURI(r.RedirectURI)
 	}
@@ -154,7 +160,7 @@ func (r *AuthorizationRequest) ValidateDisplay(opts ...bool) error {
 func (r *AuthorizationRequest) ValidatePrompts(opts ...bool) error {
 	if isRequired(false, opts...) && (r.Prompts == nil || len(r.Prompts) == 0) {
 		return autherrors.InvalidRequestError().
-			WithDescription(ErrMissingPrompt).
+			WithDescription("missing \"prompt\" in request").
 			WithState(r.State).
 			WithRedirectURI(r.RedirectURI)
 	}

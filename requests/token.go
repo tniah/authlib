@@ -36,7 +36,7 @@ func NewTokenRequestFromHttp(r *http.Request) (*TokenRequest, error) {
 
 func (r *TokenRequest) ValidateGrantType(expected string, opts ...bool) error {
 	if isRequired(true, opts...) && r.GrantType == "" {
-		return autherrors.InvalidRequestError().WithDescription(ErrMissingGrantType)
+		return autherrors.InvalidRequestError().WithDescription("missing \"grant_type\" in request")
 	}
 
 	if r.GrantType != expected {
@@ -48,7 +48,7 @@ func (r *TokenRequest) ValidateGrantType(expected string, opts ...bool) error {
 
 func (r *TokenRequest) ValidateCode(opts ...bool) error {
 	if isRequired(true, opts...) && r.Code == "" {
-		return autherrors.InvalidRequestError().WithDescription(ErrMissingAuthorizationCode)
+		return autherrors.InvalidRequestError().WithDescription("missing \"code\" in request")
 	}
 
 	return nil
@@ -56,7 +56,7 @@ func (r *TokenRequest) ValidateCode(opts ...bool) error {
 
 func (r *TokenRequest) ValidateRedirectURI(opts ...bool) error {
 	if isRequired(true, opts...) && r.RedirectURI == "" {
-		return autherrors.InvalidRequestError().WithDescription(ErrMissingRedirectURI)
+		return autherrors.InvalidRequestError().WithDescription("missing \"redirect_uri\" in request")
 	}
 
 	return nil
