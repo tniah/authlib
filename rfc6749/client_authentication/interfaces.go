@@ -7,7 +7,7 @@ import (
 )
 
 type ClientStore interface {
-	FetchByClientID(ctx context.Context, clientID string) (models.Client, error)
+	QueryByClientID(ctx context.Context, clientID string) (models.Client, error)
 }
 
 type Handler interface {
