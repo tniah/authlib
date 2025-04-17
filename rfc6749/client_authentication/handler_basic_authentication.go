@@ -40,7 +40,7 @@ func (h *BasicAuthHandler) Authenticate(r *http.Request) (models.Client, error) 
 		return nil, ErrInvalidClient
 	}
 
-	client, err := h.store.FetchByClientID(r.Context(), clientID)
+	client, err := h.store.QueryByClientID(r.Context(), clientID)
 	if err != nil {
 		return nil, err
 	}
