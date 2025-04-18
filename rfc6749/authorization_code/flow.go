@@ -2,14 +2,18 @@ package authorizationcode
 
 import (
 	"errors"
+	"fmt"
 	"github.com/tniah/authlib/common"
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/rfc6749"
+	"github.com/tniah/authlib/types"
 	"net/http"
 	"time"
 )
+
+const endpointToken = "token"
 
 var (
 	ErrNilAuthCode = errors.New("authorization code is nil")
@@ -33,31 +37,19 @@ func Must(cfg *Config) (*Flow, error) {
 	return New(cfg), nil
 }
 
-func (f *Flow) GrantType() string {
-	return GrantTypeAuthorizationCode
+func (f *Flow) CheckGrantType(gt types.GrantType) bool {
+	return gt.IsAuthorizationCode()
 }
 
-func (f *Flow) CheckGrantType(gt string) bool {
-	if gt == "" {
-		return false
-	}
-
-	return gt == f.GrantType()
-}
-
-func (f *Flow) ResponseType() string {
-	return ResponseTypeCode
-}
-
-func (f *Flow) CheckResponseType(typ string) bool {
-	if typ == "" {
-		return false
-	}
-
-	return typ == f.ResponseType()
+func (f *Flow) CheckResponseType(typ types.ResponseType) bool {
+	return typ.IsCode()
 }
 
 func (f *Flow) ValidateAuthorizationRequest(r *requests.AuthorizationRequest) error {
+	if err := f.checkAuthEndpointHttpMethod(r); err != nil {
+		return err
+	}
+
 	if err := f.checkClient(r); err != nil {
 		return err
 	}
@@ -70,7 +62,7 @@ func (f *Flow) ValidateAuthorizationRequest(r *requests.AuthorizationRequest) er
 		return err
 	}
 
-	r.GrantType = f.GrantType()
+	r.GrantType = types.GrantTypeAuthorizationCode
 	for h, _ := range f.authReqValidators {
 		if err := h.ValidateAuthorizationRequest(r); err != nil {
 			return err
@@ -105,10 +97,10 @@ func (f *Flow) AuthorizationResponse(r *requests.AuthorizationRequest, rw http.R
 	}
 
 	params := map[string]interface{}{
-		ParamCode: authCode.GetCode(),
+		"code": authCode.GetCode(),
 	}
 	if r.State != "" {
-		params[ParamState] = r.State
+		params["state"] = r.State
 	}
 
 	for h, _ := range f.authCodeProcessors {
@@ -125,7 +117,11 @@ func (f *Flow) AuthorizationResponse(r *requests.AuthorizationRequest, rw http.R
 }
 
 func (f *Flow) ValidateTokenRequest(r *requests.TokenRequest) error {
-	if err := f.checkTokenRequestParams(r); err != nil {
+	if err := f.checkTokenEndpointHttpMethod(r); err != nil {
+		return err
+	}
+
+	if err := f.validateGrantType(r); err != nil {
 		return err
 	}
 
@@ -174,6 +170,26 @@ func (f *Flow) TokenResponse(r *requests.TokenRequest, rw http.ResponseWriter) e
 	return f.HandleTokenResponse(rw, data)
 }
 
+func (f *Flow) checkAuthEndpointHttpMethod(r *requests.AuthorizationRequest) error {
+	for _, method := range f.authEndpointHttpMethods {
+		if r.Method() == method {
+			return nil
+		}
+	}
+
+	return autherrors.InvalidRequestError().WithDescription(fmt.Sprintf("unsupported http method \"%s\"", r.Method()))
+}
+
+func (f *Flow) checkTokenEndpointHttpMethod(r *requests.TokenRequest) error {
+	for _, method := range f.tokenEndpointHttpMethods {
+		if r.Method() == method {
+			return nil
+		}
+	}
+
+	return autherrors.InvalidRequestError().WithDescription(fmt.Sprintf("unsupported http method \"%s\"", r.Method()))
+}
+
 func (f *Flow) checkClient(r *requests.AuthorizationRequest) error {
 	if err := r.ValidateClientID(true); err != nil {
 		return err
@@ -185,7 +201,9 @@ func (f *Flow) checkClient(r *requests.AuthorizationRequest) error {
 	}
 
 	if client == nil {
-		return autherrors.InvalidRequestError().WithDescription(ErrClientNotFound).WithState(r.State)
+		return autherrors.InvalidRequestError().
+			WithDescription("No client was found that matches \"client_id\" value").
+			WithState(r.State)
 	}
 
 	r.Client = client
@@ -195,27 +213,34 @@ func (f *Flow) checkClient(r *requests.AuthorizationRequest) error {
 func (f *Flow) validateRedirectURI(r *requests.AuthorizationRequest) error {
 	if r.RedirectURI == "" {
 		r.RedirectURI = r.Client.GetDefaultRedirectURI()
-
 		if r.RedirectURI == "" {
-			return autherrors.InvalidRequestError().WithDescription(ErrMissingRedirectURI).WithState(r.State)
+			return autherrors.InvalidRequestError().
+				WithDescription("Missing \"redirect_uri\" in request").
+				WithState(r.State)
 		}
 
 		return nil
 	}
 
 	if allowed := r.Client.CheckRedirectURI(r.RedirectURI); !allowed {
-		return autherrors.InvalidRequestError().WithDescription(ErrUnsupportedRedirectURI).WithState(r.State)
+		return autherrors.InvalidRequestError().
+			WithDescription("\"redirect_uri\" is not supported by client").
+			WithState(r.State)
 	}
 
 	return nil
 }
 
 func (f *Flow) validateResponseType(r *requests.AuthorizationRequest) error {
-	if err := r.ValidateResponseType(ResponseTypeCode); err != nil {
+	if err := r.ValidateResponseType(true); err != nil {
 		return err
 	}
 
-	if allowed := r.Client.CheckResponseType(string(r.ResponseType)); !allowed {
+	if valid := r.ResponseType.IsCode(); !valid {
+		return autherrors.UnsupportedResponseTypeError().WithState(r.State).WithRedirectURI(r.RedirectURI)
+	}
+
+	if allowed := r.Client.CheckResponseType(r.ResponseType); !allowed {
 		return autherrors.UnauthorizedClientError().WithState(r.State).WithRedirectURI(r.RedirectURI)
 	}
 
@@ -235,24 +260,20 @@ func (f *Flow) genAuthCode(r *requests.AuthorizationRequest) (models.Authorizati
 	return authCode, nil
 }
 
-func (f *Flow) checkTokenRequestParams(r *requests.TokenRequest) error {
-	if err := f.CheckTokenRequest(r.Request); err != nil {
+func (f *Flow) validateGrantType(r *requests.TokenRequest) error {
+	if err := r.ValidateGrantType(true); err != nil {
 		return err
 	}
 
-	if err := r.ValidateGrantType(f.GrantType()); err != nil {
-		return err
-	}
-
-	if err := r.ValidateCode(); err != nil {
-		return err
+	if valid := r.GrantType.IsAuthorizationCode(); !valid {
+		return autherrors.UnsupportedGrantTypeError()
 	}
 
 	return nil
 }
 
 func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
-	client, err := f.clientMgr.Authenticate(r.Request, f.supportedClientAuthMethods, EndpointToken)
+	client, err := f.clientMgr.Authenticate(r.Request, f.supportedClientAuthMethods, endpointToken)
 	if err != nil {
 		return err
 	}
@@ -266,22 +287,26 @@ func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 }
 
 func (f *Flow) validateAuthCode(r *requests.TokenRequest) error {
+	if err := r.ValidateCode(); err != nil {
+		return err
+	}
+
 	authCode, err := f.authCodeMgr.QueryByCode(r.Request.Context(), r.Code)
 	if err != nil {
 		return err
 	}
 
 	if authCode == nil {
-		return autherrors.InvalidGrantError().WithDescription(ErrInvalidAuthCode)
+		return autherrors.InvalidGrantError().WithDescription("Invalid \"code\" in request")
 	}
 
 	if authCode.GetAuthTime().Add(authCode.GetExpiresIn()).Before(time.Now()) {
-		return autherrors.InvalidGrantError().WithDescription(ErrInvalidAuthCode)
+		return autherrors.InvalidGrantError().WithDescription("\"code\" has been expired")
 	}
 
 	redirectURI := authCode.GetRedirectURI()
 	if redirectURI != "" && redirectURI != r.RedirectURI {
-		return autherrors.InvalidGrantError().WithDescription(ErrInvalidRedirectURI)
+		return autherrors.InvalidGrantError().WithDescription("Invalid \"redirect_uri\" in request")
 	}
 
 	r.AuthCode = authCode
@@ -291,7 +316,7 @@ func (f *Flow) validateAuthCode(r *requests.TokenRequest) error {
 func (f *Flow) queryUserByAuthCode(r *requests.TokenRequest) error {
 	userID := r.AuthCode.GetUserID()
 	if userID == "" {
-		return autherrors.InvalidGrantError().WithDescription(ErrUserNotFound)
+		return autherrors.InvalidGrantError().WithDescription("No user could be found associated with this authorization code")
 	}
 
 	user, err := f.userMgr.QueryByUserID(r.Request.Context(), userID)
@@ -300,7 +325,7 @@ func (f *Flow) queryUserByAuthCode(r *requests.TokenRequest) error {
 	}
 
 	if user == nil {
-		return autherrors.InvalidGrantError().WithDescription(ErrUserNotFound)
+		return autherrors.InvalidGrantError().WithDescription("No user could be found associated with this authorization code")
 	}
 
 	r.User = user
@@ -313,8 +338,8 @@ func (f *Flow) genToken(r *requests.TokenRequest) (models.Token, error) {
 		return nil, ErrNilToken
 	}
 
-	r.Scopes = r.AuthCode.GetScopes()
-	if err := f.tokenMgr.Generate(token, r, r.Client.CheckGrantType(GrantTypeRefreshToken)); err != nil {
+	r.Scopes = types.NewScopes(r.AuthCode.GetScopes())
+	if err := f.tokenMgr.Generate(token, r, r.Client.CheckGrantType(types.GrantTypeRefreshToken)); err != nil {
 		return nil, err
 	}
 

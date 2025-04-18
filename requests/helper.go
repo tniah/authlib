@@ -1,8 +1,8 @@
 package requests
 
-func isRequired(defaultValue bool, opts ...bool) bool {
-	if len(opts) > 0 {
-		return opts[0]
+func isRequired(defaultValue bool, required ...bool) bool {
+	if len(required) > 0 {
+		return required[0]
 	}
 
 	return defaultValue

@@ -1,6 +1,10 @@
 package authorizationcode
 
-import "errors"
+import (
+	"errors"
+	"github.com/tniah/authlib/types"
+	"net/http"
+)
 
 var (
 	ErrNilClientManager       = errors.New("client manager is nil")
@@ -15,6 +19,8 @@ type Config struct {
 	userMgr                    UserManager
 	authCodeMgr                AuthCodeManager
 	tokenMgr                   TokenManager
+	authEndpointHttpMethods    []string
+	tokenEndpointHttpMethods   []string
 	authReqValidators          map[AuthorizationRequestValidator]bool
 	consentReqValidators       map[ConsentRequestValidator]bool
 	authCodeProcessors         map[AuthCodeProcessor]bool
@@ -26,14 +32,16 @@ type Config struct {
 func NewConfig() *Config {
 	return &Config{
 		supportedClientAuthMethods: map[string]bool{
-			AuthMethodClientSecretBasic: true,
-			AuthMethodNone:              true,
+			types.ClientBasicAuthentication.String(): true,
+			types.ClientNoneAuthentication.String():  true,
 		},
-		authReqValidators:    map[AuthorizationRequestValidator]bool{},
-		consentReqValidators: map[ConsentRequestValidator]bool{},
-		authCodeProcessors:   map[AuthCodeProcessor]bool{},
-		tokenReqValidators:   map[TokenRequestValidator]bool{},
-		tokenProcessors:      map[TokenProcessor]bool{},
+		authEndpointHttpMethods:  []string{http.MethodGet},
+		tokenEndpointHttpMethods: []string{http.MethodPost},
+		authReqValidators:        map[AuthorizationRequestValidator]bool{},
+		consentReqValidators:     map[ConsentRequestValidator]bool{},
+		authCodeProcessors:       map[AuthCodeProcessor]bool{},
+		tokenReqValidators:       map[TokenRequestValidator]bool{},
+		tokenProcessors:          map[TokenProcessor]bool{},
 	}
 }
 
@@ -54,6 +62,16 @@ func (cfg *Config) SetAuthCodeManager(mgr AuthCodeManager) *Config {
 
 func (cfg *Config) SetTokenManager(mgr TokenManager) *Config {
 	cfg.tokenMgr = mgr
+	return cfg
+}
+
+func (cfg *Config) SetAuthEndpointHttpMethods(methods []string) *Config {
+	cfg.authEndpointHttpMethods = methods
+	return cfg
+}
+
+func (cfg *Config) SetTokenEndpointHttpMethods(methods []string) *Config {
+	cfg.tokenEndpointHttpMethods = methods
 	return cfg
 }
 
@@ -123,7 +141,7 @@ func (cfg *Config) Validate() error {
 		return ErrNilTokenManager
 	}
 
-	if cfg.supportedClientAuthMethods == nil || len(cfg.supportedClientAuthMethods) == 0 {
+	if len(cfg.supportedClientAuthMethods) == 0 {
 		return ErrEmptyClientAuthMethods
 	}
 

@@ -1,34 +1,34 @@
 package requests
 
 import (
-	"github.com/tniah/authlib/attributes"
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
+	"github.com/tniah/authlib/types"
 	"net/http"
 	"strconv"
 	"strings"
 )
 
 type AuthorizationRequest struct {
-	GrantType    string
-	ResponseType attributes.ResponseType
+	GrantType    types.GrantType
+	ResponseType types.ResponseType
 	ClientID     string
 	RedirectURI  string
-	Scopes       attributes.SpaceDelimitedArray
+	Scopes       []types.Scope
 	State        string
 
 	Nonce        string
-	ResponseMode attributes.ResponseMode
-	Display      attributes.Display
-	Prompts      attributes.SpaceDelimitedArray
-	MaxAge       *uint
-	UILocales    attributes.Locales
+	ResponseMode types.ResponseMode
+	Display      types.Display
+	Prompts      []types.Prompt
+	MaxAge       types.MaxAge
+	UILocales    types.Locales
 	IDTokenHint  string
 	LoginHint    string
-	ACRValues    attributes.SpaceDelimitedArray
+	ACRValues    types.SpaceDelimitedArray
 
 	CodeChallenge       string
-	CodeChallengeMethod attributes.CodeChallengeMethod
+	CodeChallengeMethod types.CodeChallengeMethod
 
 	Client models.Client
 	User   models.User
@@ -38,21 +38,21 @@ type AuthorizationRequest struct {
 
 func NewAuthorizationRequestFromHttp(r *http.Request) (*AuthorizationRequest, error) {
 	authReq := &AuthorizationRequest{
-		ResponseType:        attributes.ResponseType(r.FormValue("response_type")),
+		ResponseType:        types.NewResponseType(r.FormValue("response_type")),
 		ClientID:            r.FormValue("client_id"),
 		RedirectURI:         r.FormValue("redirect_uri"),
-		Scopes:              strings.Fields(r.FormValue("scope")),
+		Scopes:              types.NewScopes(strings.Fields(r.FormValue("scope"))),
 		State:               r.FormValue("state"),
 		Nonce:               r.FormValue("nonce"),
-		ResponseMode:        attributes.ResponseMode(r.FormValue("response_mode")),
-		Display:             attributes.Display(r.FormValue("display")),
-		Prompts:             strings.Fields(r.FormValue("prompt")),
-		UILocales:           attributes.NewLocales(strings.Fields(r.FormValue("ui_locales"))),
+		ResponseMode:        types.NewResponseMode(r.FormValue("response_mode")),
+		Display:             types.NewDisplay(r.FormValue("display")),
+		Prompts:             types.NewPrompts(strings.Fields(r.FormValue("prompt"))),
+		UILocales:           types.NewLocales(strings.Fields(r.FormValue("ui_locales"))),
 		IDTokenHint:         r.FormValue("id_token_hint"),
 		LoginHint:           r.FormValue("login_hint"),
 		ACRValues:           strings.Fields(r.FormValue("acr_values")),
 		CodeChallenge:       r.FormValue("code_challenge"),
-		CodeChallengeMethod: attributes.CodeChallengeMethod(r.FormValue("code_challenge_method")),
+		CodeChallengeMethod: types.NewCodeChallengeMethod(r.FormValue("code_challenge_method")),
 		Request:             r,
 	}
 
@@ -60,27 +60,21 @@ func NewAuthorizationRequestFromHttp(r *http.Request) (*AuthorizationRequest, er
 	if err != nil {
 		return nil, err
 	}
-	authReq.MaxAge = attributes.NewMaxAge(uint(maxAge))
+	authReq.MaxAge = types.NewMaxAge(uint(maxAge))
 
 	return authReq, nil
 }
 
-func (r *AuthorizationRequest) ValidateResponseType(expected string, opts ...bool) error {
-	if isRequired(true, opts...) && r.ResponseType == "" {
-		return autherrors.InvalidRequestError().
-			WithDescription("missing \"response_type\" in request").
-			WithState(r.State)
-	}
-
-	if r.ResponseType != "" && r.ResponseType != attributes.ResponseType(expected) {
-		return autherrors.UnsupportedResponseTypeError().WithState(r.State).WithRedirectURI(r.RedirectURI)
+func (r *AuthorizationRequest) ValidateResponseType(required ...bool) error {
+	if isRequired(true, required...) && r.ResponseType.IsEmpty() {
+		return autherrors.InvalidRequestError().WithDescription("missing \"response_type\" in request").WithState(r.State)
 	}
 
 	return nil
 }
 
-func (r *AuthorizationRequest) ValidateClientID(opts ...bool) error {
-	if isRequired(true, opts...) && r.ClientID == "" {
+func (r *AuthorizationRequest) ValidateClientID(required ...bool) error {
+	if isRequired(true, required...) && r.ClientID == "" {
 		return autherrors.InvalidRequestError().
 			WithDescription("missing \"client_id\" in request").
 			WithState(r.State)
@@ -89,8 +83,8 @@ func (r *AuthorizationRequest) ValidateClientID(opts ...bool) error {
 	return nil
 }
 
-func (r *AuthorizationRequest) ValidateRedirectURI(opts ...bool) error {
-	if isRequired(true, opts...) && r.RedirectURI == "" {
+func (r *AuthorizationRequest) ValidateRedirectURI(required ...bool) error {
+	if isRequired(true, required...) && r.RedirectURI == "" {
 		return autherrors.InvalidRequestError().
 			WithDescription("missing \"redirect_uri\" in request").
 			WithState(r.State)
@@ -99,22 +93,8 @@ func (r *AuthorizationRequest) ValidateRedirectURI(opts ...bool) error {
 	return nil
 }
 
-func (r *AuthorizationRequest) ContainOpenIDScope() bool {
-	if r.Scopes == nil || len(r.Scopes) == 0 {
-		return false
-	}
-
-	for _, scope := range r.Scopes {
-		if scope == attributes.ScopeOpenID {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (r *AuthorizationRequest) ValidateNonce(opts ...bool) error {
-	if isRequired(true, opts...) && r.Nonce == "" {
+func (r *AuthorizationRequest) ValidateNonce(required ...bool) error {
+	if isRequired(true, required...) && r.Nonce == "" {
 		return autherrors.InvalidRequestError().
 			WithDescription("missing \"nonce\" in request").
 			WithState(r.State).
@@ -124,8 +104,8 @@ func (r *AuthorizationRequest) ValidateNonce(opts ...bool) error {
 	return nil
 }
 
-func (r *AuthorizationRequest) ValidateResponseMode(opts ...bool) error {
-	if isRequired(false, opts...) && r.ResponseMode == "" {
+func (r *AuthorizationRequest) ValidateResponseMode(required ...bool) error {
+	if isRequired(false, required...) && r.ResponseMode.IsEmpty() {
 		return autherrors.InvalidRequestError().
 			WithDescription("missing \"response_mode\" in request").
 			WithState(r.State).
@@ -135,21 +115,25 @@ func (r *AuthorizationRequest) ValidateResponseMode(opts ...bool) error {
 	return nil
 }
 
-func (r *AuthorizationRequest) ValidateDisplay(opts ...bool) error {
-	if isRequired(false, opts...) && r.Display == "" {
+func (r *AuthorizationRequest) ValidateDisplay(required ...bool) error {
+	if isRequired(false, required...) && r.Display.IsEmpty() {
 		return autherrors.InvalidRequestError().
 			WithDescription("missing \"display\" in request").
 			WithState(r.State).
 			WithRedirectURI(r.RedirectURI)
 	}
 
-	if r.Display != "" &&
-		r.Display != attributes.DisplayPage &&
-		r.Display != attributes.DisplayPopup &&
-		r.Display != attributes.DisplayTouch &&
-		r.Display != attributes.DisplayWap {
+	if r.Display.IsEmpty() || !r.Display.IsValid() {
+		r.Display = types.DisplayPage
+	}
+
+	return nil
+}
+
+func (r *AuthorizationRequest) ValidatePrompts(required ...bool) error {
+	if isRequired(false, required...) && len(r.Prompts) == 0 {
 		return autherrors.InvalidRequestError().
-			WithDescription("invalid \"display\" in request").
+			WithDescription("missing \"prompt\" in request").
 			WithState(r.State).
 			WithRedirectURI(r.RedirectURI)
 	}
@@ -157,24 +141,6 @@ func (r *AuthorizationRequest) ValidateDisplay(opts ...bool) error {
 	return nil
 }
 
-func (r *AuthorizationRequest) ValidatePrompts(opts ...bool) error {
-	if isRequired(false, opts...) && (r.Prompts == nil || len(r.Prompts) == 0) {
-		return autherrors.InvalidRequestError().
-			WithDescription("missing \"prompt\" in request").
-			WithState(r.State).
-			WithRedirectURI(r.RedirectURI)
-	}
-
-	prompts := make(attributes.SpaceDelimitedArray, 0)
-	for _, prompt := range r.Prompts {
-		if prompt == attributes.PromptNone ||
-			prompt == attributes.PromptLogin ||
-			prompt == attributes.PromptConsent ||
-			prompt == attributes.PromptSelectAccount {
-			prompts = append(prompts, prompt)
-		}
-	}
-
-	r.Prompts = prompts
-	return nil
+func (r *AuthorizationRequest) Method() string {
+	return r.Request.Method
 }

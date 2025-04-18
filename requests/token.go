@@ -3,16 +3,17 @@ package requests
 import (
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
+	"github.com/tniah/authlib/types"
 	"net/http"
 	"strings"
 )
 
 type TokenRequest struct {
-	GrantType   string
+	GrantType   types.GrantType
 	Code        string
 	RedirectURI string
 	ClientID    string
-	Scopes      []string
+	Scopes      types.Scopes
 
 	Client   models.Client
 	User     models.User
@@ -23,41 +24,41 @@ type TokenRequest struct {
 
 func NewTokenRequestFromHttp(r *http.Request) (*TokenRequest, error) {
 	tokenReq := &TokenRequest{
-		GrantType:   r.PostFormValue("grant_type"),
+		GrantType:   types.NewGrantType(r.PostFormValue("grant_type")),
 		Code:        r.PostFormValue("code"),
 		RedirectURI: r.PostFormValue("redirect_uri"),
 		ClientID:    r.PostFormValue("client_id"),
-		Scopes:      strings.Fields(r.PostFormValue("scope")),
+		Scopes:      types.NewScopes(strings.Fields(r.PostFormValue("scope"))),
 		Request:     r,
 	}
 
 	return tokenReq, nil
 }
 
-func (r *TokenRequest) ValidateGrantType(expected string, opts ...bool) error {
-	if isRequired(true, opts...) && r.GrantType == "" {
+func (r *TokenRequest) ValidateGrantType(required ...bool) error {
+	if isRequired(true, required...) && r.GrantType.IsEmpty() {
 		return autherrors.InvalidRequestError().WithDescription("missing \"grant_type\" in request")
-	}
-
-	if r.GrantType != expected {
-		return autherrors.UnsupportedGrantTypeError()
 	}
 
 	return nil
 }
 
-func (r *TokenRequest) ValidateCode(opts ...bool) error {
-	if isRequired(true, opts...) && r.Code == "" {
+func (r *TokenRequest) ValidateCode(required ...bool) error {
+	if isRequired(true, required...) && r.Code == "" {
 		return autherrors.InvalidRequestError().WithDescription("missing \"code\" in request")
 	}
 
 	return nil
 }
 
-func (r *TokenRequest) ValidateRedirectURI(opts ...bool) error {
-	if isRequired(true, opts...) && r.RedirectURI == "" {
+func (r *TokenRequest) ValidateRedirectURI(required ...bool) error {
+	if isRequired(true, required...) && r.RedirectURI == "" {
 		return autherrors.InvalidRequestError().WithDescription("missing \"redirect_uri\" in request")
 	}
 
 	return nil
+}
+
+func (r *TokenRequest) Method() string {
+	return r.Request.Method
 }

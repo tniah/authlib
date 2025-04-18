@@ -3,6 +3,11 @@ package types
 const (
 	ScopeOpenID Scope = "openid"
 
+	GrantTypeAuthorizationCode GrantType = "authorization_code"
+	GrantTypeClientCredentials GrantType = "client_credentials"
+	GrantTypeROPC              GrantType = "password"
+	GrantTypeRefreshToken      GrantType = "refresh_token"
+
 	ResponseTypeToken ResponseType = "token"
 	ResponseTypeCode  ResponseType = "code"
 
@@ -15,4 +20,11 @@ const (
 	PromptLogin         Prompt = "login"
 	PromptConsent       Prompt = "consent"
 	PromptSelectAccount Prompt = "select_account"
+
+	CodeChallengeMethodPlain CodeChallengeMethod = "plain"
+	CodeChallengeMethodS256  CodeChallengeMethod = "S256"
+
+	ClientBasicAuthentication ClientAuthMethod = "client_secret_basic"
+	ClientPostAuthentication  ClientAuthMethod = "client_secret_post"
+	ClientNoneAuthentication  ClientAuthMethod = "none"
 )

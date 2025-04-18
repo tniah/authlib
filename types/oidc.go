@@ -1,5 +1,7 @@
 package types
 
+import "golang.org/x/text/language"
+
 type Scope string
 
 func NewScope(s string) Scope {
@@ -10,22 +12,28 @@ func (s Scope) IsOpenID() bool {
 	return s == ScopeOpenID
 }
 
-type ResponseType string
+type Scopes []Scope
 
-func NewResponseType(s string) ResponseType {
-	return ResponseType(s)
+func NewScopes(ar []string) Scopes {
+	ret := make(Scopes, len(ar))
+	for i, s := range ar {
+		ret[i] = NewScope(s)
+	}
+	return ret
 }
 
-func (t ResponseType) IsCode() bool {
-	return t == ResponseTypeCode
+func (s Scopes) Contain(expected Scope) bool {
+	for _, scope := range s {
+		if scope == expected {
+			return true
+		}
+	}
+
+	return false
 }
 
-func (t ResponseType) IsToken() bool {
-	return t == ResponseTypeToken
-}
-
-func (t ResponseType) IsValid() bool {
-	return t.IsCode() || t.IsToken()
+func (s Scopes) ContainOpenID() bool {
+	return s.Contain(ScopeOpenID)
 }
 
 type Display string
@@ -54,6 +62,14 @@ func (d Display) IsValid() bool {
 	return d.IsPage() || d.IsPopup() || d.IsTouch() || d.IsWap()
 }
 
+func (d Display) IsEmpty() bool {
+	return d == ""
+}
+
+func (d Display) String() string {
+	return string(d)
+}
+
 type Prompt string
 
 func NewPrompt(s string) Prompt {
@@ -76,6 +92,47 @@ func (p Prompt) IsSelectAccount() bool {
 	return p == PromptSelectAccount
 }
 
+func NewPrompts(ar []string) []Prompt {
+	ret := make([]Prompt, len(ar))
+	for i, s := range ar {
+		ret[i] = NewPrompt(s)
+	}
+	return ret
+}
+
 func (p Prompt) IsValid() bool {
 	return p.IsNone() || p.IsLogin() || p.IsConsent() || p.IsSelectAccount()
+}
+
+type MaxAge *uint
+
+func NewMaxAge(i uint) MaxAge {
+	return &i
+}
+
+type Locales []language.Tag
+
+func NewLocales(locales []string) Locales {
+	out := make(Locales, 0, len(locales))
+	for _, locale := range locales {
+		tag, err := language.Parse(locale)
+		if err == nil && !tag.IsRoot() {
+			out = append(out, tag)
+		}
+	}
+	return out
+}
+
+type ResponseMode string
+
+func NewResponseMode(s string) ResponseMode {
+	return ResponseMode(s)
+}
+
+func (m ResponseMode) IsEmpty() bool {
+	return m == ""
+}
+
+func (m ResponseMode) String() string {
+	return string(m)
 }
