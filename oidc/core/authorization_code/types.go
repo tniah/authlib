@@ -1,8 +1,9 @@
-package rfc9068
+package authorizationcode
 
 import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/tniah/authlib/models"
+	"github.com/tniah/authlib/requests"
 	"time"
 )
 
@@ -14,4 +15,4 @@ type SigningKeyGenerator func(client models.Client) ([]byte, jwt.SigningMethod, 
 
 type ExtraClaimGenerator func(grantType string, client models.Client, user models.User, scopes []string) (map[string]interface{}, error)
 
-type JWTIDGenerator func(grantType string, client models.Client) string
+type ExistNonce func(nonce string, r *requests.AuthorizationRequest) bool

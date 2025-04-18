@@ -2,6 +2,7 @@ package authlib
 
 import (
 	"github.com/tniah/authlib/requests"
+	"github.com/tniah/authlib/types"
 	"net/http"
 )
 
@@ -18,7 +19,7 @@ type ConsentGrant interface {
 }
 
 type TokenGrant interface {
-	CheckGrantType(gt string) bool
+	CheckGrantType(gt types.GrantType) bool
 	ValidateTokenRequest(r *requests.TokenRequest) error
 	TokenResponse(r *requests.TokenRequest, rw http.ResponseWriter) error
 }

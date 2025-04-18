@@ -3,36 +3,23 @@ package rfc9068
 import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
+	"github.com/tniah/authlib/utils"
 	"strings"
 	"time"
 )
 
-const (
-	DefaultExpiresIn    = time.Minute * 60
-	ClaimIssuer         = "iss"
-	ClaimSubject        = "sub"
-	ClaimAudience       = "aud"
-	ClaimExpirationTime = "exp"
-	ClaimIssuedAt       = "iat"
-	ClaimJwtID          = "jti"
-	ClaimClientID       = "client_id"
-	HeaderMediaType     = "typ"
-	MediaType           = "at+JWT"
-)
-
 type JWTAccessTokenGenerator struct {
-	*JWTAccessTokenGeneratorConfig
+	*GeneratorConfig
 }
 
-func NewJWTAccessTokenGenerator(cfg *JWTAccessTokenGeneratorConfig) *JWTAccessTokenGenerator {
+func NewJWTAccessTokenGenerator(cfg *GeneratorConfig) *JWTAccessTokenGenerator {
 	return &JWTAccessTokenGenerator{cfg}
 }
 
-func MustJWTAccessTokenGenerator(cfg *JWTAccessTokenGeneratorConfig) (*JWTAccessTokenGenerator, error) {
-	if err := cfg.Validate(); err != nil {
+func MustJWTAccessTokenGenerator(cfg *GeneratorConfig) (*JWTAccessTokenGenerator, error) {
+	if err := cfg.ValidateConfig(); err != nil {
 		return nil, err
 	}
 
@@ -49,41 +36,38 @@ func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.Token
 	sub := user.GetSubjectID()
 	token.SetUserID(sub)
 
-	allowedScopes := client.GetAllowedScopes(r.Scopes)
+	allowedScopes := client.GetAllowedScopes(r.Scopes.String())
 	token.SetScopes(allowedScopes)
 
 	issuedAt := time.Now()
 	token.SetIssuedAt(issuedAt)
 
-	expiresIn := g.expiresInHandler(r.GrantType, client)
+	expiresIn := g.expiresInHandler(r.GrantType.String(), client)
 	token.SetAccessTokenExpiresIn(expiresIn)
 
 	jwtID := token.GetJwtID()
 	if jwtID == "" {
-		jwtID, err := g.jwtIDHandler(r.GrantType, client)
-		if err != nil {
-			return err
-		}
+		jwtID = g.jwtIDHandler(r.GrantType.String(), client)
 		token.SetJwtID(jwtID)
 	}
 
-	claims := common.JWTClaim{
-		ClaimIssuer:         g.issuerHandler(client),
-		ClaimExpirationTime: jwt.NewNumericDate(issuedAt.Add(expiresIn)),
-		ClaimAudience:       clientID,
-		ClaimClientID:       clientID,
-		ClaimIssuedAt:       jwt.NewNumericDate(issuedAt),
-		ClaimJwtID:          jwtID,
+	claims := utils.JWTClaim{
+		"iss":       g.issuerHandler(client),
+		"exp":       jwt.NewNumericDate(issuedAt.Add(expiresIn)),
+		"aud":       clientID,
+		"client_id": clientID,
+		"iat":       jwt.NewNumericDate(issuedAt),
+		"jti":       jwtID,
 	}
 
 	if sub != "" {
-		claims[ClaimSubject] = sub
+		claims["sub"] = sub
 	} else {
-		claims[ClaimSubject] = clientID
+		claims["sub"] = clientID
 	}
 
-	if fn := g.ExtraClaimGenerator(); fn != nil {
-		extraClaims, err := fn(r.GrantType, client, user, allowedScopes)
+	if fn := g.extraClaimGenerator; fn != nil {
+		extraClaims, err := fn(r.GrantType.String(), client, user, allowedScopes)
 		if err != nil {
 			return err
 		}
@@ -94,12 +78,12 @@ func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.Token
 	}
 
 	signingKey, signingMethod, signingKeyID := g.signingKeyHandler(client)
-	t, err := common.NewJWTToken(signingKey, signingMethod, signingKeyID)
+	t, err := utils.NewJWTToken(signingKey, signingMethod, signingKeyID)
 	if err != nil {
 		return err
 	}
 
-	jwtToken, err := t.Generate(claims, common.JWTHeader{HeaderMediaType: MediaType})
+	jwtToken, err := t.Generate(claims, utils.JWTHeader{"typ": "at+JWT"})
 	if err != nil {
 		return err
 	}
@@ -109,33 +93,33 @@ func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.Token
 }
 
 func (g *JWTAccessTokenGenerator) issuerHandler(client models.Client) string {
-	if fn := g.IssuerGenerator(); fn != nil {
+	if fn := g.issuerGenerator; fn != nil {
 		return fn(client)
 	}
 
-	return g.Issuer()
+	return g.issuer
 }
 
 func (g *JWTAccessTokenGenerator) expiresInHandler(grantType string, client models.Client) time.Duration {
-	if fn := g.ExpiresInGenerator(); fn != nil {
+	if fn := g.expiresInGenerator; fn != nil {
 		return fn(grantType, client)
 	}
 
-	return g.ExpiresIn()
+	return g.expiresIn
 }
 
 func (g *JWTAccessTokenGenerator) signingKeyHandler(client models.Client) ([]byte, jwt.SigningMethod, string) {
-	if fn := g.SigningKeyGenerator(); fn != nil {
+	if fn := g.signingKeyGenerator; fn != nil {
 		return fn(client)
 	}
 
-	return g.SigningKey(), g.SigningKeyMethod(), g.SigningKeyID()
+	return g.signingKey, g.signingKeyMethod, g.signingKeyID
 }
 
-func (g *JWTAccessTokenGenerator) jwtIDHandler(grantType string, client models.Client) (string, error) {
-	if fn := g.JWTIDGenerator(); fn != nil {
+func (g *JWTAccessTokenGenerator) jwtIDHandler(grantType string, client models.Client) string {
+	if fn := g.jwtIDGenerator; fn != nil {
 		return fn(grantType, client)
 	}
 
-	return strings.Replace(uuid.NewString(), "-", "", -1), nil
+	return strings.Replace(uuid.NewString(), "-", "", -1)
 }

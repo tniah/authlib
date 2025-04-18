@@ -5,6 +5,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/tniah/authlib/mocks/models"
+	"github.com/tniah/authlib/requests"
+	"github.com/tniah/authlib/types"
 	"testing"
 	"time"
 )
@@ -14,7 +16,7 @@ func TestJWTAccessTokenGenerator(t *testing.T) {
 	mockUser := models.NewMockUser(t)
 	mockToken := models.NewMockToken(t)
 
-	cfg := NewJWTAccessTokenGeneratorConfig().
+	cfg := NewGeneratorConfig().
 		SetIssuer("https://example.com").
 		SetSigningKey([]byte("my-secret-key"), jwt.SigningMethodHS256, "my-kid-id").
 		SetExpiresIn(time.Hour * 24)
@@ -65,7 +67,13 @@ func TestJWTAccessTokenGenerator(t *testing.T) {
 	})
 
 	generator := NewJWTAccessTokenGenerator(cfg)
-	err := generator.Generate("password", mockToken, mockClient, mockUser, scopesExpected)
+	r := &requests.TokenRequest{
+		GrantType: "password",
+		Client:    mockClient,
+		User:      mockUser,
+		Scopes:    types.NewScopes(scopesExpected),
+	}
+	err := generator.Generate(mockToken, r)
 	assert.NoError(t, err)
 	assert.Equal(t, clientIDExpected, actual.clientID)
 	assert.Equal(t, userIDExpected, actual.userID)

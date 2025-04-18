@@ -36,6 +36,14 @@ func (s Scopes) ContainOpenID() bool {
 	return s.Contain(ScopeOpenID)
 }
 
+func (s Scopes) String() []string {
+	ret := make([]string, len(s))
+	for i, scope := range s {
+		ret[i] = string(scope)
+	}
+	return ret
+}
+
 type Display string
 
 func NewDisplay(s string) Display {

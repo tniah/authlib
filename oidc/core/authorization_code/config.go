@@ -1,22 +1,27 @@
 package authorizationcode
 
 import (
-	"github.com/tniah/authlib/base"
-	"github.com/tniah/authlib/requests"
+	"github.com/golang-jwt/jwt/v5"
+	"time"
 )
 
 type Config struct {
-	requireNonce bool
-	existNonce   ExistNonce
-	*base.JWTConfig
+	requireNonce        bool
+	issuer              string
+	issuerGenerator     IssuerGenerator
+	expiresIn           time.Duration
+	expiresInGenerator  ExpiresInGenerator
+	signingKey          []byte
+	signingKeyMethod    jwt.SigningMethod
+	signingKeyID        string
+	signingKeyGenerator SigningKeyGenerator
+	extraClaimGenerator ExtraClaimGenerator
+	existNonce          ExistNonce
 }
-
-type ExistNonce func(nonce string, r *requests.AuthorizationRequest) bool
 
 func NewConfig() *Config {
 	return &Config{
 		requireNonce: true,
-		JWTConfig:    &base.JWTConfig{},
 	}
 }
 
