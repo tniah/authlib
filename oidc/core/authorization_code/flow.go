@@ -11,7 +11,9 @@ import (
 	"time"
 )
 
-var ErrNilAuthorizationCode = errors.New("authorization code is nil")
+var (
+	ErrNilAuthorizationCode = errors.New("authorization code is nil")
+)
 
 type Flow struct {
 	*Config
@@ -148,6 +150,17 @@ func (f *Flow) genIDToken(r *requests.TokenRequest) (string, error) {
 
 	if userID := user.GetSubjectID(); userID != "" {
 		claims["sub"] = userID
+	}
+
+	if fn := f.extraClaimGenerator; fn != nil {
+		extraClaims, err := fn(r.GrantType.String(), client, user)
+		if err != nil {
+			return "", err
+		}
+
+		for k, v := range extraClaims {
+			claims[k] = v
+		}
 	}
 
 	key, method, keyID := f.signingKeyHandler(client)

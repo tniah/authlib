@@ -13,6 +13,6 @@ type ExpiresInGenerator func(grantType string, client models.Client) time.Durati
 
 type SigningKeyGenerator func(client models.Client) ([]byte, jwt.SigningMethod, string)
 
-type ExtraClaimGenerator func(grantType string, client models.Client, user models.User, scopes []string) (map[string]interface{}, error)
+type ExtraClaimGenerator func(grantType string, client models.Client, user models.User) (map[string]interface{}, error)
 
 type ExistNonce func(nonce string, r *requests.AuthorizationRequest) bool
