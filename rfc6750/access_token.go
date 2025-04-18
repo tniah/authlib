@@ -27,39 +27,33 @@ func (g *OpaqueAccessTokenGenerator) Generate(token models.Token, r *requests.To
 	token.SetClientID(client.GetClientID())
 	token.SetUserID(user.GetSubjectID())
 
-	allowedScopes := client.GetAllowedScopes(r.Scopes)
+	allowedScopes := client.GetAllowedScopes(r.Scopes.String())
 	token.SetScopes(allowedScopes)
 
 	issuedAt := time.Now()
 	token.SetIssuedAt(issuedAt)
 
-	expiresIn, err := g.expiresInHandler(r.GrantType, client)
-	if err != nil {
-		return err
-	}
+	expiresIn := g.expiresInHandler(r.GrantType.String(), client)
 	token.SetAccessTokenExpiresIn(expiresIn)
 
-	opaqueToken, err := g.genToken(r.GrantType, client)
-	if err != nil {
-		return err
-	}
-
+	opaqueToken := g.genToken(r.GrantType.String(), client)
 	token.SetAccessToken(opaqueToken)
 	return nil
 }
 
-func (g *OpaqueAccessTokenGenerator) expiresInHandler(grantType string, client models.Client) (time.Duration, error) {
+func (g *OpaqueAccessTokenGenerator) expiresInHandler(grantType string, client models.Client) time.Duration {
 	if fn := g.expiresInGenerator; fn != nil {
 		return fn(grantType, client)
 	}
 
-	return g.expiresIn, nil
+	return g.expiresIn
 }
 
-func (g *OpaqueAccessTokenGenerator) genToken(grantType string, c models.Client) (string, error) {
+func (g *OpaqueAccessTokenGenerator) genToken(grantType string, c models.Client) string {
 	if fn := g.randStringGenerator; fn != nil {
 		return fn(grantType, c)
 	}
 
-	return common.GenerateRandString(g.tokenLength, common.SecretCharset)
+	randStr, _ := common.GenerateRandString(g.tokenLength, common.SecretCharset)
+	return randStr
 }

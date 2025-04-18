@@ -14,13 +14,13 @@ type AuthorizationRequest struct {
 	ResponseType types.ResponseType
 	ClientID     string
 	RedirectURI  string
-	Scopes       []types.Scope
+	Scopes       types.Scopes
 	State        string
 
 	Nonce        string
 	ResponseMode types.ResponseMode
 	Display      types.Display
-	Prompts      []types.Prompt
+	Prompts      types.Prompts
 	MaxAge       types.MaxAge
 	UILocales    types.Locales
 	IDTokenHint  string

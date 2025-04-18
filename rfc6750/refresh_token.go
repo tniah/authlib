@@ -23,33 +23,27 @@ func NewOpaqueRefreshTokenGenerator(opts ...*TokenGeneratorOptions) *OpaqueRefre
 }
 
 func (g *OpaqueRefreshTokenGenerator) Generate(token models.Token, r *requests.TokenRequest) error {
-	expiresIn, err := g.expiresInHandler(r.GrantType, r.Client)
-	if err != nil {
-		return err
-	}
+	expiresIn := g.expiresInHandler(r.GrantType.String(), r.Client)
 	token.SetRefreshTokenExpiresIn(expiresIn)
 
-	refreshToken, err := g.genToken(r.GrantType, r.Client)
-	if err != nil {
-		return err
-	}
-
+	refreshToken := g.genToken(r.GrantType.String(), r.Client)
 	token.SetRefreshToken(refreshToken)
 	return nil
 }
 
-func (g *OpaqueRefreshTokenGenerator) expiresInHandler(grantType string, client models.Client) (time.Duration, error) {
+func (g *OpaqueRefreshTokenGenerator) expiresInHandler(grantType string, client models.Client) time.Duration {
 	if fn := g.expiresInGenerator; fn != nil {
 		return fn(grantType, client)
 	}
 
-	return g.expiresIn, nil
+	return g.expiresIn
 }
 
-func (g *OpaqueRefreshTokenGenerator) genToken(gt string, c models.Client) (string, error) {
+func (g *OpaqueRefreshTokenGenerator) genToken(gt string, c models.Client) string {
 	if fn := g.randStringGenerator; fn != nil {
 		return fn(gt, c)
 	}
 
-	return common.GenerateRandString(g.tokenLength, common.SecretCharset)
+	randStr, _ := common.GenerateRandString(g.tokenLength, common.SecretCharset)
+	return randStr
 }

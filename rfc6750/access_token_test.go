@@ -55,9 +55,9 @@ func TestOpaqueAccessTokenGenerator(t *testing.T) {
 
 	r := &requests.TokenRequest{
 		GrantType: "password",
-		Client:    mockClient,
-		User:      mockUser,
-		Scopes:    expectedScopes,
+		//Client:    mockClient,
+		User: mockUser,
+		//Scopes:    expectedScopes,
 	}
 
 	g := NewOpaqueAccessTokenGenerator()

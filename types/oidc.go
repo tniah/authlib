@@ -100,7 +100,9 @@ func (p Prompt) IsSelectAccount() bool {
 	return p == PromptSelectAccount
 }
 
-func NewPrompts(ar []string) []Prompt {
+type Prompts []Prompt
+
+func NewPrompts(ar []string) Prompts {
 	ret := make([]Prompt, len(ar))
 	for i, s := range ar {
 		ret[i] = NewPrompt(s)

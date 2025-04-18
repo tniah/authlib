@@ -63,9 +63,9 @@ func (_c *MockClient_CheckClientSecret_Call) RunAndReturn(run func(string) bool)
 	return _c
 }
 
-// CheckGrantType provides a mock function with given fields: grantType
-func (_m *MockClient) CheckGrantType(grantType string) bool {
-	ret := _m.Called(grantType)
+// CheckGrantType provides a mock function with given fields: gt
+func (_m *MockClient) CheckGrantType(gt string) bool {
+	ret := _m.Called(gt)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CheckGrantType")
@@ -73,7 +73,7 @@ func (_m *MockClient) CheckGrantType(grantType string) bool {
 
 	var r0 bool
 	if rf, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = rf(grantType)
+		r0 = rf(gt)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
@@ -87,12 +87,12 @@ type MockClient_CheckGrantType_Call struct {
 }
 
 // CheckGrantType is a helper method to define mock.On call
-//   - grantType string
-func (_e *MockClient_Expecter) CheckGrantType(grantType interface{}) *MockClient_CheckGrantType_Call {
-	return &MockClient_CheckGrantType_Call{Call: _e.mock.On("CheckGrantType", grantType)}
+//   - gt string
+func (_e *MockClient_Expecter) CheckGrantType(gt interface{}) *MockClient_CheckGrantType_Call {
+	return &MockClient_CheckGrantType_Call{Call: _e.mock.On("CheckGrantType", gt)}
 }
 
-func (_c *MockClient_CheckGrantType_Call) Run(run func(grantType string)) *MockClient_CheckGrantType_Call {
+func (_c *MockClient_CheckGrantType_Call) Run(run func(gt string)) *MockClient_CheckGrantType_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(string))
 	})
@@ -155,9 +155,9 @@ func (_c *MockClient_CheckRedirectURI_Call) RunAndReturn(run func(string) bool) 
 	return _c
 }
 
-// CheckResponseType provides a mock function with given fields: responseType
-func (_m *MockClient) CheckResponseType(responseType string) bool {
-	ret := _m.Called(responseType)
+// CheckResponseType provides a mock function with given fields: rt
+func (_m *MockClient) CheckResponseType(rt string) bool {
+	ret := _m.Called(rt)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CheckResponseType")
@@ -165,7 +165,7 @@ func (_m *MockClient) CheckResponseType(responseType string) bool {
 
 	var r0 bool
 	if rf, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = rf(responseType)
+		r0 = rf(rt)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
@@ -179,12 +179,12 @@ type MockClient_CheckResponseType_Call struct {
 }
 
 // CheckResponseType is a helper method to define mock.On call
-//   - responseType string
-func (_e *MockClient_Expecter) CheckResponseType(responseType interface{}) *MockClient_CheckResponseType_Call {
-	return &MockClient_CheckResponseType_Call{Call: _e.mock.On("CheckResponseType", responseType)}
+//   - rt string
+func (_e *MockClient_Expecter) CheckResponseType(rt interface{}) *MockClient_CheckResponseType_Call {
+	return &MockClient_CheckResponseType_Call{Call: _e.mock.On("CheckResponseType", rt)}
 }
 
-func (_c *MockClient_CheckResponseType_Call) Run(run func(responseType string)) *MockClient_CheckResponseType_Call {
+func (_c *MockClient_CheckResponseType_Call) Run(run func(rt string)) *MockClient_CheckResponseType_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(string))
 	})

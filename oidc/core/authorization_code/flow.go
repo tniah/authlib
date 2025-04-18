@@ -2,11 +2,12 @@ package authorizationcode
 
 import (
 	"errors"
-	"github.com/tniah/authlib/attributes"
-	"github.com/tniah/authlib/common"
+	"github.com/golang-jwt/jwt/v5"
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
+	"github.com/tniah/authlib/types"
+	"github.com/tniah/authlib/utils"
 	"time"
 )
 
@@ -21,7 +22,7 @@ func New(cfg *Config) *Flow {
 }
 
 func Must(cfg *Config) (*Flow, error) {
-	if err := cfg.Validate(); err != nil {
+	if err := cfg.ValidateConfig(); err != nil {
 		return nil, err
 	}
 
@@ -29,7 +30,7 @@ func Must(cfg *Config) (*Flow, error) {
 }
 
 func (f *Flow) ValidateAuthorizationRequest(r *requests.AuthorizationRequest) error {
-	if !r.ContainOpenIDScope() {
+	if isOIDCReq := r.Scopes.ContainOpenID(); !isOIDCReq {
 		return nil
 	}
 
@@ -54,8 +55,8 @@ func (f *Flow) ValidateConsentRequest(r *requests.AuthorizationRequest) error {
 	}
 
 	user := r.User
-	if (r.Prompts == nil || len(r.Prompts) == 0) && user == nil {
-		r.Prompts = attributes.SpaceDelimitedArray{attributes.PromptLogin}
+	if len(r.Prompts) == 0 && user == nil {
+		r.Prompts = types.Prompts{types.PromptLogin}
 	}
 
 	return nil
@@ -67,7 +68,7 @@ func (f *Flow) ProcessAuthorizationCode(r *requests.AuthorizationRequest, authCo
 }
 
 func (f *Flow) ProcessToken(r *requests.TokenRequest, token models.Token, data map[string]interface{}) error {
-	if !f.containOpenIDScope(token.GetScopes()) {
+	if isOIDCReq := r.Scopes.ContainOpenID(); !isOIDCReq {
 		return nil
 	}
 
@@ -107,33 +108,19 @@ func (f *Flow) validatePrompt(r *requests.AuthorizationRequest) error {
 	}
 
 	for _, prompt := range r.Prompts {
-		if prompt == attributes.PromptNone && len(prompt) > 0 {
+		if prompt.IsNone() && len(prompt) > 0 {
 			return autherrors.InvalidRequestError().
 				WithDescription("The prompt parameter \"none\" must only be used as a single value").
 				WithState(r.State).
 				WithRedirectURI(r.RedirectURI)
 		}
 
-		if prompt == attributes.PromptLogin {
-			r.MaxAge = attributes.NewMaxAge(0)
+		if prompt.IsLogin() {
+			r.MaxAge = types.NewMaxAge(0)
 		}
 	}
 
 	return nil
-}
-
-func (f *Flow) containOpenIDScope(scopes []string) bool {
-	if len(scopes) == 0 {
-		return false
-	}
-
-	for _, scope := range scopes {
-		if scope == attributes.ScopeOpenID {
-			return true
-		}
-	}
-
-	return false
 }
 
 func (f *Flow) genIDToken(r *requests.TokenRequest) (string, error) {
@@ -142,10 +129,10 @@ func (f *Flow) genIDToken(r *requests.TokenRequest) (string, error) {
 	authCode := r.AuthCode
 
 	now := time.Now()
-	claims := common.JWTClaim{
-		"iss": f.Issuer(client),
+	claims := utils.JWTClaim{
+		"iss": f.issuerHandler(client),
 		"aud": []string{client.GetClientID()},
-		"exp": now.Add(f.ExpiresIn(r.GrantType, client)),
+		"exp": now.Add(f.expiresInHandler(r.GrantType.String(), client)),
 		"iat": now,
 	}
 
@@ -163,16 +150,40 @@ func (f *Flow) genIDToken(r *requests.TokenRequest) (string, error) {
 		claims["sub"] = userID
 	}
 
-	key, method, keyID := f.SigningKey(client)
-	t, err := common.NewJWTToken(key, method, keyID)
+	key, method, keyID := f.signingKeyHandler(client)
+	t, err := utils.NewJWTToken(key, method, keyID)
 	if err != nil {
 		return "", err
 	}
 
-	idToken, err := t.Generate(claims, common.JWTHeader{})
+	idToken, err := t.Generate(claims, utils.JWTHeader{})
 	if err != nil {
 		return "", err
 	}
 
 	return idToken, nil
+}
+
+func (f *Flow) issuerHandler(client models.Client) string {
+	if fn := f.issuerGenerator; fn != nil {
+		return fn(client)
+	}
+
+	return f.issuer
+}
+
+func (f *Flow) expiresInHandler(grantType string, client models.Client) time.Duration {
+	if fn := f.expiresInGenerator; fn != nil {
+		return fn(grantType, client)
+	}
+
+	return f.expiresIn
+}
+
+func (f *Flow) signingKeyHandler(client models.Client) ([]byte, jwt.SigningMethod, string) {
+	if fn := f.signingKeyGenerator; fn != nil {
+		return fn(client)
+	}
+
+	return f.signingKey, f.signingKeyMethod, f.signingKeyID
 }

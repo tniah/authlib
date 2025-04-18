@@ -23,7 +23,7 @@ func (_m *MockExpiresInGenerator) EXPECT() *MockExpiresInGenerator_Expecter {
 }
 
 // Execute provides a mock function with given fields: grantType, client
-func (_m *MockExpiresInGenerator) Execute(grantType string, client models.Client) (time.Duration, error) {
+func (_m *MockExpiresInGenerator) Execute(grantType string, client models.Client) time.Duration {
 	ret := _m.Called(grantType, client)
 
 	if len(ret) == 0 {
@@ -31,23 +31,13 @@ func (_m *MockExpiresInGenerator) Execute(grantType string, client models.Client
 	}
 
 	var r0 time.Duration
-	var r1 error
-	if rf, ok := ret.Get(0).(func(string, models.Client) (time.Duration, error)); ok {
-		return rf(grantType, client)
-	}
 	if rf, ok := ret.Get(0).(func(string, models.Client) time.Duration); ok {
 		r0 = rf(grantType, client)
 	} else {
 		r0 = ret.Get(0).(time.Duration)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, models.Client) error); ok {
-		r1 = rf(grantType, client)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
+	return r0
 }
 
 // MockExpiresInGenerator_Execute_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Execute'
@@ -69,12 +59,12 @@ func (_c *MockExpiresInGenerator_Execute_Call) Run(run func(grantType string, cl
 	return _c
 }
 
-func (_c *MockExpiresInGenerator_Execute_Call) Return(_a0 time.Duration, _a1 error) *MockExpiresInGenerator_Execute_Call {
-	_c.Call.Return(_a0, _a1)
+func (_c *MockExpiresInGenerator_Execute_Call) Return(_a0 time.Duration) *MockExpiresInGenerator_Execute_Call {
+	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockExpiresInGenerator_Execute_Call) RunAndReturn(run func(string, models.Client) (time.Duration, error)) *MockExpiresInGenerator_Execute_Call {
+func (_c *MockExpiresInGenerator_Execute_Call) RunAndReturn(run func(string, models.Client) time.Duration) *MockExpiresInGenerator_Execute_Call {
 	_c.Call.Return(run)
 	return _c
 }

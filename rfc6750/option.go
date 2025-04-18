@@ -2,8 +2,6 @@ package rfc6750
 
 import (
 	"errors"
-	"github.com/tniah/authlib/models"
-	"github.com/tniah/authlib/requests"
 	"time"
 )
 
@@ -17,16 +15,10 @@ const (
 	DefaultTokenLength = 48
 )
 
-type (
-	BearerTokenGeneratorOptions struct {
-		atGen TokenGenerator
-		rfGen TokenGenerator
-	}
-
-	TokenGenerator interface {
-		Generate(token models.Token, r *requests.TokenRequest) error
-	}
-)
+type BearerTokenGeneratorOptions struct {
+	atGen TokenGenerator
+	rfGen TokenGenerator
+}
 
 func NewBearerTokenGeneratorOptions() *BearerTokenGeneratorOptions {
 	return &BearerTokenGeneratorOptions{
@@ -57,18 +49,12 @@ func (cfg *BearerTokenGeneratorOptions) Validate() error {
 	return nil
 }
 
-type (
-	TokenGeneratorOptions struct {
-		tokenLength         int
-		expiresIn           time.Duration
-		expiresInGenerator  ExpiresInGenerator
-		randStringGenerator RandStringGenerator
-	}
-
-	ExpiresInGenerator func(grantType string, client models.Client) (time.Duration, error)
-
-	RandStringGenerator func(grantType string, client models.Client) (string, error)
-)
+type TokenGeneratorOptions struct {
+	tokenLength         int
+	expiresIn           time.Duration
+	expiresInGenerator  ExpiresInGenerator
+	randStringGenerator RandStringGenerator
+}
 
 func NewTokenGeneratorOptions() *TokenGeneratorOptions {
 	return &TokenGeneratorOptions{
