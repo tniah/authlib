@@ -24,7 +24,7 @@ packages:
     interfaces:
       ClientManager:
       TokenManager:
-  github.com/tniah/authlib/base:
+  github.com/tniah/authlib/rfc9068:
     config:
       outpkg: rfc9068
     interfaces:

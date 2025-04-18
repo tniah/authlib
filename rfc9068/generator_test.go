@@ -38,7 +38,7 @@ func TestJWTAccessTokenGenerator(t *testing.T) {
 	})
 
 	userIDExpected := "my-user-id"
-	mockUser.On("GetSubjectID").Return(userIDExpected).Once()
+	mockUser.On("GetUserID").Return(userIDExpected).Once()
 	mockToken.On("SetUserID", mock.AnythingOfType("string")).Run(func(args mock.Arguments) {
 		actual.userID = args.Get(0).(string)
 	})

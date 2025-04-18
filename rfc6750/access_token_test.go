@@ -30,7 +30,7 @@ func TestOpaqueAccessTokenGenerator(t *testing.T) {
 	})
 
 	expectedUserID := "my-user-id"
-	mockUser.On("GetSubjectID").Return(expectedUserID).Once()
+	mockUser.On("GetUserID").Return(expectedUserID).Once()
 	mockToken.On("SetUserID", mock.AnythingOfType("string")).Run(func(args mock.Arguments) {
 		actual.userID = args.Get(0).(string)
 	})

@@ -1,5 +1,5 @@
 package models
 
 type User interface {
-	GetSubjectID() string
+	GetUserID() string
 }

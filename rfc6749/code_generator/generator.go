@@ -44,7 +44,7 @@ func (g *Generator) Generate(authCode models.AuthorizationCode, r *requests.Auth
 	authCode.SetCode(code)
 
 	authCode.SetClientID(client.GetClientID())
-	authCode.SetUserID(user.GetSubjectID())
+	authCode.SetUserID(user.GetUserID())
 	authCode.SetRedirectURI(r.RedirectURI)
 	authCode.SetResponseType(string(r.ResponseType))
 	authCode.SetScopes(r.Scopes)

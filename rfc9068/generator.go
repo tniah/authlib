@@ -1,6 +1,7 @@
 package rfc9068
 
 import (
+	"errors"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/tniah/authlib/models"
@@ -9,6 +10,8 @@ import (
 	"strings"
 	"time"
 )
+
+var ErrNilClient = errors.New("client is nil")
 
 type JWTAccessTokenGenerator struct {
 	*GeneratorConfig
@@ -28,12 +31,17 @@ func MustJWTAccessTokenGenerator(cfg *GeneratorConfig) (*JWTAccessTokenGenerator
 
 func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.TokenRequest) error {
 	client := r.Client
-	user := r.User
+	if client == nil {
+		return ErrNilClient
+	}
 
 	clientID := client.GetClientID()
 	token.SetClientID(clientID)
 
-	sub := user.GetSubjectID()
+	sub := ""
+	if user := r.User; user != nil {
+		sub = user.GetUserID()
+	}
 	token.SetUserID(sub)
 
 	allowedScopes := client.GetAllowedScopes(r.Scopes.String())
@@ -67,7 +75,7 @@ func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.Token
 	}
 
 	if fn := g.extraClaimGenerator; fn != nil {
-		extraClaims, err := fn(r.GrantType.String(), client, user, allowedScopes)
+		extraClaims, err := fn(r.GrantType.String(), client, r.User, allowedScopes)
 		if err != nil {
 			return err
 		}

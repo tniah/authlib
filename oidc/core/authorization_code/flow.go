@@ -148,7 +148,7 @@ func (f *Flow) genIDToken(r *requests.TokenRequest) (string, error) {
 		claims["nonce"] = nonce
 	}
 
-	if userID := user.GetSubjectID(); userID != "" {
+	if userID := user.GetUserID(); userID != "" {
 		claims["sub"] = userID
 	}
 
