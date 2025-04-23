@@ -3,6 +3,7 @@ package ropc
 import (
 	"context"
 	"github.com/tniah/authlib/models"
+	"github.com/tniah/authlib/requests"
 	"net/http"
 )
 
@@ -16,6 +17,14 @@ type UserManager interface {
 
 type TokenManager interface {
 	New() models.Token
-	Generate(grantType string, token models.Token, client models.Client, user models.User, scopes []string, includeRefreshToken bool) error
+	Generate(token models.Token, r *requests.TokenRequest, includeRefreshToken bool) error
 	Save(ctx context.Context, token models.Token) error
+}
+
+type TokenRequestValidator interface {
+	ValidateTokenRequest(r *requests.TokenRequest) error
+}
+
+type TokenProcessor interface {
+	ProcessToken(r *requests.TokenRequest, token models.Token, data map[string]interface{}) error
 }

@@ -1,9 +1,9 @@
 package rfc6750
 
 import (
-	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
+	"github.com/tniah/authlib/utils"
 	"time"
 )
 
@@ -54,6 +54,6 @@ func (g *OpaqueAccessTokenGenerator) genToken(grantType string, c models.Client)
 		return fn(grantType, c)
 	}
 
-	randStr, _ := common.GenerateRandString(g.tokenLength, common.SecretCharset)
+	randStr, _ := utils.GenerateRandString(g.tokenLength, utils.SecretCharset)
 	return randStr
 }

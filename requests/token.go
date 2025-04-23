@@ -15,6 +15,9 @@ type TokenRequest struct {
 	ClientID    string
 	Scopes      types.Scopes
 
+	Username string
+	Password string
+
 	Client   models.Client
 	User     models.User
 	AuthCode models.AuthorizationCode
@@ -29,6 +32,8 @@ func NewTokenRequestFromHttp(r *http.Request) (*TokenRequest, error) {
 		RedirectURI: r.PostFormValue("redirect_uri"),
 		ClientID:    r.PostFormValue("client_id"),
 		Scopes:      types.NewScopes(strings.Fields(r.PostFormValue("scope"))),
+		Username:    r.PostFormValue("username"),
+		Password:    r.PostFormValue("password"),
 		Request:     r,
 	}
 
@@ -54,6 +59,22 @@ func (r *TokenRequest) ValidateCode(required ...bool) error {
 func (r *TokenRequest) ValidateRedirectURI(required ...bool) error {
 	if isRequired(true, required...) && r.RedirectURI == "" {
 		return autherrors.InvalidRequestError().WithDescription("missing \"redirect_uri\" in request")
+	}
+
+	return nil
+}
+
+func (r *TokenRequest) ValidateUsername(required ...bool) error {
+	if isRequired(true, required...) && r.Username == "" {
+		return autherrors.InvalidRequestError().WithDescription("missing \"username\" in request")
+	}
+
+	return nil
+}
+
+func (r *TokenRequest) ValidatePassword(required ...bool) error {
+	if isRequired(true, required...) && r.Password == "" {
+		return autherrors.InvalidRequestError().WithDescription("missing \"password\" in request")
 	}
 
 	return nil

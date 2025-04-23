@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-const endpointToken = "token"
+const EndpointToken = "token"
 
 var (
 	ErrNilAuthCode = errors.New("authorization code is nil")
@@ -273,7 +273,7 @@ func (f *Flow) validateGrantType(r *requests.TokenRequest) error {
 }
 
 func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
-	client, err := f.clientMgr.Authenticate(r.Request, f.supportedClientAuthMethods, endpointToken)
+	client, err := f.clientMgr.Authenticate(r.Request, f.supportedClientAuthMethods, EndpointToken)
 	if err != nil {
 		return err
 	}

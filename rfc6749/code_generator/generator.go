@@ -2,9 +2,9 @@ package codegen
 
 import (
 	"errors"
-	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
+	"github.com/tniah/authlib/utils"
 	"time"
 )
 
@@ -73,7 +73,7 @@ func (g *Generator) genCode(grantType string, client models.Client) (string, err
 		return fn(grantType, client)
 	}
 
-	return common.GenerateRandString(g.codeLength, common.AlphaNum)
+	return utils.GenerateRandString(g.codeLength, utils.AlphaNum)
 }
 
 func (g *Generator) expiresInHandler(grantType string, client models.Client) (time.Duration, error) {
