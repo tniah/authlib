@@ -1,11 +1,8 @@
 package rfc7662
 
 import (
-	"encoding/json"
-	"github.com/tniah/authlib/common"
 	autherrors "github.com/tniah/authlib/errors"
-	"github.com/tniah/authlib/models"
-	"mime"
+	"github.com/tniah/authlib/utils"
 	"net/http"
 	"time"
 )
@@ -19,7 +16,7 @@ func NewTokenIntrospection(cfg *IntrospectionConfig) *TokenIntrospection {
 }
 
 func MustTokenIntrospection(cfg *IntrospectionConfig) (*TokenIntrospection, error) {
-	if err := cfg.Validate(); err != nil {
+	if err := cfg.ValidateConfig(); err != nil {
 		return nil, err
 	}
 
@@ -40,85 +37,73 @@ func (t *TokenIntrospection) EndpointResponse(r *http.Request, rw http.ResponseW
 		return err
 	}
 
-	token, err := t.authenticateToken(r, client)
+	req := NewIntrospectionRequestFromHTTP(r)
+	req.Client = client
+
+	if err = t.authenticateToken(req); err != nil {
+		return err
+	}
+
+	payload := t.introspectionPayload(req)
+	return utils.JSONResponse(rw, payload, http.StatusOK)
+}
+
+func (t *TokenIntrospection) authenticateToken(r *IntrospectionRequest) error {
+	if err := t.checkParams(r); err != nil {
+		return err
+	}
+
+	token, err := t.tokenManager.QueryByToken(r.Request.Context(), r.Token, r.TokenTypeHint.String())
 	if err != nil {
 		return err
 	}
 
-	payload := t.introspectionPayload(token, client)
-	return t.jsonResponse(rw, payload)
-}
-
-func (t *TokenIntrospection) authenticateToken(r *http.Request, client models.Client) (models.Token, error) {
-	if err := t.checkParams(r); err != nil {
-		return nil, err
-	}
-
-	token, err := t.tokenManager.QueryByToken(r.Context(), r.FormValue(ParamToken), r.PostFormValue(ParamTokenTypeHint))
-	if err != nil {
-		return nil, err
-	}
-
 	if fn := t.clientManager.CheckPermission; fn != nil {
-		if allowed := fn(client, token, r); !allowed {
-			return nil, autherrors.AccessDeniedError().WithDescription(ErrClientDoesNotHavePermission)
+		if allowed := fn(r.Client, token, r.Request); !allowed {
+			return autherrors.AccessDeniedError().WithDescription("client does not have permission to inspect token")
 		}
 	}
 
-	return token, nil
+	r.Tok = token
+	return nil
 }
 
-func (t *TokenIntrospection) checkParams(r *http.Request) error {
-	if r.Method != http.MethodPost {
-		return autherrors.InvalidRequestError().WithDescription(ErrRequestMustBePost)
+func (t *TokenIntrospection) checkParams(r *IntrospectionRequest) error {
+	if err := r.ValidateHTTPMethod(); err != nil {
+		return err
 	}
 
-	ct, _, err := mime.ParseMediaType(r.Header.Get(HeaderContentType))
-	if err != nil {
-		return autherrors.InvalidRequestError()
-	}
-	if ct != ContentTypeXWwwFormUrlEncoded {
-		return autherrors.InvalidRequestError().WithDescription(ErrInvalidContentType)
+	if err := r.ValidateContentType(); err != nil {
+		return err
 	}
 
-	token := r.PostFormValue(ParamToken)
-	if token == "" {
-		return autherrors.InvalidRequestError().WithDescription(ErrTokenParamMissing)
+	if err := r.ValidateToken(); err != nil {
+		return err
 	}
 
-	hint := r.PostFormValue(ParamTokenTypeHint)
-	if hint != "" && hint != TokenTypeHintAccessToken && hint != TokenTypeHintRefreshToken {
-		return autherrors.UnsupportedTokenType().WithDescription(ErrInvalidTokenTypeHint)
+	if err := r.ValidateTokenTypeHint(); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (t *TokenIntrospection) introspectionPayload(token models.Token, client models.Client) map[string]interface{} {
+func (t *TokenIntrospection) introspectionPayload(r *IntrospectionRequest) map[string]interface{} {
 	payload := map[string]interface{}{
 		"active": false,
 	}
-	if token == nil {
+	if r.Tok == nil {
 		return payload
 	}
 
-	if token.GetIssuedAt().Add(token.GetAccessTokenExpiresIn()).Before(time.Now()) {
+	if r.Tok.GetIssuedAt().Add(r.Tok.GetAccessTokenExpiresIn()).Before(time.Now()) {
 		return payload
 	}
 
 	if fn := t.tokenManager.Inspect; fn != nil {
-		payload = fn(client, token)
+		payload = fn(r.Client, r.Tok)
 	}
 
 	payload["active"] = true
 	return payload
-}
-
-func (t *TokenIntrospection) jsonResponse(rw http.ResponseWriter, payload map[string]interface{}) error {
-	for k, v := range common.DefaultJSONHeader() {
-		rw.Header().Set(k, v)
-	}
-
-	rw.WriteHeader(http.StatusOK)
-	return json.NewEncoder(rw).Encode(payload)
 }

@@ -1,6 +1,11 @@
 package rfc7662
 
-import "errors"
+import (
+	"errors"
+	"github.com/tniah/authlib/types"
+)
+
+const EndpointNameTokenIntrospection = "introspection"
 
 var (
 	ErrEmptyEndpointName = errors.New("endpoint name is empty")
@@ -18,42 +23,42 @@ type IntrospectionConfig struct {
 func NewIntrospectionConfig() *IntrospectionConfig {
 	return &IntrospectionConfig{
 		clientAuthMethods: map[string]bool{
-			AuthMethodClientSecretBasic: true,
+			types.ClientBasicAuthentication.String(): true,
 		},
 		endpointName: EndpointNameTokenIntrospection,
 	}
 }
 
-func (opts *IntrospectionConfig) SetEndpointName(name string) *IntrospectionConfig {
-	opts.endpointName = name
-	return opts
+func (cfg *IntrospectionConfig) SetEndpointName(name string) *IntrospectionConfig {
+	cfg.endpointName = name
+	return cfg
 }
 
-func (opts *IntrospectionConfig) SetClientManager(mgr ClientManager) *IntrospectionConfig {
-	opts.clientManager = mgr
-	return opts
+func (cfg *IntrospectionConfig) SetClientManager(mgr ClientManager) *IntrospectionConfig {
+	cfg.clientManager = mgr
+	return cfg
 }
 
-func (opts *IntrospectionConfig) SetTokenManager(mgr TokenManager) *IntrospectionConfig {
-	opts.tokenManager = mgr
-	return opts
+func (cfg *IntrospectionConfig) SetTokenManager(mgr TokenManager) *IntrospectionConfig {
+	cfg.tokenManager = mgr
+	return cfg
 }
 
-func (opts *IntrospectionConfig) SetClientAuthMethods(methods map[string]bool) *IntrospectionConfig {
-	opts.clientAuthMethods = methods
-	return opts
+func (cfg *IntrospectionConfig) SetClientAuthMethods(methods map[string]bool) *IntrospectionConfig {
+	cfg.clientAuthMethods = methods
+	return cfg
 }
 
-func (opts *IntrospectionConfig) Validate() error {
-	if opts.endpointName == "" {
+func (cfg *IntrospectionConfig) ValidateConfig() error {
+	if cfg.endpointName == "" {
 		return ErrEmptyEndpointName
 	}
 
-	if opts.clientManager == nil {
+	if cfg.clientManager == nil {
 		return ErrNilClientManager
 	}
 
-	if opts.tokenManager == nil {
+	if cfg.tokenManager == nil {
 		return ErrNilTokenManager
 	}
 

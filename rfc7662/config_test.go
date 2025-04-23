@@ -31,17 +31,17 @@ func TestIntrospectionConfig(t *testing.T) {
 	t.Run("error", func(t *testing.T) {
 		cfg := NewIntrospectionConfig()
 		cfg.SetEndpointName("")
-		err := cfg.Validate()
+		err := cfg.ValidateConfig()
 		assert.ErrorIs(t, err, ErrEmptyEndpointName)
 
 		cfg.SetEndpointName("test")
 		cfg.SetClientManager(nil)
-		err = cfg.Validate()
+		err = cfg.ValidateConfig()
 		assert.ErrorIs(t, err, ErrNilClientManager)
 
 		cfg.SetClientManager(mock.NewMockClientManager(t))
 		cfg.SetTokenManager(nil)
-		err = cfg.Validate()
+		err = cfg.ValidateConfig()
 		assert.ErrorIs(t, err, ErrNilTokenManager)
 	})
 }
