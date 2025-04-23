@@ -37,7 +37,7 @@ func (g *Generator) Generate(authCode models.AuthorizationCode, r *requests.Auth
 		return ErrNilUser
 	}
 
-	code, err := g.genCode(r.GrantType, client)
+	code, err := g.genCode(r.GrantType.String(), client)
 	if err != nil {
 		return err
 	}
@@ -47,11 +47,11 @@ func (g *Generator) Generate(authCode models.AuthorizationCode, r *requests.Auth
 	authCode.SetUserID(user.GetUserID())
 	authCode.SetRedirectURI(r.RedirectURI)
 	authCode.SetResponseType(string(r.ResponseType))
-	authCode.SetScopes(r.Scopes)
+	authCode.SetScopes(r.Scopes.String())
 	authCode.SetState(r.State)
 	authCode.SetAuthTime(time.Now())
 
-	exp, err := g.expiresInHandler(r.GrantType, client)
+	exp, err := g.expiresInHandler(r.GrantType.String(), client)
 	if err != nil {
 		return err
 	}

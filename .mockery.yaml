@@ -11,6 +11,19 @@ packages:
       Client:
       User:
       Token:
+  github.com/tniah/authlib/rfc6749/client_authentication:
+    config:
+      outpkg: rfc6749
+    interfaces:
+      ClientStore:
+      Handler:
+  github.com/tniah/authlib/rfc6749/code_generator:
+    config:
+      outpkg: rfc6749
+    interfaces:
+      ExpiresInGenerator:
+      RandStringGenerator:
+      ExtraDataGenerator:
   github.com/tniah/authlib/rfc6750:
     config:
       outpkg: rfc6750

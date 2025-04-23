@@ -123,10 +123,6 @@ func (r *AuthorizationRequest) ValidateDisplay(required ...bool) error {
 			WithRedirectURI(r.RedirectURI)
 	}
 
-	if r.Display.IsEmpty() || !r.Display.IsValid() {
-		r.Display = types.DisplayPage
-	}
-
 	return nil
 }
 

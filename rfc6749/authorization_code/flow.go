@@ -240,7 +240,7 @@ func (f *Flow) validateResponseType(r *requests.AuthorizationRequest) error {
 		return autherrors.UnsupportedResponseTypeError().WithState(r.State).WithRedirectURI(r.RedirectURI)
 	}
 
-	if allowed := r.Client.CheckResponseType(r.ResponseType); !allowed {
+	if allowed := r.Client.CheckResponseType(r.ResponseType.String()); !allowed {
 		return autherrors.UnauthorizedClientError().WithState(r.State).WithRedirectURI(r.RedirectURI)
 	}
 
@@ -339,7 +339,7 @@ func (f *Flow) genToken(r *requests.TokenRequest) (models.Token, error) {
 	}
 
 	r.Scopes = types.NewScopes(r.AuthCode.GetScopes())
-	if err := f.tokenMgr.Generate(token, r, r.Client.CheckGrantType(types.GrantTypeRefreshToken)); err != nil {
+	if err := f.tokenMgr.Generate(token, r, r.Client.CheckGrantType(types.GrantTypeRefreshToken.String())); err != nil {
 		return nil, err
 	}
 
