@@ -3,6 +3,7 @@ package clientauth
 import (
 	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/models"
+	"github.com/tniah/authlib/types"
 	"net/http"
 )
 
@@ -30,8 +31,8 @@ func MustNoneAuthHandler(store ClientStore) (*NoneAuthHandler, error) {
 	return h, nil
 }
 
-func (h *NoneAuthHandler) Method() string {
-	return AuthMethodNone
+func (h *NoneAuthHandler) Method() types.ClientAuthMethod {
+	return types.ClientNoneAuthentication
 }
 
 func (h *NoneAuthHandler) Authenticate(r *http.Request) (models.Client, error) {

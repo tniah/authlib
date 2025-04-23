@@ -44,5 +44,5 @@ func (m *Manager) Register(h Handler) {
 		m.handlers = make(map[string]Handler)
 	}
 
-	m.handlers[h.Method()] = h
+	m.handlers[h.Method().String()] = h
 }

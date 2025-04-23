@@ -3,6 +3,7 @@ package clientauth
 import (
 	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/models"
+	"github.com/tniah/authlib/types"
 	"net/http"
 )
 
@@ -31,8 +32,8 @@ func MustPostAuthHandler(store ClientStore) (*PostAuthHandler, error) {
 	return h, nil
 }
 
-func (h *PostAuthHandler) Method() string {
-	return AuthMethodClientSecretPost
+func (h *PostAuthHandler) Method() types.ClientAuthMethod {
+	return types.ClientPostAuthentication
 }
 
 func (h *PostAuthHandler) Authenticate(r *http.Request) (models.Client, error) {

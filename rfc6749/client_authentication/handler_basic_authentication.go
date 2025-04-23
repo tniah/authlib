@@ -2,6 +2,7 @@ package clientauth
 
 import (
 	"github.com/tniah/authlib/models"
+	"github.com/tniah/authlib/types"
 	"net/http"
 )
 
@@ -30,8 +31,8 @@ func MustBasicAuthHandler(store ClientStore) (*BasicAuthHandler, error) {
 	return h, nil
 }
 
-func (h *BasicAuthHandler) Method() string {
-	return AuthMethodClientSecretBasic
+func (h *BasicAuthHandler) Method() types.ClientAuthMethod {
+	return types.ClientBasicAuthentication
 }
 
 func (h *BasicAuthHandler) Authenticate(r *http.Request) (models.Client, error) {
