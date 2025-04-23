@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/tniah/authlib/mocks/models"
 	"github.com/tniah/authlib/requests"
+	"github.com/tniah/authlib/types"
 	"testing"
 	"time"
 )
@@ -55,9 +56,9 @@ func TestOpaqueAccessTokenGenerator(t *testing.T) {
 
 	r := &requests.TokenRequest{
 		GrantType: "password",
-		//Client:    mockClient,
-		User: mockUser,
-		//Scopes:    expectedScopes,
+		Client:    mockClient,
+		User:      mockUser,
+		Scopes:    types.NewScopes(expectedScopes),
 	}
 
 	g := NewOpaqueAccessTokenGenerator()
@@ -69,4 +70,8 @@ func TestOpaqueAccessTokenGenerator(t *testing.T) {
 	assert.NotEqual(t, time.Time{}, actual.issuedAt)
 	assert.Equal(t, DefaultExpiresIn, actual.expiresIn)
 	assert.Equal(t, DefaultTokenLength, len(actual.accessToken))
+
+	mockClient.AssertExpectations(t)
+	mockUser.AssertExpectations(t)
+	mockToken.AssertExpectations(t)
 }

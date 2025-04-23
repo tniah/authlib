@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/tniah/authlib/mocks/models"
 	"github.com/tniah/authlib/requests"
+	"github.com/tniah/authlib/types"
 	"testing"
 	"time"
 )
@@ -31,11 +32,15 @@ func TestOpaqueRefreshTokenGenerator(t *testing.T) {
 		GrantType: "password",
 		Client:    mockClient,
 		User:      mockUser,
-		Scopes:    []string{"openid"},
+		Scopes:    types.NewScopes([]string{"profile", "email"}),
 	}
 	g := NewOpaqueRefreshTokenGenerator()
 	err := g.Generate(mockToken, r)
 	assert.NoError(t, err)
 	assert.Equal(t, DefaultTokenLength, len(actual.refreshToken))
 	assert.Equal(t, DefaultRefreshTokenExpiresIn, actual.expires)
+
+	mockToken.AssertExpectations(t)
+	mockClient.AssertExpectations(t)
+	mockUser.AssertExpectations(t)
 }
