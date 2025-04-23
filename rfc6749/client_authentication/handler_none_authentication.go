@@ -1,9 +1,9 @@
 package clientauth
 
 import (
-	"github.com/tniah/authlib/common"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/types"
+	"github.com/tniah/authlib/utils"
 	"net/http"
 )
 
@@ -36,7 +36,16 @@ func (h *NoneAuthHandler) Method() types.ClientAuthMethod {
 }
 
 func (h *NoneAuthHandler) Authenticate(r *http.Request) (models.Client, error) {
-	if r.Method != http.MethodPost || !common.IsXWWWFormUrlencodedContentType(r) {
+	if r.Method != http.MethodPost {
+		return nil, ErrInvalidClient
+	}
+
+	ct, err := utils.ContentType(r)
+	if err != nil {
+		return nil, ErrInvalidClient
+	}
+
+	if valid := ct.IsXWWWFormUrlencoded(); !valid {
 		return nil, ErrInvalidClient
 	}
 

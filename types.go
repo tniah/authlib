@@ -7,13 +7,13 @@ import (
 )
 
 type AuthorizationGrant interface {
-	CheckResponseType(typ string) bool
+	CheckResponseType(typ types.ResponseType) bool
 	ValidateAuthorizationRequest(r *requests.AuthorizationRequest) error
 	AuthorizationResponse(r *requests.AuthorizationRequest, rw http.ResponseWriter) error
 }
 
 type ConsentGrant interface {
-	CheckResponseType(typ string) bool
+	CheckResponseType(typ types.ResponseType) bool
 	ValidateConsentRequest(r *requests.AuthorizationRequest) error
 	AuthorizationResponse(r *requests.AuthorizationRequest, rw http.ResponseWriter) error
 }

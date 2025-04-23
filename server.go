@@ -3,9 +3,9 @@ package authlib
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/tniah/authlib/common"
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/requests"
+	"github.com/tniah/authlib/utils"
 	"net/http"
 )
 
@@ -30,7 +30,7 @@ func (srv *Server) CreateAuthorizationRequest(r *http.Request) (*requests.Author
 
 func (srv *Server) GetAuthorizationGrant(r *requests.AuthorizationRequest) (AuthorizationGrant, error) {
 	for grant := range srv.authorizationGrants {
-		if grant.CheckResponseType(string(r.ResponseType)) {
+		if grant.CheckResponseType(r.ResponseType) {
 			return grant, nil
 		}
 	}
@@ -64,6 +64,7 @@ func (srv *Server) Endpoint(name string) (Endpoint, error) {
 
 func (srv *Server) RegisterGrant(grant interface{}) {
 	srv.RegisterAuthorizationGrant(grant)
+	srv.RegisterConsentGrant(grant)
 	srv.RegisterTokenGrant(grant)
 }
 
@@ -72,6 +73,7 @@ func (srv *Server) RegisterAuthorizationGrant(grant interface{}) {
 		if srv.authorizationGrants == nil {
 			srv.authorizationGrants = make(map[AuthorizationGrant]bool)
 		}
+
 		srv.authorizationGrants[g] = true
 	}
 }
@@ -81,6 +83,7 @@ func (srv *Server) RegisterConsentGrant(grant interface{}) {
 		if srv.consentGrants == nil {
 			srv.consentGrants = make(map[ConsentGrant]bool)
 		}
+
 		srv.consentGrants[g] = true
 	}
 }
@@ -99,6 +102,7 @@ func (srv *Server) RegisterEndpoint(endpoint interface{}) {
 		if srv.endpoints == nil {
 			srv.endpoints = make(map[Endpoint]bool)
 		}
+
 		srv.endpoints[g] = true
 	}
 }
@@ -110,7 +114,7 @@ func (srv *Server) HandleError(rw http.ResponseWriter, err error) error {
 	}
 
 	if authErr.RedirectURI != "" {
-		return common.Redirect(rw, authErr.RedirectURI, authErr.Data())
+		return utils.Redirect(rw, authErr.RedirectURI, authErr.Data())
 	}
 
 	status, header, data := authErr.Response()
@@ -118,7 +122,7 @@ func (srv *Server) HandleError(rw http.ResponseWriter, err error) error {
 }
 
 func (srv *Server) JSONResponse(rw http.ResponseWriter, status int, header http.Header, data map[string]interface{}) error {
-	for k, v := range common.DefaultJSONHeader() {
+	for k, v := range utils.JSONHeaders() {
 		rw.Header().Set(k, v)
 	}
 

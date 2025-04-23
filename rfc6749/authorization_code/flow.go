@@ -3,12 +3,12 @@ package authorizationcode
 import (
 	"errors"
 	"fmt"
-	"github.com/tniah/authlib/common"
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/rfc6749"
 	"github.com/tniah/authlib/types"
+	"github.com/tniah/authlib/utils"
 	"net/http"
 	"time"
 )
@@ -113,7 +113,7 @@ func (f *Flow) AuthorizationResponse(r *requests.AuthorizationRequest, rw http.R
 		return err
 	}
 
-	return common.Redirect(rw, r.RedirectURI, params)
+	return utils.Redirect(rw, r.RedirectURI, params)
 }
 
 func (f *Flow) ValidateTokenRequest(r *requests.TokenRequest) error {
