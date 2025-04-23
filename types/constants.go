@@ -27,4 +27,7 @@ const (
 	ClientBasicAuthentication ClientAuthMethod = "client_secret_basic"
 	ClientPostAuthentication  ClientAuthMethod = "client_secret_post"
 	ClientNoneAuthentication  ClientAuthMethod = "none"
+
+	ContentTypeJSON               ContentType = "application/json;charset=UTF-8"
+	ContentTypeXWWWFormUrlencoded ContentType = "application/x-www-form-urlencoded"
 )
