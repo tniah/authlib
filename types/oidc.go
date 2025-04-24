@@ -100,6 +100,14 @@ func (p Prompt) IsSelectAccount() bool {
 	return p == PromptSelectAccount
 }
 
+func (p Prompt) IsValid() bool {
+	return p.IsNone() || p.IsLogin() || p.IsConsent() || p.IsSelectAccount()
+}
+
+func (p Prompt) String() string {
+	return string(p)
+}
+
 type Prompts []Prompt
 
 func NewPrompts(ar []string) Prompts {
@@ -110,8 +118,38 @@ func NewPrompts(ar []string) Prompts {
 	return ret
 }
 
-func (p Prompt) IsValid() bool {
-	return p.IsNone() || p.IsLogin() || p.IsConsent() || p.IsSelectAccount()
+func (p Prompts) Contain(expected Prompt) bool {
+	for _, prompt := range p {
+		if prompt == expected {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (p Prompts) ContainLogin() bool {
+	return p.Contain(PromptLogin)
+}
+
+func (p Prompts) ContainNone() bool {
+	return p.Contain(PromptNone)
+}
+
+func (p Prompts) ContainConsent() bool {
+	return p.Contain(PromptConsent)
+}
+
+func (p Prompts) ContainSelectAccount() bool {
+	return p.Contain(PromptSelectAccount)
+}
+
+func (p Prompts) String() []string {
+	ret := make([]string, len(p))
+	for i, s := range p {
+		ret[i] = string(s)
+	}
+	return ret
 }
 
 type MaxAge *uint

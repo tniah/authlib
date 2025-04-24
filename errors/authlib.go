@@ -96,3 +96,15 @@ func UnsupportedTokenType() *AuthLibError {
 func InternalServerError() *AuthLibError {
 	return NewAuthLibError(ErrServerError)
 }
+
+func LoginRequiredError() *AuthLibError {
+	return NewAuthLibError(ErrLoginRequired)
+}
+
+func ConsentRequiredError() *AuthLibError {
+	return NewAuthLibError(ErrConsentRequired)
+}
+
+func AccountSelectionRequiredError() *AuthLibError {
+	return NewAuthLibError(ErrAccountSelectionRequired)
+}

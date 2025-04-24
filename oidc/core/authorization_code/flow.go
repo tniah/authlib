@@ -61,6 +61,22 @@ func (f *Flow) ValidateConsentRequest(r *requests.AuthorizationRequest) error {
 		r.Prompts = types.Prompts{types.PromptLogin}
 	}
 
+	if user == nil && r.Prompts.ContainLogin() {
+		return nil
+	}
+
+	if user == nil && r.Prompts.ContainNone() {
+		return autherrors.LoginRequiredError().WithState(r.State).WithRedirectURI(r.RedirectURI)
+	}
+
+	if user == nil && r.Prompts.ContainConsent() {
+		return autherrors.ConsentRequiredError().WithState(r.State).WithRedirectURI(r.RedirectURI)
+	}
+
+	if user == nil && r.Prompts.ContainSelectAccount() {
+		return autherrors.AccountSelectionRequiredError().WithState(r.State).WithRedirectURI(r.RedirectURI)
+	}
+
 	return nil
 }
 
@@ -105,10 +121,6 @@ func (f *Flow) validateNonce(r *requests.AuthorizationRequest) error {
 }
 
 func (f *Flow) validatePrompt(r *requests.AuthorizationRequest) error {
-	if err := r.ValidatePrompts(false); err != nil {
-		return err
-	}
-
 	for _, prompt := range r.Prompts {
 		if prompt.IsNone() && len(prompt) > 0 {
 			return autherrors.InvalidRequestError().
