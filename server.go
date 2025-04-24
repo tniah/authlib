@@ -38,6 +38,16 @@ func (srv *Server) GetAuthorizationGrant(r *requests.AuthorizationRequest) (Auth
 	return nil, autherrors.UnsupportedResponseTypeError()
 }
 
+func (srv *Server) GetConsentGrant(r *requests.AuthorizationRequest) (ConsentGrant, error) {
+	for grant := range srv.consentGrants {
+		if grant.CheckResponseType(r.ResponseType) {
+			return grant, nil
+		}
+	}
+
+	return nil, autherrors.UnsupportedResponseTypeError()
+}
+
 func (srv *Server) CreateTokenRequest(r *http.Request) (*requests.TokenRequest, error) {
 	return requests.NewTokenRequestFromHttp(r)
 }
