@@ -109,6 +109,28 @@ func (srv *Server) GetTokenGrant(r *requests.TokenRequest) (TokenGrant, error) {
 	return nil, autherrors.UnsupportedGrantTypeError()
 }
 
+func (srv *Server) CreateTokenResponse(hr *http.Request, rw http.ResponseWriter) error {
+	r, err := srv.CreateTokenRequest(hr)
+	if err != nil {
+		return srv.HandleError(rw, err)
+	}
+
+	grant, err := srv.GetTokenGrant(r)
+	if err != nil {
+		return srv.HandleError(rw, err)
+	}
+
+	if err := grant.ValidateTokenRequest(r); err != nil {
+		return srv.HandleError(rw, err)
+	}
+
+	if err := grant.TokenResponse(r, rw); err != nil {
+		return srv.HandleError(rw, err)
+	}
+
+	return nil
+}
+
 func (srv *Server) Endpoint(name string) (Endpoint, error) {
 	for endpoint := range srv.endpoints {
 		if endpoint.CheckEndpoint(name) {
