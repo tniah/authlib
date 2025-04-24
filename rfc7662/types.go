@@ -3,6 +3,7 @@ package rfc7662
 import (
 	"context"
 	"github.com/tniah/authlib/models"
+	"github.com/tniah/authlib/types"
 	"net/http"
 )
 
@@ -12,32 +13,6 @@ type ClientManager interface {
 }
 
 type TokenManager interface {
-	QueryByToken(ctx context.Context, token, hint string) (models.Token, error)
+	QueryByToken(ctx context.Context, token string, hint types.TokenTypeHint) (models.Token, error)
 	Inspect(client models.Client, token models.Token) map[string]interface{}
-}
-
-type TokenTypeHint string
-
-func NewTokenTypeHint(s string) TokenTypeHint {
-	return TokenTypeHint(s)
-}
-
-func (t TokenTypeHint) IsEmpty() bool {
-	return t == ""
-}
-
-func (t TokenTypeHint) IsAccessToken() bool {
-	return t == TokenTypeHintAccessToken
-}
-
-func (t TokenTypeHint) IsRefreshToken() bool {
-	return t == TokenTypeHintRefreshToken
-}
-
-func (t TokenTypeHint) IsValid() bool {
-	return t.IsAccessToken() || t.IsRefreshToken()
-}
-
-func (t TokenTypeHint) String() string {
-	return string(t)
 }

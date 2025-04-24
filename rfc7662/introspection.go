@@ -53,7 +53,7 @@ func (t *TokenIntrospection) authenticateToken(r *IntrospectionRequest) error {
 		return err
 	}
 
-	token, err := t.tokenManager.QueryByToken(r.Request.Context(), r.Token, r.TokenTypeHint.String())
+	token, err := t.tokenManager.QueryByToken(r.Request.Context(), r.Token, r.TokenTypeHint)
 	if err != nil {
 		return err
 	}

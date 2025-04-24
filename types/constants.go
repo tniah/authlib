@@ -24,6 +24,9 @@ const (
 	CodeChallengeMethodPlain CodeChallengeMethod = "plain"
 	CodeChallengeMethodS256  CodeChallengeMethod = "S256"
 
+	TokenTypeHintAccessToken  TokenTypeHint = "access_token"
+	TokenTypeHintRefreshToken TokenTypeHint = "refresh_token"
+
 	ClientBasicAuthentication ClientAuthMethod = "client_secret_basic"
 	ClientPostAuthentication  ClientAuthMethod = "client_secret_post"
 	ClientNoneAuthentication  ClientAuthMethod = "none"

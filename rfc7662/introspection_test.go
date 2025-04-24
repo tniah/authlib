@@ -30,7 +30,7 @@ func TestTokenIntrospection(t *testing.T) {
 		"scope":    "read write dolphin",
 		"username": "makai",
 	}
-	mockTokenMgr.On("QueryByToken", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(mockToken, nil).Once()
+	mockTokenMgr.On("QueryByToken", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("types.TokenTypeHint")).Return(mockToken, nil).Once()
 	mockTokenMgr.On("Inspect", mock.Anything, mock.Anything).Return(expected).Once()
 	cfg.SetTokenManager(mockTokenMgr)
 
@@ -92,7 +92,7 @@ func TestAuthenticateToken(t *testing.T) {
 		hr.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		r := NewIntrospectionRequestFromHTTP(hr)
 
-		mockTokenMgr.On("QueryByToken", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(mockToken, nil).Once()
+		mockTokenMgr.On("QueryByToken", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("types.TokenTypeHint")).Return(mockToken, nil).Once()
 		mockClientMgr.On("CheckPermission", mock.Anything, mock.Anything, mock.AnythingOfType("*http.Request")).Return(true).Once()
 
 		r.Client = mockClient
@@ -107,7 +107,7 @@ func TestAuthenticateToken(t *testing.T) {
 		hr.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		r := NewIntrospectionRequestFromHTTP(hr)
 
-		mockTokenMgr.On("QueryByToken", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(mockToken, nil).Once()
+		mockTokenMgr.On("QueryByToken", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("types.TokenTypeHint")).Return(mockToken, nil).Once()
 		mockClientMgr.On("CheckPermission", mock.Anything, mock.Anything, mock.AnythingOfType("*http.Request")).Return(false).Once()
 		r.Client = mockClient
 

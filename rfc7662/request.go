@@ -4,18 +4,16 @@ import (
 	"fmt"
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
+	"github.com/tniah/authlib/types"
 	"github.com/tniah/authlib/utils"
 	"net/http"
 )
 
-const (
-	TokenTypeHintAccessToken  TokenTypeHint = "access_token"
-	TokenTypeHintRefreshToken TokenTypeHint = "refresh_token"
-)
+const ()
 
 type IntrospectionRequest struct {
 	Token         string
-	TokenTypeHint TokenTypeHint
+	TokenTypeHint types.TokenTypeHint
 
 	Client  models.Client
 	Tok     models.Token
@@ -25,7 +23,7 @@ type IntrospectionRequest struct {
 func NewIntrospectionRequestFromHTTP(r *http.Request) *IntrospectionRequest {
 	return &IntrospectionRequest{
 		Token:         r.FormValue("token"),
-		TokenTypeHint: NewTokenTypeHint(r.FormValue("token_type_hint")),
+		TokenTypeHint: types.NewTokenTypeHint(r.FormValue("token_type_hint")),
 		Request:       r,
 	}
 }
