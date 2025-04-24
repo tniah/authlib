@@ -142,7 +142,7 @@ func (f *Flow) genIDToken(r *requests.TokenRequest) (string, error) {
 	user := r.User
 	authCode := r.AuthCode
 
-	now := time.Now()
+	now := time.Now().UTC().Round(time.Second)
 	claims := utils.JWTClaim{
 		"iss": f.issuerHandler(client),
 		"aud": []string{client.GetClientID()},

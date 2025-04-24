@@ -49,7 +49,7 @@ func (g *Generator) Generate(authCode models.AuthorizationCode, r *requests.Auth
 	authCode.SetResponseType(r.ResponseType)
 	authCode.SetScopes(r.Scopes)
 	authCode.SetState(r.State)
-	authCode.SetAuthTime(time.Now())
+	authCode.SetAuthTime(time.Now().UTC().Round(time.Second))
 
 	exp, err := g.expiresInHandler(r.GrantType.String(), client)
 	if err != nil {
