@@ -29,18 +29,8 @@ func (srv *Server) CreateAuthorizationRequest(r *http.Request) (*requests.Author
 	return requests.NewAuthorizationRequestFromHttp(r)
 }
 
-func (srv *Server) GetAuthorizationGrant(r *requests.AuthorizationRequest) (AuthorizationGrant, error) {
+func (srv *Server) AuthorizationGrant(r *requests.AuthorizationRequest) (AuthorizationGrant, error) {
 	for grant := range srv.authorizationGrants {
-		if grant.CheckResponseType(r.ResponseType) {
-			return grant, nil
-		}
-	}
-
-	return nil, autherrors.UnsupportedResponseTypeError()
-}
-
-func (srv *Server) GetConsentGrant(r *requests.AuthorizationRequest) (ConsentGrant, error) {
-	for grant := range srv.consentGrants {
 		if grant.CheckResponseType(r.ResponseType) {
 			return grant, nil
 		}
@@ -56,20 +46,30 @@ func (srv *Server) CreateAuthorizationResponse(hr *http.Request, rw http.Respons
 	}
 
 	r.User = u
-	grant, err := srv.GetAuthorizationGrant(r)
+	grant, err := srv.AuthorizationGrant(r)
 	if err != nil {
 		return srv.HandleError(rw, err)
 	}
 
-	if err := grant.ValidateAuthorizationRequest(r); err != nil {
+	if err = grant.ValidateAuthorizationRequest(r); err != nil {
 		return srv.HandleError(rw, err)
 	}
 
-	if err := grant.AuthorizationResponse(r, rw); err != nil {
+	if err = grant.AuthorizationResponse(r, rw); err != nil {
 		return srv.HandleError(rw, err)
 	}
 
 	return nil
+}
+
+func (srv *Server) ConsentGrant(r *requests.AuthorizationRequest) (ConsentGrant, error) {
+	for grant := range srv.consentGrants {
+		if grant.CheckResponseType(r.ResponseType) {
+			return grant, nil
+		}
+	}
+
+	return nil, autherrors.UnsupportedResponseTypeError()
 }
 
 func (srv *Server) CreateConsentResponse(hr *http.Request, rw http.ResponseWriter, u models.User) error {
@@ -79,16 +79,16 @@ func (srv *Server) CreateConsentResponse(hr *http.Request, rw http.ResponseWrite
 	}
 
 	r.User = u
-	grant, err := srv.GetConsentGrant(r)
+	grant, err := srv.ConsentGrant(r)
 	if err != nil {
 		return srv.HandleError(rw, err)
 	}
 
-	if err := grant.ValidateConsentRequest(r); err != nil {
+	if err = grant.ValidateConsentRequest(r); err != nil {
 		return srv.HandleError(rw, err)
 	}
 
-	if err := grant.AuthorizationResponse(r, rw); err != nil {
+	if err = grant.AuthorizationResponse(r, rw); err != nil {
 		return srv.HandleError(rw, err)
 	}
 
@@ -99,7 +99,7 @@ func (srv *Server) CreateTokenRequest(r *http.Request) (*requests.TokenRequest, 
 	return requests.NewTokenRequestFromHttp(r)
 }
 
-func (srv *Server) GetTokenGrant(r *requests.TokenRequest) (TokenGrant, error) {
+func (srv *Server) TokenGrant(r *requests.TokenRequest) (TokenGrant, error) {
 	for grant := range srv.tokenGrants {
 		if grant.CheckGrantType(r.GrantType) {
 			return grant, nil
@@ -115,16 +115,16 @@ func (srv *Server) CreateTokenResponse(hr *http.Request, rw http.ResponseWriter)
 		return srv.HandleError(rw, err)
 	}
 
-	grant, err := srv.GetTokenGrant(r)
+	grant, err := srv.TokenGrant(r)
 	if err != nil {
 		return srv.HandleError(rw, err)
 	}
 
-	if err := grant.ValidateTokenRequest(r); err != nil {
+	if err = grant.ValidateTokenRequest(r); err != nil {
 		return srv.HandleError(rw, err)
 	}
 
-	if err := grant.TokenResponse(r, rw); err != nil {
+	if err = grant.TokenResponse(r, rw); err != nil {
 		return srv.HandleError(rw, err)
 	}
 
@@ -141,6 +141,19 @@ func (srv *Server) Endpoint(name string) (Endpoint, error) {
 	return nil, fmt.Errorf("no endpoint was found with \"%s\"", name)
 }
 
+func (srv *Server) EndpointResponse(hr *http.Request, rw http.ResponseWriter, name string) error {
+	h, err := srv.Endpoint(name)
+	if err != nil {
+		return srv.HandleError(rw, err)
+	}
+
+	if err = h.EndpointResponse(hr, rw); err != nil {
+		return srv.HandleError(rw, err)
+	}
+
+	return nil
+}
+
 func (srv *Server) RegisterGrant(grant interface{}) {
 	srv.RegisterAuthorizationGrant(grant)
 	srv.RegisterConsentGrant(grant)
@@ -152,7 +165,6 @@ func (srv *Server) RegisterAuthorizationGrant(grant interface{}) {
 		if srv.authorizationGrants == nil {
 			srv.authorizationGrants = make(map[AuthorizationGrant]bool)
 		}
-
 		srv.authorizationGrants[g] = true
 	}
 }
@@ -162,7 +174,6 @@ func (srv *Server) RegisterConsentGrant(grant interface{}) {
 		if srv.consentGrants == nil {
 			srv.consentGrants = make(map[ConsentGrant]bool)
 		}
-
 		srv.consentGrants[g] = true
 	}
 }
@@ -181,7 +192,6 @@ func (srv *Server) RegisterEndpoint(endpoint interface{}) {
 		if srv.endpoints == nil {
 			srv.endpoints = make(map[Endpoint]bool)
 		}
-
 		srv.endpoints[g] = true
 	}
 }
