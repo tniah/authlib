@@ -52,7 +52,7 @@ func (t *JWTToken) SigningMethod() jwt.SigningMethod {
 
 func (t *JWTToken) Generate(claims JWTClaim, headers JWTHeader) (string, error) {
 	mapClaims := jwt.MapClaims{
-		"iat": jwt.NewNumericDate(time.Now()),
+		"iat": jwt.NewNumericDate(time.Now().UTC().Round(time.Second)),
 	}
 	for k, _ := range claims {
 		mapClaims[k] = claims[k]

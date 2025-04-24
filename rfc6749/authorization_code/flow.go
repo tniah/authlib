@@ -296,7 +296,7 @@ func (f *Flow) validateAuthCode(r *requests.TokenRequest) error {
 		return autherrors.InvalidGrantError().WithDescription("Invalid \"code\" in request")
 	}
 
-	if authCode.GetAuthTime().Add(authCode.GetExpiresIn()).Before(time.Now()) {
+	if authCode.GetAuthTime().Add(authCode.GetExpiresIn()).Before(time.Now().UTC().Round(time.Second)) {
 		return autherrors.InvalidGrantError().WithDescription("\"code\" has been expired")
 	}
 

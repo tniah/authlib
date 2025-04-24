@@ -47,7 +47,7 @@ func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.Token
 	allowedScopes := client.GetAllowedScopes(r.Scopes)
 	token.SetScopes(allowedScopes)
 
-	issuedAt := time.Now()
+	issuedAt := time.Now().UTC().Round(time.Second)
 	token.SetIssuedAt(issuedAt)
 
 	expiresIn := g.expiresInHandler(r.GrantType.String(), client)

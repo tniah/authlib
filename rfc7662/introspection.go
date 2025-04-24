@@ -96,7 +96,7 @@ func (t *TokenIntrospection) introspectionPayload(r *IntrospectionRequest) map[s
 		return payload
 	}
 
-	if r.Tok.GetIssuedAt().Add(r.Tok.GetAccessTokenExpiresIn()).Before(time.Now()) {
+	if r.Tok.GetIssuedAt().Add(r.Tok.GetAccessTokenExpiresIn()).Before(time.Now().UTC().Round(time.Second)) {
 		return payload
 	}
 

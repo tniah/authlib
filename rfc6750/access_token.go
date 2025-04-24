@@ -30,7 +30,7 @@ func (g *OpaqueAccessTokenGenerator) Generate(token models.Token, r *requests.To
 	allowedScopes := client.GetAllowedScopes(r.Scopes)
 	token.SetScopes(allowedScopes)
 
-	issuedAt := time.Now()
+	issuedAt := time.Now().UTC().Round(time.Second)
 	token.SetIssuedAt(issuedAt)
 
 	expiresIn := g.expiresInHandler(r.GrantType.String(), client)
