@@ -146,15 +146,15 @@ func (f *Flow) genIDToken(r *requests.TokenRequest) (string, error) {
 	claims := utils.JWTClaim{
 		"iss": f.issuerHandler(client),
 		"aud": []string{client.GetClientID()},
-		"exp": now.Add(f.expiresInHandler(r.GrantType.String(), client)),
-		"iat": now,
+		"exp": jwt.NewNumericDate(now.Add(f.expiresInHandler(r.GrantType.String(), client))),
+		"iat": jwt.NewNumericDate(now),
 	}
 
 	authTime := authCode.GetAuthTime()
 	if authTime.IsZero() {
 		authTime = now
 	}
-	claims["auth_time"] = authTime
+	claims["auth_time"] = jwt.NewNumericDate(authTime)
 
 	if nonce := authCode.GetNonce(); nonce != "" {
 		claims["nonce"] = nonce
