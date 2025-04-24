@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"github.com/tniah/authlib/types"
+	"time"
+)
 
 type AuthorizationCode interface {
 	GetCode() string
@@ -12,9 +15,9 @@ type AuthorizationCode interface {
 	GetRedirectURI() string
 	SetRedirectURI(redirectURI string)
 	GetResponseType() string
-	SetResponseType(responseType string)
-	GetScopes() []string
-	SetScopes(scopes []string)
+	SetResponseType(rt types.ResponseType)
+	GetScopes() types.Scopes
+	SetScopes(scopes types.Scopes)
 	GetNonce() string
 	SetNonce(nonce string)
 	GetState() string
@@ -26,7 +29,7 @@ type AuthorizationCode interface {
 	GetCodeChallenge() string
 	SetCodeChallenge(codeChallenge string)
 	GetCodeChallengeMethod() string
-	SetCodeChallengeMethod(codeChallengeMethod string)
+	SetCodeChallengeMethod(codeChallengeMethod types.CodeChallengeMethod)
 	GetExtraData() map[string]interface{}
 	SetExtraData(data map[string]interface{})
 }

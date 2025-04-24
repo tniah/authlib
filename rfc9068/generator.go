@@ -44,7 +44,7 @@ func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.Token
 	}
 	token.SetUserID(sub)
 
-	allowedScopes := client.GetAllowedScopes(r.Scopes.String())
+	allowedScopes := client.GetAllowedScopes(r.Scopes)
 	token.SetScopes(allowedScopes)
 
 	issuedAt := time.Now()

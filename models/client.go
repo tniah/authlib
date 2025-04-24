@@ -1,5 +1,7 @@
 package models
 
+import "github.com/tniah/authlib/types"
+
 type Client interface {
 	GetClientID() string
 	GetClientSecret() string
@@ -8,7 +10,7 @@ type Client interface {
 	GetGrantTypes() []string
 	GetScopes() []string
 	GetTokenEndpointAuthMethod() string
-	GetAllowedScopes(scopes []string) []string
+	GetAllowedScopes(scopes types.Scopes) types.Scopes
 	GetDefaultRedirectURI() string
 	CheckRedirectURI(redirectURI string) bool
 	CheckGrantType(gt string) bool

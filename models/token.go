@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"github.com/tniah/authlib/types"
+	"time"
+)
 
 type Token interface {
 	GetType() string
@@ -11,8 +14,8 @@ type Token interface {
 	SetRefreshToken(refreshToken string)
 	GetClientID() string
 	SetClientID(clientID string)
-	GetScopes() []string
-	SetScopes(scopes []string)
+	GetScopes() types.Scopes
+	SetScopes(scopes types.Scopes)
 	GetIssuedAt() time.Time
 	SetIssuedAt(issuedAt time.Time)
 	GetAccessTokenExpiresIn() time.Duration

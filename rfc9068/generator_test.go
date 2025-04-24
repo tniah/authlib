@@ -24,7 +24,7 @@ func TestJWTAccessTokenGenerator(t *testing.T) {
 	actual := &struct {
 		clientID    string
 		userID      string
-		scopes      []string
+		scopes      types.Scopes
 		issuedAt    time.Time
 		expiresIn   time.Duration
 		jwtID       string
@@ -43,10 +43,10 @@ func TestJWTAccessTokenGenerator(t *testing.T) {
 		actual.userID = args.Get(0).(string)
 	})
 
-	scopesExpected := []string{"openid", "email", "profile"}
-	mockClient.On("GetAllowedScopes", mock.AnythingOfType("[]string")).Return(scopesExpected).Once()
-	mockToken.On("SetScopes", mock.AnythingOfType("[]string")).Run(func(args mock.Arguments) {
-		actual.scopes = args.Get(0).([]string)
+	scopesExpected := types.NewScopes([]string{"openid", "email", "profile"})
+	mockClient.On("GetAllowedScopes", mock.AnythingOfType("types.Scopes")).Return(scopesExpected).Once()
+	mockToken.On("SetScopes", mock.AnythingOfType("types.Scopes")).Run(func(args mock.Arguments) {
+		actual.scopes = args.Get(0).(types.Scopes)
 	})
 
 	mockToken.On("SetIssuedAt", mock.AnythingOfType("time.Time")).Run(func(args mock.Arguments) {
@@ -71,7 +71,7 @@ func TestJWTAccessTokenGenerator(t *testing.T) {
 		GrantType: "password",
 		Client:    mockClient,
 		User:      mockUser,
-		Scopes:    types.NewScopes(scopesExpected),
+		Scopes:    scopesExpected,
 	}
 	err := generator.Generate(mockToken, r)
 	assert.NoError(t, err)

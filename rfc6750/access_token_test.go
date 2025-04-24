@@ -18,7 +18,7 @@ func TestOpaqueAccessTokenGenerator(t *testing.T) {
 	actual := &struct {
 		clientID    string
 		userID      string
-		scopes      []string
+		scopes      types.Scopes
 		issuedAt    time.Time
 		expiresIn   time.Duration
 		accessToken string
@@ -36,10 +36,10 @@ func TestOpaqueAccessTokenGenerator(t *testing.T) {
 		actual.userID = args.Get(0).(string)
 	})
 
-	expectedScopes := []string{"openid", "email", "profile"}
-	mockClient.On("GetAllowedScopes", mock.AnythingOfType("[]string")).Return(expectedScopes).Once()
-	mockToken.On("SetScopes", mock.AnythingOfType("[]string")).Run(func(args mock.Arguments) {
-		actual.scopes = args.Get(0).([]string)
+	expectedScopes := types.NewScopes([]string{"openid", "email", "profile"})
+	mockClient.On("GetAllowedScopes", mock.AnythingOfType("types.Scopes")).Return(expectedScopes).Once()
+	mockToken.On("SetScopes", mock.AnythingOfType("types.Scopes")).Run(func(args mock.Arguments) {
+		actual.scopes = args.Get(0).(types.Scopes)
 	})
 
 	mockToken.On("SetIssuedAt", mock.AnythingOfType("time.Time")).Run(func(args mock.Arguments) {
@@ -58,7 +58,7 @@ func TestOpaqueAccessTokenGenerator(t *testing.T) {
 		GrantType: "password",
 		Client:    mockClient,
 		User:      mockUser,
-		Scopes:    types.NewScopes(expectedScopes),
+		Scopes:    expectedScopes,
 	}
 
 	g := NewOpaqueAccessTokenGenerator()

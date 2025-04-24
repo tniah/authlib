@@ -3,6 +3,7 @@ package rfc9068
 import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/tniah/authlib/models"
+	"github.com/tniah/authlib/types"
 	"time"
 )
 
@@ -12,6 +13,6 @@ type ExpiresInGenerator func(grantType string, client models.Client) time.Durati
 
 type SigningKeyGenerator func(client models.Client) ([]byte, jwt.SigningMethod, string)
 
-type ExtraClaimGenerator func(grantType string, client models.Client, user models.User, scopes []string) (map[string]interface{}, error)
+type ExtraClaimGenerator func(grantType string, client models.Client, user models.User, scopes types.Scopes) (map[string]interface{}, error)
 
 type JWTIDGenerator func(grantType string, client models.Client) string

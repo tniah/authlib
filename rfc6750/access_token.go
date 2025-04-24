@@ -27,7 +27,7 @@ func (g *OpaqueAccessTokenGenerator) Generate(token models.Token, r *requests.To
 	token.SetClientID(client.GetClientID())
 	token.SetUserID(user.GetUserID())
 
-	allowedScopes := client.GetAllowedScopes(r.Scopes.String())
+	allowedScopes := client.GetAllowedScopes(r.Scopes)
 	token.SetScopes(allowedScopes)
 
 	issuedAt := time.Now()

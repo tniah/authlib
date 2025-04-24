@@ -22,7 +22,7 @@ func (f *TokenFlowMixin) StandardTokenData(token models.Token) map[string]interf
 	}
 
 	if scopes := token.GetScopes(); len(scopes) > 0 {
-		data["scope"] = strings.Join(scopes, " ")
+		data["scope"] = strings.Join(scopes.String(), " ")
 	}
 
 	return data
