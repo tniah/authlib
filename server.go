@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	autherrors "github.com/tniah/authlib/errors"
+	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/utils"
 	"net/http"
@@ -46,6 +47,52 @@ func (srv *Server) GetConsentGrant(r *requests.AuthorizationRequest) (ConsentGra
 	}
 
 	return nil, autherrors.UnsupportedResponseTypeError()
+}
+
+func (srv *Server) CreateAuthorizationResponse(hr *http.Request, rw http.ResponseWriter, u models.User) error {
+	r, err := srv.CreateAuthorizationRequest(hr)
+	if err != nil {
+		return srv.HandleError(rw, err)
+	}
+
+	r.User = u
+	grant, err := srv.GetAuthorizationGrant(r)
+	if err != nil {
+		return srv.HandleError(rw, err)
+	}
+
+	if err := grant.ValidateAuthorizationRequest(r); err != nil {
+		return srv.HandleError(rw, err)
+	}
+
+	if err := grant.AuthorizationResponse(r, rw); err != nil {
+		return srv.HandleError(rw, err)
+	}
+
+	return nil
+}
+
+func (srv *Server) CreateConsentResponse(hr *http.Request, rw http.ResponseWriter, u models.User) error {
+	r, err := srv.CreateAuthorizationRequest(hr)
+	if err != nil {
+		return srv.HandleError(rw, err)
+	}
+
+	r.User = u
+	grant, err := srv.GetConsentGrant(r)
+	if err != nil {
+		return srv.HandleError(rw, err)
+	}
+
+	if err := grant.ValidateConsentRequest(r); err != nil {
+		return srv.HandleError(rw, err)
+	}
+
+	if err := grant.AuthorizationResponse(r, rw); err != nil {
+		return srv.HandleError(rw, err)
+	}
+
+	return nil
 }
 
 func (srv *Server) CreateTokenRequest(r *http.Request) (*requests.TokenRequest, error) {
