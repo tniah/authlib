@@ -87,11 +87,11 @@ func (f *Flow) checkParams(r *requests.TokenRequest) error {
 		return err
 	}
 
-	if err := r.ValidateUsername(true); err != nil {
+	if err := r.ValidateUsername(); err != nil {
 		return err
 	}
 
-	if err := r.ValidatePassword(true); err != nil {
+	if err := r.ValidatePassword(); err != nil {
 		return err
 	}
 
@@ -109,7 +109,7 @@ func (f *Flow) checkTokenEndpointHttpMethod(r *requests.TokenRequest) error {
 }
 
 func (f *Flow) validateGrantType(r *requests.TokenRequest) error {
-	if err := r.ValidateGrantType(true); err != nil {
+	if err := r.ValidateGrantType(); err != nil {
 		return err
 	}
 

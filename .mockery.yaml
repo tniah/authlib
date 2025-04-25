@@ -24,6 +24,13 @@ packages:
       ExpiresInGenerator:
       RandStringGenerator:
       ExtraDataGenerator:
+  github.com/tniah/authlib/rfc6749/ropc:
+    interfaces:
+      ClientManager:
+      UserManager:
+      TokenManager:
+      TokenRequestValidator:
+      TokenProcessor:
   github.com/tniah/authlib/rfc6750:
     config:
       outpkg: rfc6750

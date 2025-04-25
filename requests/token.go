@@ -44,8 +44,8 @@ func NewTokenRequestFromHttp(r *http.Request) (*TokenRequest, error) {
 	return tokenReq, nil
 }
 
-func (r *TokenRequest) ValidateGrantType(required ...bool) error {
-	if isRequired(true, required...) && r.GrantType.IsEmpty() {
+func (r *TokenRequest) ValidateGrantType() error {
+	if r.GrantType.IsEmpty() {
 		return autherrors.InvalidRequestError().WithDescription("missing \"grant_type\" in request")
 	}
 
@@ -68,16 +68,16 @@ func (r *TokenRequest) ValidateRedirectURI(required ...bool) error {
 	return nil
 }
 
-func (r *TokenRequest) ValidateUsername(required ...bool) error {
-	if isRequired(true, required...) && r.Username == "" {
+func (r *TokenRequest) ValidateUsername() error {
+	if r.Username == "" {
 		return autherrors.InvalidRequestError().WithDescription("missing \"username\" in request")
 	}
 
 	return nil
 }
 
-func (r *TokenRequest) ValidatePassword(required ...bool) error {
-	if isRequired(true, required...) && r.Password == "" {
+func (r *TokenRequest) ValidatePassword() error {
+	if r.Password == "" {
 		return autherrors.InvalidRequestError().WithDescription("missing \"password\" in request")
 	}
 

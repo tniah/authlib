@@ -261,7 +261,7 @@ func (f *Flow) genAuthCode(r *requests.AuthorizationRequest) (models.Authorizati
 }
 
 func (f *Flow) validateGrantType(r *requests.TokenRequest) error {
-	if err := r.ValidateGrantType(true); err != nil {
+	if err := r.ValidateGrantType(); err != nil {
 		return err
 	}
 

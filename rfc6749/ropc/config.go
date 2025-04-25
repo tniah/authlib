@@ -2,6 +2,7 @@ package ropc
 
 import (
 	"errors"
+	"github.com/tniah/authlib/types"
 	"net/http"
 )
 
@@ -19,17 +20,17 @@ type Config struct {
 	tokenEndpointHttpMethods   []string
 	tokenReqValidators         map[TokenRequestValidator]bool
 	tokenProcessors            map[TokenProcessor]bool
-	supportedClientAuthMethods map[string]bool
+	supportedClientAuthMethods map[types.ClientAuthMethod]bool
 }
 
 func NewConfig() *Config {
 	return &Config{
 		tokenEndpointHttpMethods: []string{http.MethodPost},
-		supportedClientAuthMethods: map[string]bool{
-			"client_secret_basic": true,
+		tokenReqValidators:       map[TokenRequestValidator]bool{},
+		tokenProcessors:          map[TokenProcessor]bool{},
+		supportedClientAuthMethods: map[types.ClientAuthMethod]bool{
+			types.ClientBasicAuthentication: true,
 		},
-		tokenReqValidators: map[TokenRequestValidator]bool{},
-		tokenProcessors:    map[TokenProcessor]bool{},
 	}
 }
 
@@ -48,7 +49,7 @@ func (cfg *Config) SetTokenManager(mgr TokenManager) *Config {
 	return cfg
 }
 
-func (cfg *Config) SetSupportedClientAuthMethods(methods map[string]bool) *Config {
+func (cfg *Config) SetSupportedClientAuthMethods(methods map[types.ClientAuthMethod]bool) *Config {
 	cfg.supportedClientAuthMethods = methods
 	return cfg
 }
@@ -91,7 +92,7 @@ func (cfg *Config) ValidateConfig() error {
 		return ErrNilTokenManager
 	}
 
-	if cfg.supportedClientAuthMethods == nil || len(cfg.supportedClientAuthMethods) == 0 {
+	if len(cfg.supportedClientAuthMethods) == 0 {
 		return ErrEmptyClientAuthMethods
 	}
 
