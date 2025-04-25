@@ -77,7 +77,7 @@ func (f *ProofKeyForCodeExchangeFlow) ValidateTokenRequest(r *requests.TokenRequ
 }
 
 func (f *ProofKeyForCodeExchangeFlow) ProcessAuthorizationCode(r *requests.AuthorizationRequest, authCode models.AuthorizationCode, params map[string]interface{}) error {
-	authCode.SetCodeChallenge(r.Nonce)
+	authCode.SetCodeChallenge(r.CodeChallenge)
 	authCode.SetCodeChallengeMethod(r.CodeChallengeMethod)
 	return nil
 }
