@@ -61,7 +61,7 @@ func (f *ProofKeyForCodeExchangeFlow) ValidateTokenRequest(r *requests.TokenRequ
 	}
 
 	if valid := ValidateCodeVerifierPattern(r.CodeVerifier); !valid {
-		return autherrors.InvalidRequestError().WithDescription("invalid \"code_verifier\" in request")
+		return autherrors.InvalidRequestError().WithDescription("\"code_verifier\" does not match pattern")
 	}
 
 	method := r.AuthCode.GetCodeChallengeMethod()
