@@ -2,6 +2,7 @@ package rfc7636
 
 import (
 	autherrors "github.com/tniah/authlib/errors"
+	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/types"
 )
@@ -72,6 +73,12 @@ func (f *ProofKeyForCodeExchangeFlow) ValidateTokenRequest(r *requests.TokenRequ
 		return autherrors.InvalidGrantError().WithDescription("Code verifier validation failed")
 	}
 
+	return nil
+}
+
+func (f *ProofKeyForCodeExchangeFlow) ProcessAuthorizationCode(r *requests.AuthorizationRequest, authCode models.AuthorizationCode, params map[string]interface{}) error {
+	authCode.SetCodeChallenge(r.Nonce)
+	authCode.SetCodeChallengeMethod(r.CodeChallengeMethod)
 	return nil
 }
 
