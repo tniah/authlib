@@ -11,11 +11,11 @@ func TestClientAuthMethod(t *testing.T) {
 	assert.Equal(t, "password", m.String())
 
 	m = NewClientAuthMethod("client_secret_basic")
-	assert.True(t, m.IsBasicAuthentication())
+	assert.True(t, m.IsBasic())
 
 	m = NewClientAuthMethod("client_secret_post")
-	assert.True(t, m.IsPostAuthentication())
+	assert.True(t, m.IsPOST())
 
 	m = NewClientAuthMethod("none")
-	assert.True(t, m.IsNoneAuthentication())
+	assert.True(t, m.IsNone())
 }

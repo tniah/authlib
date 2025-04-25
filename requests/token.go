@@ -18,6 +18,9 @@ type TokenRequest struct {
 	Username string
 	Password string
 
+	ClientAuthMethod types.ClientAuthMethod
+	CodeVerifier     string
+
 	Client   models.Client
 	User     models.User
 	AuthCode models.AuthorizationCode
@@ -27,14 +30,15 @@ type TokenRequest struct {
 
 func NewTokenRequestFromHttp(r *http.Request) (*TokenRequest, error) {
 	tokenReq := &TokenRequest{
-		GrantType:   types.NewGrantType(r.PostFormValue("grant_type")),
-		Code:        r.PostFormValue("code"),
-		RedirectURI: r.PostFormValue("redirect_uri"),
-		ClientID:    r.PostFormValue("client_id"),
-		Scopes:      types.NewScopes(strings.Fields(r.PostFormValue("scope"))),
-		Username:    r.PostFormValue("username"),
-		Password:    r.PostFormValue("password"),
-		Request:     r,
+		GrantType:    types.NewGrantType(r.PostFormValue("grant_type")),
+		Code:         r.PostFormValue("code"),
+		RedirectURI:  r.PostFormValue("redirect_uri"),
+		ClientID:     r.PostFormValue("client_id"),
+		Scopes:       types.NewScopes(strings.Fields(r.PostFormValue("scope"))),
+		Username:     r.PostFormValue("username"),
+		Password:     r.PostFormValue("password"),
+		CodeVerifier: r.PostFormValue("code_verifier"),
+		Request:      r,
 	}
 
 	return tokenReq, nil

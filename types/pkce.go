@@ -14,8 +14,8 @@ func (m CodeChallengeMethod) IsS256() bool {
 	return m == CodeChallengeMethodS256
 }
 
-func (m CodeChallengeMethod) IsValid() bool {
-	return m.IsPlain() || m.IsS256()
+func (m CodeChallengeMethod) IsEmpty() bool {
+	return m == ""
 }
 
 func (m CodeChallengeMethod) String() string {

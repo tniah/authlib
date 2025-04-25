@@ -28,7 +28,7 @@ type AuthorizationCode interface {
 	SetExpiresIn(time.Duration)
 	GetCodeChallenge() string
 	SetCodeChallenge(codeChallenge string)
-	GetCodeChallengeMethod() string
+	GetCodeChallengeMethod() types.CodeChallengeMethod
 	SetCodeChallengeMethod(codeChallengeMethod types.CodeChallengeMethod)
 	GetExtraData() map[string]interface{}
 	SetExtraData(data map[string]interface{})

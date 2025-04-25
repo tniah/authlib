@@ -6,15 +6,15 @@ func NewClientAuthMethod(method string) ClientAuthMethod {
 	return ClientAuthMethod(method)
 }
 
-func (m ClientAuthMethod) IsBasicAuthentication() bool {
+func (m ClientAuthMethod) IsBasic() bool {
 	return m == ClientBasicAuthentication
 }
 
-func (m ClientAuthMethod) IsPostAuthentication() bool {
+func (m ClientAuthMethod) IsPOST() bool {
 	return m == ClientPostAuthentication
 }
 
-func (m ClientAuthMethod) IsNoneAuthentication() bool {
+func (m ClientAuthMethod) IsNone() bool {
 	return m == ClientNoneAuthentication
 }
 
