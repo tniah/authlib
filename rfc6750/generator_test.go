@@ -3,10 +3,9 @@ package rfc6750
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/tniah/authlib/mocks/models"
+	"github.com/tniah/authlib/integrations/sql"
 	"github.com/tniah/authlib/mocks/rfc6750"
 	"github.com/tniah/authlib/requests"
-	"github.com/tniah/authlib/types"
 	"testing"
 )
 
@@ -15,7 +14,7 @@ func TestTestBearerTokenGenerator(t *testing.T) {
 	atGenerator := rfc6750.NewMockTokenGenerator(t)
 	atGenerator.On(
 		"Generate",
-		mock.AnythingOfType("*models.MockToken"),
+		mock.AnythingOfType("*sql.Token"),
 		mock.AnythingOfType("*requests.TokenRequest"),
 	).Return(nil).Once()
 	g.SetAccessTokenGenerator(atGenerator)
@@ -23,31 +22,16 @@ func TestTestBearerTokenGenerator(t *testing.T) {
 	rtGenerator := rfc6750.NewMockTokenGenerator(t)
 	rtGenerator.On(
 		"Generate",
-		mock.AnythingOfType("*models.MockToken"),
+		mock.AnythingOfType("*sql.Token"),
 		mock.AnythingOfType("*requests.TokenRequest"),
 	).Return(nil).Once()
 	g.SetRefreshTokenGenerator(rtGenerator)
 
-	mockToken := models.NewMockToken(t)
-	mockClient := models.NewMockClient(t)
-	mockUser := models.NewMockUser(t)
-	scopes := types.NewScopes([]string{"openid", "profile"})
-
-	actual := &struct {
-		tokenType string
-	}{}
-	mockToken.On("SetType", mock.AnythingOfType("string")).Run(func(args mock.Arguments) {
-		actual.tokenType = args.Get(0).(string)
-	})
-
+	mockToken := &sql.Token{}
 	r := &requests.TokenRequest{
 		GrantType: "password",
-		Client:    mockClient,
-		User:      mockUser,
-		Scopes:    scopes,
 	}
-
 	err := g.Generate(mockToken, r, true)
 	assert.NoError(t, err)
-	assert.Equal(t, TokenTypeBearer, actual.tokenType)
+	assert.Equal(t, TokenTypeBearer, mockToken.GetType())
 }

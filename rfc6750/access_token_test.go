@@ -1,77 +1,39 @@
 package rfc6750
 
 import (
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/tniah/authlib/mocks/models"
+	"github.com/tniah/authlib/integrations/sql"
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/types"
 	"testing"
-	"time"
 )
 
 func TestOpaqueAccessTokenGenerator(t *testing.T) {
-	mockToken := models.NewMockToken(t)
-	mockClient := models.NewMockClient(t)
-	mockUser := models.NewMockUser(t)
-
-	actual := &struct {
-		clientID    string
-		userID      string
-		scopes      types.Scopes
-		issuedAt    time.Time
-		expiresIn   time.Duration
-		accessToken string
-	}{}
-
-	expectedClientID := "my-client-id"
-	mockClient.On("GetClientID").Return(expectedClientID).Once()
-	mockToken.On("SetClientID", mock.AnythingOfType("string")).Run(func(args mock.Arguments) {
-		actual.clientID = args.Get(0).(string)
-	})
-
-	expectedUserID := "my-user-id"
-	mockUser.On("GetUserID").Return(expectedUserID).Once()
-	mockToken.On("SetUserID", mock.AnythingOfType("string")).Run(func(args mock.Arguments) {
-		actual.userID = args.Get(0).(string)
-	})
-
-	expectedScopes := types.NewScopes([]string{"openid", "email", "profile"})
-	mockClient.On("GetAllowedScopes", mock.AnythingOfType("types.Scopes")).Return(expectedScopes).Once()
-	mockToken.On("SetScopes", mock.AnythingOfType("types.Scopes")).Run(func(args mock.Arguments) {
-		actual.scopes = args.Get(0).(types.Scopes)
-	})
-
-	mockToken.On("SetIssuedAt", mock.AnythingOfType("time.Time")).Run(func(args mock.Arguments) {
-		actual.issuedAt = args.Get(0).(time.Time)
-	})
-
-	mockToken.On("SetAccessTokenExpiresIn", mock.AnythingOfType("time.Duration")).Run(func(args mock.Arguments) {
-		actual.expiresIn = args.Get(0).(time.Duration)
-	})
-
-	mockToken.On("SetAccessToken", mock.AnythingOfType("string")).Run(func(args mock.Arguments) {
-		actual.accessToken = args.Get(0).(string)
-	})
-
+	mockClient := &sql.Client{
+		ClientID: uuid.NewString(),
+		Scopes:   []string{"openid", "email", "profile"},
+	}
+	mockToken := &sql.Token{}
+	mockUser := &sql.User{
+		UserID: uuid.NewString(),
+	}
 	r := &requests.TokenRequest{
 		GrantType: "password",
 		Client:    mockClient,
 		User:      mockUser,
-		Scopes:    expectedScopes,
+		Scopes:    types.NewScopes([]string{"openid", "email", "test"}),
 	}
 
 	g := NewOpaqueAccessTokenGenerator()
 	err := g.Generate(mockToken, r)
 	assert.NoError(t, err)
-	assert.Equal(t, expectedClientID, actual.clientID)
-	assert.Equal(t, expectedUserID, actual.userID)
-	assert.Equal(t, expectedScopes, actual.scopes)
-	assert.NotEqual(t, time.Time{}, actual.issuedAt)
-	assert.Equal(t, DefaultExpiresIn, actual.expiresIn)
-	assert.Equal(t, DefaultTokenLength, len(actual.accessToken))
-
-	mockClient.AssertExpectations(t)
-	mockUser.AssertExpectations(t)
-	mockToken.AssertExpectations(t)
+	assert.Equal(t, mockClient.GetClientID(), mockToken.GetClientID())
+	assert.Equal(t, mockUser.GetUserID(), mockToken.GetUserID())
+	assert.Contains(t, mockToken.Scopes, "openid")
+	assert.Contains(t, mockToken.Scopes, "email")
+	assert.NotContains(t, mockToken.Scopes, "test")
+	assert.False(t, mockToken.GetIssuedAt().IsZero())
+	assert.Equal(t, DefaultExpiresIn, mockToken.GetAccessTokenExpiresIn())
+	assert.Equal(t, DefaultTokenLength, len(mockToken.GetAccessToken()))
 }
