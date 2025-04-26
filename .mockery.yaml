@@ -44,3 +44,12 @@ packages:
       SigningKeyGenerator:
       ExtraClaimGenerator:
       JWTIDGenerator:
+  github.com/tniah/authlib/oidc/core/authorization_code:
+    config:
+      outpkg: oidc
+    interfaces:
+      IssuerGenerator:
+      ExpiresInGenerator:
+      SigningKeyGenerator:
+      ExtraClaimGenerator:
+      ExistNonce:
