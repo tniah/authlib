@@ -8,7 +8,7 @@ import (
 )
 
 type ClientManager interface {
-	Authenticate(r *http.Request, authMethods map[string]bool, endpointName string) (models.Client, error)
+	Authenticate(r *http.Request, authMethods map[types.ClientAuthMethod]bool, endpointName string) (models.Client, error)
 	CheckPermission(client models.Client, token models.Token, r *http.Request) bool
 }
 

@@ -122,15 +122,11 @@ func (f *Flow) validateGrantType(r *requests.TokenRequest) error {
 
 func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 	client, err := f.clientMgr.Authenticate(r.Request, f.supportedClientAuthMethods, EndpointToken)
-	if err != nil {
-		return err
-	}
-
-	if client == nil {
+	if err != nil || client == nil {
 		return autherrors.InvalidClientError()
 	}
 
-	if !client.CheckGrantType(types.GrantTypeROPC.String()) {
+	if allowed := client.CheckGrantType(types.GrantTypeROPC); !allowed {
 		return autherrors.UnauthorizedClientError().WithDescription("The client is not authorized to use grant type \"password\"")
 	}
 
@@ -140,11 +136,7 @@ func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 
 func (f *Flow) authenticateUser(r *requests.TokenRequest) error {
 	user, err := f.userMgr.Authenticate(r.Username, r.Password, r.Client, r.Request)
-	if err != nil {
-		return err
-	}
-
-	if user == nil {
+	if err != nil || user == nil {
 		return autherrors.InvalidRequestError().WithDescription("Username or password is incorrect")
 	}
 
@@ -158,7 +150,7 @@ func (f *Flow) genToken(r *requests.TokenRequest) (models.Token, error) {
 		return nil, ErrNilToken
 	}
 
-	if err := f.tokenMgr.Generate(token, r, r.Client.CheckGrantType(types.GrantTypeRefreshToken.String())); err != nil {
+	if err := f.tokenMgr.Generate(token, r, r.Client.CheckGrantType(types.GrantTypeRefreshToken)); err != nil {
 		return nil, err
 	}
 

@@ -12,6 +12,10 @@ func (s Scope) IsOpenID() bool {
 	return s == ScopeOpenID
 }
 
+func (s Scope) String() string {
+	return string(s)
+}
+
 type Scopes []Scope
 
 func NewScopes(ar []string) Scopes {

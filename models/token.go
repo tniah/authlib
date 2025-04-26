@@ -9,9 +9,9 @@ type Token interface {
 	GetType() string
 	SetType(string)
 	GetAccessToken() string
-	SetAccessToken(accessToken string)
+	SetAccessToken(token string)
 	GetRefreshToken() string
-	SetRefreshToken(refreshToken string)
+	SetRefreshToken(token string)
 	GetClientID() string
 	SetClientID(clientID string)
 	GetScopes() types.Scopes

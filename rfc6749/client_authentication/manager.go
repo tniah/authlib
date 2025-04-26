@@ -2,20 +2,21 @@ package clientauth
 
 import (
 	"github.com/tniah/authlib/models"
+	"github.com/tniah/authlib/types"
 	"net/http"
 )
 
 type Manager struct {
-	handlers map[string]Handler
+	handlers map[types.ClientAuthMethod]Handler
 }
 
 func NewManager() *Manager {
 	return &Manager{
-		handlers: make(map[string]Handler),
+		handlers: make(map[types.ClientAuthMethod]Handler),
 	}
 }
 
-func (m *Manager) Authenticate(r *http.Request, supportedMethods map[string]bool, endpoint string) (models.Client, error) {
+func (m *Manager) Authenticate(r *http.Request, supportedMethods map[types.ClientAuthMethod]bool, endpoint string) (models.Client, error) {
 	for method, ok := range supportedMethods {
 		if !ok {
 			continue
@@ -41,8 +42,8 @@ func (m *Manager) Authenticate(r *http.Request, supportedMethods map[string]bool
 
 func (m *Manager) Register(h Handler) {
 	if m.handlers == nil {
-		m.handlers = make(map[string]Handler)
+		m.handlers = make(map[types.ClientAuthMethod]Handler)
 	}
 
-	m.handlers[h.Method().String()] = h
+	m.handlers[h.Method()] = h
 }

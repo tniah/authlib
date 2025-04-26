@@ -8,48 +8,49 @@ import (
 const EndpointNameTokenIntrospection = "introspection"
 
 var (
-	ErrEmptyEndpointName = errors.New("endpoint name is empty")
-	ErrNilClientManager  = errors.New("client manager is nil")
-	ErrNilTokenManager   = errors.New("token manager is nil")
+	ErrEmptyEndpointName      = errors.New("endpoint name is empty")
+	ErrNilClientManager       = errors.New("client manager is nil")
+	ErrNilTokenManager        = errors.New("token manager is nil")
+	ErrEmptyClientAuthMethods = errors.New("supported client auth methods are empty")
 )
 
-type IntrospectionConfig struct {
-	endpointName      string
-	clientManager     ClientManager
-	tokenManager      TokenManager
-	clientAuthMethods map[string]bool
+type Config struct {
+	endpointName               string
+	clientManager              ClientManager
+	tokenManager               TokenManager
+	supportedClientAuthMethods map[types.ClientAuthMethod]bool
 }
 
-func NewIntrospectionConfig() *IntrospectionConfig {
-	return &IntrospectionConfig{
-		clientAuthMethods: map[string]bool{
-			types.ClientBasicAuthentication.String(): true,
+func NewConfig() *Config {
+	return &Config{
+		supportedClientAuthMethods: map[types.ClientAuthMethod]bool{
+			types.ClientBasicAuthentication: true,
 		},
 		endpointName: EndpointNameTokenIntrospection,
 	}
 }
 
-func (cfg *IntrospectionConfig) SetEndpointName(name string) *IntrospectionConfig {
+func (cfg *Config) SetEndpointName(name string) *Config {
 	cfg.endpointName = name
 	return cfg
 }
 
-func (cfg *IntrospectionConfig) SetClientManager(mgr ClientManager) *IntrospectionConfig {
+func (cfg *Config) SetClientManager(mgr ClientManager) *Config {
 	cfg.clientManager = mgr
 	return cfg
 }
 
-func (cfg *IntrospectionConfig) SetTokenManager(mgr TokenManager) *IntrospectionConfig {
+func (cfg *Config) SetTokenManager(mgr TokenManager) *Config {
 	cfg.tokenManager = mgr
 	return cfg
 }
 
-func (cfg *IntrospectionConfig) SetClientAuthMethods(methods map[string]bool) *IntrospectionConfig {
-	cfg.clientAuthMethods = methods
+func (cfg *Config) SetSupportedClientAuthMethods(methods map[types.ClientAuthMethod]bool) *Config {
+	cfg.supportedClientAuthMethods = methods
 	return cfg
 }
 
-func (cfg *IntrospectionConfig) ValidateConfig() error {
+func (cfg *Config) ValidateConfig() error {
 	if cfg.endpointName == "" {
 		return ErrEmptyEndpointName
 	}
@@ -60,6 +61,10 @@ func (cfg *IntrospectionConfig) ValidateConfig() error {
 
 	if cfg.tokenManager == nil {
 		return ErrNilTokenManager
+	}
+
+	if cfg.supportedClientAuthMethods == nil {
+		return ErrEmptyClientAuthMethods
 	}
 
 	return nil

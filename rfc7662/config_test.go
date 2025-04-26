@@ -3,19 +3,20 @@ package rfc7662
 import (
 	"github.com/stretchr/testify/assert"
 	mock "github.com/tniah/authlib/mocks/rfc7662"
+	"github.com/tniah/authlib/types"
 	"testing"
 )
 
-func TestIntrospectionConfig(t *testing.T) {
+func TestConfig(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		cfg := NewIntrospectionConfig()
-		expected := IntrospectionConfig{
+		cfg := NewConfig()
+		expected := Config{
 			endpointName:  "test-endpoint-name",
 			clientManager: mock.NewMockClientManager(t),
 			tokenManager:  mock.NewMockTokenManager(t),
-			clientAuthMethods: map[string]bool{
-				"client_secret_basic": true,
-				"client_secret_post":  true,
+			supportedClientAuthMethods: map[types.ClientAuthMethod]bool{
+				types.ClientBasicAuthentication: true,
+				types.ClientPostAuthentication:  true,
 			},
 		}
 
@@ -29,7 +30,7 @@ func TestIntrospectionConfig(t *testing.T) {
 	})
 
 	t.Run("error", func(t *testing.T) {
-		cfg := NewIntrospectionConfig()
+		cfg := NewConfig()
 		cfg.SetEndpointName("")
 		err := cfg.ValidateConfig()
 		assert.ErrorIs(t, err, ErrEmptyEndpointName)

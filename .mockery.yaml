@@ -4,13 +4,6 @@ resolve-type-alias: False
 filename: "{{ .InterfaceName | snakecase }}.go"
 dir: "mocks/{{ .InterfaceDirRelative }}"
 packages:
-  github.com/tniah/authlib/models:
-    config:
-      outpkg: models
-    interfaces:
-      Client:
-      User:
-      Token:
   github.com/tniah/authlib/rfc6749/client_authentication:
     config:
       outpkg: rfc6749

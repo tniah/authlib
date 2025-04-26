@@ -29,7 +29,7 @@ type AuthorizationCode interface {
 	GetCodeChallenge() string
 	SetCodeChallenge(codeChallenge string)
 	GetCodeChallengeMethod() types.CodeChallengeMethod
-	SetCodeChallengeMethod(codeChallengeMethod types.CodeChallengeMethod)
+	SetCodeChallengeMethod(method types.CodeChallengeMethod)
 	GetExtraData() map[string]interface{}
 	SetExtraData(data map[string]interface{})
 }

@@ -1,7 +1,6 @@
 package rfc7662
 
 import (
-	"fmt"
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/types"
@@ -9,9 +8,7 @@ import (
 	"net/http"
 )
 
-const ()
-
-type IntrospectionRequest struct {
+type Request struct {
 	Token         string
 	TokenTypeHint types.TokenTypeHint
 
@@ -20,15 +17,15 @@ type IntrospectionRequest struct {
 	Request *http.Request
 }
 
-func NewIntrospectionRequestFromHTTP(r *http.Request) *IntrospectionRequest {
-	return &IntrospectionRequest{
+func NewRequestFromHTTP(r *http.Request) *Request {
+	return &Request{
 		Token:         r.FormValue("token"),
 		TokenTypeHint: types.NewTokenTypeHint(r.FormValue("token_type_hint")),
 		Request:       r,
 	}
 }
 
-func (r *IntrospectionRequest) ValidateHTTPMethod() error {
+func (r *Request) ValidateHTTPMethod() error {
 	if r.Request.Method != http.MethodPost {
 		return autherrors.InvalidRequestError().WithDescription("request must be \"POST\"")
 	}
@@ -36,7 +33,7 @@ func (r *IntrospectionRequest) ValidateHTTPMethod() error {
 	return nil
 }
 
-func (r *IntrospectionRequest) ValidateContentType() error {
+func (r *Request) ValidateContentType() error {
 	ct, err := utils.ContentType(r.Request)
 	if err != nil {
 		return autherrors.InvalidRequestError()
@@ -49,7 +46,7 @@ func (r *IntrospectionRequest) ValidateContentType() error {
 	return nil
 }
 
-func (r *IntrospectionRequest) ValidateToken() error {
+func (r *Request) ValidateToken() error {
 	if r.Token == "" {
 		return autherrors.InvalidRequestError().WithDescription("\"token\" is empty or missing")
 	}
@@ -57,10 +54,7 @@ func (r *IntrospectionRequest) ValidateToken() error {
 	return nil
 }
 
-func (r *IntrospectionRequest) ValidateTokenTypeHint() error {
-	a := r.TokenTypeHint.IsEmpty()
-	b := r.TokenTypeHint.IsValid()
-	fmt.Println(a, b)
+func (r *Request) ValidateTokenTypeHint() error {
 	if !r.TokenTypeHint.IsEmpty() && !r.TokenTypeHint.IsValid() {
 		return autherrors.UnsupportedTokenType().
 			WithDescription("token type hint must be set to \"access_token\" or \"refresh_token\"")
