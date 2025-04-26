@@ -6,16 +6,16 @@ import (
 )
 
 func TestClientAuthMethod(t *testing.T) {
-	m := NewClientAuthMethod("password")
-	assert.IsType(t, ClientAuthMethod(""), m)
-	assert.Equal(t, "password", m.String())
+	m := NewClientAuthMethod("test")
+	assert.IsType(t, (ClientAuthMethod)(""), m)
+	assert.Equal(t, "test", m.String())
 
-	m = NewClientAuthMethod("client_secret_basic")
-	assert.True(t, m.IsBasic())
+	assert.False(t, m.Equal(ClientBasicAuthentication))
+	assert.True(t, m.Equal(NewClientAuthMethod("test")))
 
-	m = NewClientAuthMethod("client_secret_post")
-	assert.True(t, m.IsPOST())
-
-	m = NewClientAuthMethod("none")
-	assert.True(t, m.IsNone())
+	assert.True(t, ClientBasicAuthentication.IsBasic())
+	assert.True(t, ClientPostAuthentication.IsPOST())
+	assert.True(t, ClientNoneAuthentication.IsNone())
+	assert.True(t, NewClientAuthMethod("").IsEmpty())
+	assert.False(t, m.IsEmpty())
 }

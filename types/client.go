@@ -6,16 +6,24 @@ func NewClientAuthMethod(method string) ClientAuthMethod {
 	return ClientAuthMethod(method)
 }
 
+func (m ClientAuthMethod) Equal(o ClientAuthMethod) bool {
+	return m == o
+}
+
 func (m ClientAuthMethod) IsBasic() bool {
-	return m == ClientBasicAuthentication
+	return m.Equal(ClientBasicAuthentication)
 }
 
 func (m ClientAuthMethod) IsPOST() bool {
-	return m == ClientPostAuthentication
+	return m.Equal(ClientPostAuthentication)
 }
 
 func (m ClientAuthMethod) IsNone() bool {
-	return m == ClientNoneAuthentication
+	return m.Equal(ClientNoneAuthentication)
+}
+
+func (m ClientAuthMethod) IsEmpty() bool {
+	return m.Equal("")
 }
 
 func (m ClientAuthMethod) String() string {

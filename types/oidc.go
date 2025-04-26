@@ -8,8 +8,16 @@ func NewScope(s string) Scope {
 	return Scope(s)
 }
 
+func (s Scope) Equal(o Scope) bool {
+	return s == o
+}
+
 func (s Scope) IsOpenID() bool {
-	return s == ScopeOpenID
+	return s.Equal(ScopeOpenID)
+}
+
+func (s Scope) IsEmpty() bool {
+	return s.Equal("")
 }
 
 func (s Scope) String() string {
