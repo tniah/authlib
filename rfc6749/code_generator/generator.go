@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
+	"github.com/tniah/authlib/types"
 	"github.com/tniah/authlib/utils"
 	"time"
 )
@@ -37,12 +38,8 @@ func (g *Generator) Generate(authCode models.AuthorizationCode, r *requests.Auth
 		return ErrNilUser
 	}
 
-	code, err := g.genCode(r.GrantType.String(), client)
-	if err != nil {
-		return err
-	}
+	code := g.genCode(r.GrantType, client)
 	authCode.SetCode(code)
-
 	authCode.SetClientID(client.GetClientID())
 	authCode.SetUserID(user.GetUserID())
 	authCode.SetRedirectURI(r.RedirectURI)
@@ -50,11 +47,7 @@ func (g *Generator) Generate(authCode models.AuthorizationCode, r *requests.Auth
 	authCode.SetScopes(r.Scopes)
 	authCode.SetState(r.State)
 	authCode.SetAuthTime(time.Now().UTC().Round(time.Second))
-
-	exp, err := g.expiresInHandler(r.GrantType.String(), client)
-	if err != nil {
-		return err
-	}
+	exp := g.expiresInHandler(r.GrantType, client)
 	authCode.SetExpiresIn(exp)
 
 	if fn := g.extraDataGenerator; fn != nil {
@@ -68,18 +61,19 @@ func (g *Generator) Generate(authCode models.AuthorizationCode, r *requests.Auth
 	return nil
 }
 
-func (g *Generator) genCode(grantType string, client models.Client) (string, error) {
+func (g *Generator) genCode(grantType types.GrantType, client models.Client) string {
 	if fn := g.randStringGenerator; fn != nil {
 		return fn(grantType, client)
 	}
 
-	return utils.GenerateRandString(g.codeLength, utils.AlphaNum)
+	s, _ := utils.GenerateRandString(g.codeLength, utils.AlphaNum)
+	return s
 }
 
-func (g *Generator) expiresInHandler(grantType string, client models.Client) (time.Duration, error) {
+func (g *Generator) expiresInHandler(grantType types.GrantType, client models.Client) time.Duration {
 	if fn := g.expiresInGenerator; fn != nil {
 		return fn(grantType, client)
 	}
 
-	return g.expiresIn, nil
+	return g.expiresIn
 }

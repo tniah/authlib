@@ -1,8 +1,6 @@
 package codegen
 
 import (
-	"github.com/tniah/authlib/models"
-	"github.com/tniah/authlib/requests"
 	"time"
 )
 
@@ -11,21 +9,13 @@ const (
 	DefaultCodeLength = 48
 )
 
-type (
-	Options struct {
-		codeLength          int
-		expiresIn           time.Duration
-		expiresInGenerator  ExpiresInGenerator
-		randStringGenerator RandStringGenerator
-		extraDataGenerator  ExtraDataGenerator
-	}
-
-	ExpiresInGenerator func(grantType string, client models.Client) (time.Duration, error)
-
-	RandStringGenerator func(grantType string, client models.Client) (string, error)
-
-	ExtraDataGenerator func(r *requests.AuthorizationRequest) (map[string]interface{}, error)
-)
+type Options struct {
+	codeLength          int
+	expiresIn           time.Duration
+	expiresInGenerator  ExpiresInGenerator
+	randStringGenerator RandStringGenerator
+	extraDataGenerator  ExtraDataGenerator
+}
 
 func NewOptions() *Options {
 	return &Options{

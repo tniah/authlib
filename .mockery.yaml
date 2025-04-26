@@ -11,8 +11,6 @@ packages:
       ClientStore:
       Handler:
   github.com/tniah/authlib/rfc6749/code_generator:
-    config:
-      outpkg: rfc6749
     interfaces:
       ExpiresInGenerator:
       RandStringGenerator:

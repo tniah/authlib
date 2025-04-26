@@ -14,7 +14,7 @@ type AuthorizationCode interface {
 	SetUserID(userID string)
 	GetRedirectURI() string
 	SetRedirectURI(redirectURI string)
-	GetResponseType() string
+	GetResponseType() types.ResponseType
 	SetResponseType(rt types.ResponseType)
 	GetScopes() types.Scopes
 	SetScopes(scopes types.Scopes)

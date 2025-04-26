@@ -55,8 +55,8 @@ func (c *AuthorizationCode) SetRedirectURI(redirectURI string) {
 	c.RedirectURI = redirectURI
 }
 
-func (c *AuthorizationCode) GetResponseType() string {
-	return c.ResponseType
+func (c *AuthorizationCode) GetResponseType() types.ResponseType {
+	return types.NewResponseType(c.ResponseType)
 }
 
 func (c *AuthorizationCode) SetResponseType(rt types.ResponseType) {
