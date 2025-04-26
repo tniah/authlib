@@ -5,7 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"github.com/tniah/authlib/mocks/models"
+	"github.com/tniah/authlib/integrations/sql"
 	"github.com/tniah/authlib/mocks/rfc6749/ropc"
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/types"
@@ -59,31 +59,18 @@ func TestFlow_CheckGrantType(t *testing.T) {
 }
 
 func TestFlow_TokenResponse(t *testing.T) {
-	mockClient := models.NewMockClient(t)
-	mockClient.On("CheckGrantType", mock.AnythingOfType("types.GrantType")).Return(true).Once()
-	mockUser := models.NewMockUser(t)
-	mockToken := models.NewMockToken(t)
-	mockToken.On("GetType").Return("Bearer").Once()
-	mockToken.On("GetAccessToken").Return("access-token").Once()
-	mockToken.On("")
-
-	mockClientMgr := ropc.NewMockClientManager(t)
-	mockClientMgr.On("Authenticate", mock.AnythingOfType("map[types.ClientAuthMethod]bool"), mock.AnythingOfType("string")).Return(mockClient, nil).Once()
-
-	mockUserMgr := ropc.NewMockUserManager(t)
-	mockUserMgr.On("Authenticate", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(mockUser, nil).Once()
-
+	mockToken := &sql.Token{}
 	mockTokenMgr := ropc.NewMockTokenManager(t)
 	mockTokenMgr.On("New").Return(mockToken).Once()
-	mockTokenMgr.On("Generate", mock.AnythingOfType("*models.MockToken"), mock.AnythingOfType("*requests.TokenRequest"), mock.AnythingOfType("bool")).Return(nil).Once()
-	mockTokenMgr.On("Save", mock.AnythingOfType("context.Context"), mock.AnythingOfType("models.Token")).Return(nil).Once()
+	mockTokenMgr.On("Generate", mock.AnythingOfType("*sql.Token"), mock.AnythingOfType("*requests.TokenRequest"), mock.AnythingOfType("bool")).Return(nil).Once()
+	mockTokenMgr.On("Save", mock.Anything, mock.AnythingOfType("*sql.Token")).Return(nil).Once()
 
-	f := New(NewConfig().SetClientManager(mockClientMgr).SetUserManager(mockUserMgr).SetTokenManager(mockTokenMgr))
+	f := New(NewConfig().SetTokenManager(mockTokenMgr))
 	r := &requests.TokenRequest{
 		GrantType: types.GrantTypeROPC,
 		Username:  "makai",
 		Password:  "123456",
-		Client:    mockClient,
+		Client:    &sql.Client{},
 		Request:   httptest.NewRequest("POST", "/oauth/token", nil),
 	}
 
@@ -91,7 +78,7 @@ func TestFlow_TokenResponse(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestFlow_CheckTokenEndpointHttpMethod(t *testing.T) {
+func TestFlow_checkTokenEndpointHttpMethod(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		cfg := NewConfig().SetTokenEndpointHttpMethods([]string{http.MethodDelete, http.MethodPut})
 		f := New(cfg)
@@ -140,7 +127,7 @@ func TestFlow_ValidateGrantType(t *testing.T) {
 	})
 }
 
-func TestFlow_CheckParams(t *testing.T) {
+func TestFlow_checkParams(t *testing.T) {
 	f := New(NewConfig())
 	t.Run("success", func(t *testing.T) {
 		r := &requests.TokenRequest{
@@ -205,13 +192,14 @@ func TestFlow_CheckParams(t *testing.T) {
 	})
 }
 
-func TestFlow_AuthenticateClient(t *testing.T) {
+func TestFlow_authenticateClient(t *testing.T) {
 	mockClientMgr := ropc.NewMockClientManager(t)
-	mockClient := models.NewMockClient(t)
 	f := New(NewConfig().SetClientManager(mockClientMgr))
 
 	t.Run("success", func(t *testing.T) {
-		mockClient.On("CheckGrantType", mock.Anything).Return(true).Once()
+		mockClient := &sql.Client{
+			GrantTypes: []string{types.GrantTypeROPC.String()},
+		}
 		mockClientMgr.On("Authenticate", mock.Anything, mock.Anything, mock.AnythingOfType("string")).Return(mockClient, nil).Once()
 		r := &requests.TokenRequest{
 			Request: httptest.NewRequest(http.MethodPost, "/", nil),
@@ -220,7 +208,6 @@ func TestFlow_AuthenticateClient(t *testing.T) {
 		err := f.authenticateClient(r)
 		assert.NoError(t, err)
 
-		mockClient.AssertExpectations(t)
 		mockClientMgr.AssertExpectations(t)
 	})
 
@@ -241,7 +228,9 @@ func TestFlow_AuthenticateClient(t *testing.T) {
 	})
 
 	t.Run("error_when_grant_type_is_unsupported", func(t *testing.T) {
-		mockClient.On("CheckGrantType", mock.Anything).Return(false).Once()
+		mockClient := &sql.Client{
+			GrantTypes: []string{},
+		}
 		mockClientMgr.On("Authenticate", mock.Anything, mock.Anything, mock.AnythingOfType("string")).Return(mockClient, nil).Once()
 
 		r := &requests.TokenRequest{
@@ -251,13 +240,12 @@ func TestFlow_AuthenticateClient(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "unauthorized_client")
 
-		mockClient.AssertExpectations(t)
 		mockClientMgr.AssertExpectations(t)
 	})
 }
 
-func TestFlow_AuthenticateUser(t *testing.T) {
-	mockUser := models.NewMockUser(t)
+func TestFlow_authenticateUser(t *testing.T) {
+	mockUser := &sql.User{}
 	mockUserMgr := ropc.NewMockUserManager(t)
 	f := New(NewConfig().SetUserManager(mockUserMgr))
 
@@ -290,15 +278,14 @@ func TestFlow_AuthenticateUser(t *testing.T) {
 	})
 }
 
-func TestFlow_GenToken(t *testing.T) {
-	mockToken := models.NewMockToken(t)
-	mockClient := models.NewMockClient(t)
+func TestFlow_genToken(t *testing.T) {
+	mockToken := &sql.Token{}
+	mockClient := &sql.Client{}
 	mockTokenMgr := ropc.NewMockTokenManager(t)
 	f := New(NewConfig().SetTokenManager(mockTokenMgr))
 
 	t.Run("success", func(t *testing.T) {
 		mockTokenMgr.On("New").Return(mockToken).Once()
-		mockClient.On("CheckGrantType", mock.Anything).Return(true).Once()
 		mockTokenMgr.On("Generate", mock.Anything, mock.Anything, mock.AnythingOfType("bool")).Return(nil).Once()
 
 		r := &requests.TokenRequest{
@@ -310,13 +297,11 @@ func TestFlow_GenToken(t *testing.T) {
 		assert.Equal(t, mockToken, tok)
 
 		mockTokenMgr.AssertExpectations(t)
-		mockClient.AssertExpectations(t)
 	})
 
 	t.Run("error", func(t *testing.T) {
 		mockTokenMgr.On("New").Return(nil).Once()
 		mockTokenMgr.On("New").Return(mockToken).Once()
-		mockClient.On("CheckGrantType", mock.Anything).Return(true).Once()
 		mockTokenMgr.On("Generate", mock.Anything, mock.Anything, mock.AnythingOfType("bool")).Return(errors.New("unexpected")).Once()
 
 		r := &requests.TokenRequest{
@@ -332,6 +317,5 @@ func TestFlow_GenToken(t *testing.T) {
 		assert.Contains(t, err.Error(), "unexpected")
 
 		mockTokenMgr.AssertExpectations(t)
-		mockClient.AssertExpectations(t)
 	})
 }
