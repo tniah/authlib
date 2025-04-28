@@ -4,12 +4,13 @@ import (
 	"context"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
+	"github.com/tniah/authlib/types"
 	"net/http"
 )
 
 type ClientManager interface {
 	QueryByClientID(ctx context.Context, clientID string) (models.Client, error)
-	Authenticate(r *http.Request, authMethods map[string]bool, endpointName string) (models.Client, error)
+	Authenticate(r *http.Request, authMethods map[types.ClientAuthMethod]bool, endpointName string) (models.Client, error)
 }
 
 type UserManager interface {

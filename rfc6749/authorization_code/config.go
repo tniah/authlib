@@ -26,14 +26,14 @@ type Config struct {
 	authCodeProcessors         map[AuthCodeProcessor]bool
 	tokenReqValidators         map[TokenRequestValidator]bool
 	tokenProcessors            map[TokenProcessor]bool
-	supportedClientAuthMethods map[string]bool
+	supportedClientAuthMethods map[types.ClientAuthMethod]bool
 }
 
 func NewConfig() *Config {
 	return &Config{
-		supportedClientAuthMethods: map[string]bool{
-			types.ClientBasicAuthentication.String(): true,
-			types.ClientNoneAuthentication.String():  true,
+		supportedClientAuthMethods: map[types.ClientAuthMethod]bool{
+			types.ClientBasicAuthentication: true,
+			types.ClientNoneAuthentication:  true,
 		},
 		authEndpointHttpMethods:  []string{http.MethodGet},
 		tokenEndpointHttpMethods: []string{http.MethodPost},
@@ -119,7 +119,7 @@ func (cfg *Config) RegisterExtension(ext interface{}) *Config {
 	return cfg
 }
 
-func (cfg *Config) SetSupportedClientAuthMethods(methods map[string]bool) *Config {
+func (cfg *Config) SetSupportedClientAuthMethods(methods map[types.ClientAuthMethod]bool) *Config {
 	cfg.supportedClientAuthMethods = methods
 	return cfg
 }
