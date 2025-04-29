@@ -1,6 +1,7 @@
 package rfc9068
 
 import (
+	"context"
 	"errors"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -50,17 +51,17 @@ func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.Token
 	issuedAt := time.Now().UTC().Round(time.Second)
 	token.SetIssuedAt(issuedAt)
 
-	expiresIn := g.expiresInHandler(r.GrantType.String(), client)
+	expiresIn := g.expiresInHandler(r.Request.Context(), r.GrantType.String(), client)
 	token.SetAccessTokenExpiresIn(expiresIn)
 
 	jwtID := token.GetJwtID()
 	if jwtID == "" {
-		jwtID = g.jwtIDHandler(r.GrantType.String(), client)
+		jwtID = g.jwtIDHandler(r.Request.Context(), r.GrantType.String(), client)
 		token.SetJwtID(jwtID)
 	}
 
 	claims := utils.JWTClaim{
-		"iss":       g.issuerHandler(client),
+		"iss":       g.issuerHandler(r.Request.Context(), client),
 		"exp":       jwt.NewNumericDate(issuedAt.Add(expiresIn)),
 		"aud":       clientID,
 		"client_id": clientID,
@@ -75,7 +76,7 @@ func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.Token
 	}
 
 	if fn := g.extraClaimGenerator; fn != nil {
-		extraClaims, err := fn(r.GrantType.String(), client, r.User, allowedScopes)
+		extraClaims, err := fn(r.Request.Context(), r.GrantType.String(), client, r.User, allowedScopes)
 		if err != nil {
 			return err
 		}
@@ -85,7 +86,7 @@ func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.Token
 		}
 	}
 
-	signingKey, signingMethod, signingKeyID := g.signingKeyHandler(client)
+	signingKey, signingMethod, signingKeyID := g.signingKeyHandler(r.Request.Context(), client)
 	t, err := utils.NewJWTToken(signingKey, signingMethod, signingKeyID)
 	if err != nil {
 		return err
@@ -100,33 +101,33 @@ func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.Token
 	return nil
 }
 
-func (g *JWTAccessTokenGenerator) issuerHandler(client models.Client) string {
+func (g *JWTAccessTokenGenerator) issuerHandler(ctx context.Context, client models.Client) string {
 	if fn := g.issuerGenerator; fn != nil {
-		return fn(client)
+		return fn(ctx, client)
 	}
 
 	return g.issuer
 }
 
-func (g *JWTAccessTokenGenerator) expiresInHandler(grantType string, client models.Client) time.Duration {
+func (g *JWTAccessTokenGenerator) expiresInHandler(ctx context.Context, grantType string, client models.Client) time.Duration {
 	if fn := g.expiresInGenerator; fn != nil {
-		return fn(grantType, client)
+		return fn(ctx, grantType, client)
 	}
 
 	return g.expiresIn
 }
 
-func (g *JWTAccessTokenGenerator) signingKeyHandler(client models.Client) ([]byte, jwt.SigningMethod, string) {
+func (g *JWTAccessTokenGenerator) signingKeyHandler(ctx context.Context, client models.Client) ([]byte, jwt.SigningMethod, string) {
 	if fn := g.signingKeyGenerator; fn != nil {
-		return fn(client)
+		return fn(ctx, client)
 	}
 
 	return g.signingKey, g.signingKeyMethod, g.signingKeyID
 }
 
-func (g *JWTAccessTokenGenerator) jwtIDHandler(grantType string, client models.Client) string {
+func (g *JWTAccessTokenGenerator) jwtIDHandler(ctx context.Context, grantType string, client models.Client) string {
 	if fn := g.jwtIDGenerator; fn != nil {
-		return fn(grantType, client)
+		return fn(ctx, grantType, client)
 	}
 
 	return strings.Replace(uuid.NewString(), "-", "", -1)

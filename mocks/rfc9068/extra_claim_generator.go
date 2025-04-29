@@ -3,6 +3,8 @@
 package rfc9068
 
 import (
+	context "context"
+
 	mock "github.com/stretchr/testify/mock"
 	models "github.com/tniah/authlib/models"
 
@@ -22,9 +24,9 @@ func (_m *MockExtraClaimGenerator) EXPECT() *MockExtraClaimGenerator_Expecter {
 	return &MockExtraClaimGenerator_Expecter{mock: &_m.Mock}
 }
 
-// Execute provides a mock function with given fields: grantType, client, user, scopes
-func (_m *MockExtraClaimGenerator) Execute(grantType string, client models.Client, user models.User, scopes types.Scopes) (map[string]interface{}, error) {
-	ret := _m.Called(grantType, client, user, scopes)
+// Execute provides a mock function with given fields: ctx, grantType, client, user, scopes
+func (_m *MockExtraClaimGenerator) Execute(ctx context.Context, grantType string, client models.Client, user models.User, scopes types.Scopes) (map[string]interface{}, error) {
+	ret := _m.Called(ctx, grantType, client, user, scopes)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Execute")
@@ -32,19 +34,19 @@ func (_m *MockExtraClaimGenerator) Execute(grantType string, client models.Clien
 
 	var r0 map[string]interface{}
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, models.Client, models.User, types.Scopes) (map[string]interface{}, error)); ok {
-		return rf(grantType, client, user, scopes)
+	if rf, ok := ret.Get(0).(func(context.Context, string, models.Client, models.User, types.Scopes) (map[string]interface{}, error)); ok {
+		return rf(ctx, grantType, client, user, scopes)
 	}
-	if rf, ok := ret.Get(0).(func(string, models.Client, models.User, types.Scopes) map[string]interface{}); ok {
-		r0 = rf(grantType, client, user, scopes)
+	if rf, ok := ret.Get(0).(func(context.Context, string, models.Client, models.User, types.Scopes) map[string]interface{}); ok {
+		r0 = rf(ctx, grantType, client, user, scopes)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(map[string]interface{})
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(string, models.Client, models.User, types.Scopes) error); ok {
-		r1 = rf(grantType, client, user, scopes)
+	if rf, ok := ret.Get(1).(func(context.Context, string, models.Client, models.User, types.Scopes) error); ok {
+		r1 = rf(ctx, grantType, client, user, scopes)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -58,17 +60,18 @@ type MockExtraClaimGenerator_Execute_Call struct {
 }
 
 // Execute is a helper method to define mock.On call
+//   - ctx context.Context
 //   - grantType string
 //   - client models.Client
 //   - user models.User
 //   - scopes types.Scopes
-func (_e *MockExtraClaimGenerator_Expecter) Execute(grantType interface{}, client interface{}, user interface{}, scopes interface{}) *MockExtraClaimGenerator_Execute_Call {
-	return &MockExtraClaimGenerator_Execute_Call{Call: _e.mock.On("Execute", grantType, client, user, scopes)}
+func (_e *MockExtraClaimGenerator_Expecter) Execute(ctx interface{}, grantType interface{}, client interface{}, user interface{}, scopes interface{}) *MockExtraClaimGenerator_Execute_Call {
+	return &MockExtraClaimGenerator_Execute_Call{Call: _e.mock.On("Execute", ctx, grantType, client, user, scopes)}
 }
 
-func (_c *MockExtraClaimGenerator_Execute_Call) Run(run func(grantType string, client models.Client, user models.User, scopes types.Scopes)) *MockExtraClaimGenerator_Execute_Call {
+func (_c *MockExtraClaimGenerator_Execute_Call) Run(run func(ctx context.Context, grantType string, client models.Client, user models.User, scopes types.Scopes)) *MockExtraClaimGenerator_Execute_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string), args[1].(models.Client), args[2].(models.User), args[3].(types.Scopes))
+		run(args[0].(context.Context), args[1].(string), args[2].(models.Client), args[3].(models.User), args[4].(types.Scopes))
 	})
 	return _c
 }
@@ -78,7 +81,7 @@ func (_c *MockExtraClaimGenerator_Execute_Call) Return(_a0 map[string]interface{
 	return _c
 }
 
-func (_c *MockExtraClaimGenerator_Execute_Call) RunAndReturn(run func(string, models.Client, models.User, types.Scopes) (map[string]interface{}, error)) *MockExtraClaimGenerator_Execute_Call {
+func (_c *MockExtraClaimGenerator_Execute_Call) RunAndReturn(run func(context.Context, string, models.Client, models.User, types.Scopes) (map[string]interface{}, error)) *MockExtraClaimGenerator_Execute_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -3,6 +3,8 @@
 package oidc
 
 import (
+	context "context"
+
 	mock "github.com/stretchr/testify/mock"
 	models "github.com/tniah/authlib/models"
 )
@@ -20,17 +22,17 @@ func (_m *MockIssuerGenerator) EXPECT() *MockIssuerGenerator_Expecter {
 	return &MockIssuerGenerator_Expecter{mock: &_m.Mock}
 }
 
-// Execute provides a mock function with given fields: client
-func (_m *MockIssuerGenerator) Execute(client models.Client) string {
-	ret := _m.Called(client)
+// Execute provides a mock function with given fields: ctx, client
+func (_m *MockIssuerGenerator) Execute(ctx context.Context, client models.Client) string {
+	ret := _m.Called(ctx, client)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Execute")
 	}
 
 	var r0 string
-	if rf, ok := ret.Get(0).(func(models.Client) string); ok {
-		r0 = rf(client)
+	if rf, ok := ret.Get(0).(func(context.Context, models.Client) string); ok {
+		r0 = rf(ctx, client)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
@@ -44,14 +46,15 @@ type MockIssuerGenerator_Execute_Call struct {
 }
 
 // Execute is a helper method to define mock.On call
+//   - ctx context.Context
 //   - client models.Client
-func (_e *MockIssuerGenerator_Expecter) Execute(client interface{}) *MockIssuerGenerator_Execute_Call {
-	return &MockIssuerGenerator_Execute_Call{Call: _e.mock.On("Execute", client)}
+func (_e *MockIssuerGenerator_Expecter) Execute(ctx interface{}, client interface{}) *MockIssuerGenerator_Execute_Call {
+	return &MockIssuerGenerator_Execute_Call{Call: _e.mock.On("Execute", ctx, client)}
 }
 
-func (_c *MockIssuerGenerator_Execute_Call) Run(run func(client models.Client)) *MockIssuerGenerator_Execute_Call {
+func (_c *MockIssuerGenerator_Execute_Call) Run(run func(ctx context.Context, client models.Client)) *MockIssuerGenerator_Execute_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(models.Client))
+		run(args[0].(context.Context), args[1].(models.Client))
 	})
 	return _c
 }
@@ -61,7 +64,7 @@ func (_c *MockIssuerGenerator_Execute_Call) Return(_a0 string) *MockIssuerGenera
 	return _c
 }
 
-func (_c *MockIssuerGenerator_Execute_Call) RunAndReturn(run func(models.Client) string) *MockIssuerGenerator_Execute_Call {
+func (_c *MockIssuerGenerator_Execute_Call) RunAndReturn(run func(context.Context, models.Client) string) *MockIssuerGenerator_Execute_Call {
 	_c.Call.Return(run)
 	return _c
 }

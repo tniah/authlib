@@ -7,6 +7,7 @@ import (
 	"github.com/tniah/authlib/integrations/sql"
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/types"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -32,6 +33,7 @@ func TestJWTAccessTokenGenerator(t *testing.T) {
 		Client:    mockClient,
 		User:      mockUser,
 		Scopes:    types.NewScopes([]string{"openid", "email", "phoneNumber"}),
+		Request:   httptest.NewRequest("POST", "/token", nil),
 	}
 	err := generator.Generate(mockToken, r)
 	assert.NoError(t, err)

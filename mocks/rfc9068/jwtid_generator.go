@@ -3,6 +3,8 @@
 package rfc9068
 
 import (
+	context "context"
+
 	mock "github.com/stretchr/testify/mock"
 	models "github.com/tniah/authlib/models"
 )
@@ -20,17 +22,17 @@ func (_m *MockJWTIDGenerator) EXPECT() *MockJWTIDGenerator_Expecter {
 	return &MockJWTIDGenerator_Expecter{mock: &_m.Mock}
 }
 
-// Execute provides a mock function with given fields: grantType, client
-func (_m *MockJWTIDGenerator) Execute(grantType string, client models.Client) string {
-	ret := _m.Called(grantType, client)
+// Execute provides a mock function with given fields: ctx, grantType, client
+func (_m *MockJWTIDGenerator) Execute(ctx context.Context, grantType string, client models.Client) string {
+	ret := _m.Called(ctx, grantType, client)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Execute")
 	}
 
 	var r0 string
-	if rf, ok := ret.Get(0).(func(string, models.Client) string); ok {
-		r0 = rf(grantType, client)
+	if rf, ok := ret.Get(0).(func(context.Context, string, models.Client) string); ok {
+		r0 = rf(ctx, grantType, client)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
@@ -44,15 +46,16 @@ type MockJWTIDGenerator_Execute_Call struct {
 }
 
 // Execute is a helper method to define mock.On call
+//   - ctx context.Context
 //   - grantType string
 //   - client models.Client
-func (_e *MockJWTIDGenerator_Expecter) Execute(grantType interface{}, client interface{}) *MockJWTIDGenerator_Execute_Call {
-	return &MockJWTIDGenerator_Execute_Call{Call: _e.mock.On("Execute", grantType, client)}
+func (_e *MockJWTIDGenerator_Expecter) Execute(ctx interface{}, grantType interface{}, client interface{}) *MockJWTIDGenerator_Execute_Call {
+	return &MockJWTIDGenerator_Execute_Call{Call: _e.mock.On("Execute", ctx, grantType, client)}
 }
 
-func (_c *MockJWTIDGenerator_Execute_Call) Run(run func(grantType string, client models.Client)) *MockJWTIDGenerator_Execute_Call {
+func (_c *MockJWTIDGenerator_Execute_Call) Run(run func(ctx context.Context, grantType string, client models.Client)) *MockJWTIDGenerator_Execute_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string), args[1].(models.Client))
+		run(args[0].(context.Context), args[1].(string), args[2].(models.Client))
 	})
 	return _c
 }
@@ -62,7 +65,7 @@ func (_c *MockJWTIDGenerator_Execute_Call) Return(_a0 string) *MockJWTIDGenerato
 	return _c
 }
 
-func (_c *MockJWTIDGenerator_Execute_Call) RunAndReturn(run func(string, models.Client) string) *MockJWTIDGenerator_Execute_Call {
+func (_c *MockJWTIDGenerator_Execute_Call) RunAndReturn(run func(context.Context, string, models.Client) string) *MockJWTIDGenerator_Execute_Call {
 	_c.Call.Return(run)
 	return _c
 }

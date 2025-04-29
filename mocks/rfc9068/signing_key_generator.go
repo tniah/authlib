@@ -3,6 +3,8 @@
 package rfc9068
 
 import (
+	context "context"
+
 	jwt "github.com/golang-jwt/jwt/v5"
 	mock "github.com/stretchr/testify/mock"
 
@@ -22,9 +24,9 @@ func (_m *MockSigningKeyGenerator) EXPECT() *MockSigningKeyGenerator_Expecter {
 	return &MockSigningKeyGenerator_Expecter{mock: &_m.Mock}
 }
 
-// Execute provides a mock function with given fields: client
-func (_m *MockSigningKeyGenerator) Execute(client models.Client) ([]byte, jwt.SigningMethod, string) {
-	ret := _m.Called(client)
+// Execute provides a mock function with given fields: ctx, client
+func (_m *MockSigningKeyGenerator) Execute(ctx context.Context, client models.Client) ([]byte, jwt.SigningMethod, string) {
+	ret := _m.Called(ctx, client)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Execute")
@@ -33,27 +35,27 @@ func (_m *MockSigningKeyGenerator) Execute(client models.Client) ([]byte, jwt.Si
 	var r0 []byte
 	var r1 jwt.SigningMethod
 	var r2 string
-	if rf, ok := ret.Get(0).(func(models.Client) ([]byte, jwt.SigningMethod, string)); ok {
-		return rf(client)
+	if rf, ok := ret.Get(0).(func(context.Context, models.Client) ([]byte, jwt.SigningMethod, string)); ok {
+		return rf(ctx, client)
 	}
-	if rf, ok := ret.Get(0).(func(models.Client) []byte); ok {
-		r0 = rf(client)
+	if rf, ok := ret.Get(0).(func(context.Context, models.Client) []byte); ok {
+		r0 = rf(ctx, client)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]byte)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(models.Client) jwt.SigningMethod); ok {
-		r1 = rf(client)
+	if rf, ok := ret.Get(1).(func(context.Context, models.Client) jwt.SigningMethod); ok {
+		r1 = rf(ctx, client)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(jwt.SigningMethod)
 		}
 	}
 
-	if rf, ok := ret.Get(2).(func(models.Client) string); ok {
-		r2 = rf(client)
+	if rf, ok := ret.Get(2).(func(context.Context, models.Client) string); ok {
+		r2 = rf(ctx, client)
 	} else {
 		r2 = ret.Get(2).(string)
 	}
@@ -67,14 +69,15 @@ type MockSigningKeyGenerator_Execute_Call struct {
 }
 
 // Execute is a helper method to define mock.On call
+//   - ctx context.Context
 //   - client models.Client
-func (_e *MockSigningKeyGenerator_Expecter) Execute(client interface{}) *MockSigningKeyGenerator_Execute_Call {
-	return &MockSigningKeyGenerator_Execute_Call{Call: _e.mock.On("Execute", client)}
+func (_e *MockSigningKeyGenerator_Expecter) Execute(ctx interface{}, client interface{}) *MockSigningKeyGenerator_Execute_Call {
+	return &MockSigningKeyGenerator_Execute_Call{Call: _e.mock.On("Execute", ctx, client)}
 }
 
-func (_c *MockSigningKeyGenerator_Execute_Call) Run(run func(client models.Client)) *MockSigningKeyGenerator_Execute_Call {
+func (_c *MockSigningKeyGenerator_Execute_Call) Run(run func(ctx context.Context, client models.Client)) *MockSigningKeyGenerator_Execute_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(models.Client))
+		run(args[0].(context.Context), args[1].(models.Client))
 	})
 	return _c
 }
@@ -84,7 +87,7 @@ func (_c *MockSigningKeyGenerator_Execute_Call) Return(_a0 []byte, _a1 jwt.Signi
 	return _c
 }
 
-func (_c *MockSigningKeyGenerator_Execute_Call) RunAndReturn(run func(models.Client) ([]byte, jwt.SigningMethod, string)) *MockSigningKeyGenerator_Execute_Call {
+func (_c *MockSigningKeyGenerator_Execute_Call) RunAndReturn(run func(context.Context, models.Client) ([]byte, jwt.SigningMethod, string)) *MockSigningKeyGenerator_Execute_Call {
 	_c.Call.Return(run)
 	return _c
 }

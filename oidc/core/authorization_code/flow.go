@@ -1,6 +1,7 @@
 package authorizationcode
 
 import (
+	"context"
 	"errors"
 	"github.com/golang-jwt/jwt/v5"
 	autherrors "github.com/tniah/authlib/errors"
@@ -109,7 +110,7 @@ func (f *Flow) validateNonce(r *requests.AuthorizationRequest) error {
 	}
 
 	if fn := f.existNonce; fn != nil {
-		if fn(r.Nonce, r) {
+		if fn(r.Request.Context(), r.Nonce, r) {
 			return autherrors.InvalidRequestError().
 				WithDescription("\"nonce\" has been used").
 				WithState(r.State).
@@ -144,9 +145,9 @@ func (f *Flow) genIDToken(r *requests.TokenRequest) (string, error) {
 
 	now := time.Now().UTC().Round(time.Second)
 	claims := utils.JWTClaim{
-		"iss": f.issuerHandler(client),
+		"iss": f.issuerHandler(r.Request.Context(), client),
 		"aud": []string{client.GetClientID()},
-		"exp": jwt.NewNumericDate(now.Add(f.expiresInHandler(r.GrantType.String(), client))),
+		"exp": jwt.NewNumericDate(now.Add(f.expiresInHandler(r.Request.Context(), r.GrantType.String(), client))),
 		"iat": jwt.NewNumericDate(now),
 	}
 
@@ -165,7 +166,7 @@ func (f *Flow) genIDToken(r *requests.TokenRequest) (string, error) {
 	}
 
 	if fn := f.extraClaimGenerator; fn != nil {
-		extraClaims, err := fn(r.GrantType.String(), client, user)
+		extraClaims, err := fn(r.Request.Context(), r.GrantType.String(), client, user)
 		if err != nil {
 			return "", err
 		}
@@ -175,7 +176,7 @@ func (f *Flow) genIDToken(r *requests.TokenRequest) (string, error) {
 		}
 	}
 
-	key, method, keyID := f.signingKeyHandler(client)
+	key, method, keyID := f.signingKeyHandler(r.Request.Context(), client)
 	t, err := utils.NewJWTToken(key, method, keyID)
 	if err != nil {
 		return "", err
@@ -189,25 +190,25 @@ func (f *Flow) genIDToken(r *requests.TokenRequest) (string, error) {
 	return idToken, nil
 }
 
-func (f *Flow) issuerHandler(client models.Client) string {
+func (f *Flow) issuerHandler(ctx context.Context, client models.Client) string {
 	if fn := f.issuerGenerator; fn != nil {
-		return fn(client)
+		return fn(ctx, client)
 	}
 
 	return f.issuer
 }
 
-func (f *Flow) expiresInHandler(grantType string, client models.Client) time.Duration {
+func (f *Flow) expiresInHandler(ctx context.Context, grantType string, client models.Client) time.Duration {
 	if fn := f.expiresInGenerator; fn != nil {
-		return fn(grantType, client)
+		return fn(ctx, grantType, client)
 	}
 
 	return f.expiresIn
 }
 
-func (f *Flow) signingKeyHandler(client models.Client) ([]byte, jwt.SigningMethod, string) {
+func (f *Flow) signingKeyHandler(ctx context.Context, client models.Client) ([]byte, jwt.SigningMethod, string) {
 	if fn := f.signingKeyGenerator; fn != nil {
-		return fn(client)
+		return fn(ctx, client)
 	}
 
 	return f.signingKey, f.signingKeyMethod, f.signingKeyID
