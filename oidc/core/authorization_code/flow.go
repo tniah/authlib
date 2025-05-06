@@ -176,7 +176,11 @@ func (f *Flow) genIDToken(r *requests.TokenRequest) (string, error) {
 		}
 	}
 
-	key, method, keyID := f.signingKeyHandler(r.Request.Context(), client)
+	key, method, keyID, err := f.signingKeyHandler(r.Request.Context(), client)
+	if err != nil {
+		return "", err
+	}
+
 	t, err := utils.NewJWTToken(key, method, keyID)
 	if err != nil {
 		return "", err
@@ -206,10 +210,10 @@ func (f *Flow) expiresInHandler(ctx context.Context, grantType string, client mo
 	return f.expiresIn
 }
 
-func (f *Flow) signingKeyHandler(ctx context.Context, client models.Client) ([]byte, jwt.SigningMethod, string) {
+func (f *Flow) signingKeyHandler(ctx context.Context, client models.Client) ([]byte, jwt.SigningMethod, string, error) {
 	if fn := f.signingKeyGenerator; fn != nil {
 		return fn(ctx, client)
 	}
 
-	return f.signingKey, f.signingKeyMethod, f.signingKeyID
+	return f.signingKey, f.signingKeyMethod, f.signingKeyID, nil
 }

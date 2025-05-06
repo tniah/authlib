@@ -86,7 +86,11 @@ func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.Token
 		}
 	}
 
-	signingKey, signingMethod, signingKeyID := g.signingKeyHandler(r.Request.Context(), client)
+	signingKey, signingMethod, signingKeyID, err := g.signingKeyHandler(r.Request.Context(), client)
+	if err != nil {
+		return err
+	}
+
 	t, err := utils.NewJWTToken(signingKey, signingMethod, signingKeyID)
 	if err != nil {
 		return err
@@ -117,12 +121,12 @@ func (g *JWTAccessTokenGenerator) expiresInHandler(ctx context.Context, grantTyp
 	return g.expiresIn
 }
 
-func (g *JWTAccessTokenGenerator) signingKeyHandler(ctx context.Context, client models.Client) ([]byte, jwt.SigningMethod, string) {
+func (g *JWTAccessTokenGenerator) signingKeyHandler(ctx context.Context, client models.Client) ([]byte, jwt.SigningMethod, string, error) {
 	if fn := g.signingKeyGenerator; fn != nil {
 		return fn(ctx, client)
 	}
 
-	return g.signingKey, g.signingKeyMethod, g.signingKeyID
+	return g.signingKey, g.signingKeyMethod, g.signingKeyID, nil
 }
 
 func (g *JWTAccessTokenGenerator) jwtIDHandler(ctx context.Context, grantType string, client models.Client) string {

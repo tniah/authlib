@@ -12,7 +12,7 @@ type IssuerGenerator func(ctx context.Context, client models.Client) string
 
 type ExpiresInGenerator func(ctx context.Context, grantType string, client models.Client) time.Duration
 
-type SigningKeyGenerator func(ctx context.Context, client models.Client) ([]byte, jwt.SigningMethod, string)
+type SigningKeyGenerator func(ctx context.Context, client models.Client) ([]byte, jwt.SigningMethod, string, error)
 
 type ExtraClaimGenerator func(ctx context.Context, grantType string, client models.Client, user models.User, scopes types.Scopes) (map[string]interface{}, error)
 

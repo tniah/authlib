@@ -25,7 +25,7 @@ func (_m *MockSigningKeyGenerator) EXPECT() *MockSigningKeyGenerator_Expecter {
 }
 
 // Execute provides a mock function with given fields: ctx, client
-func (_m *MockSigningKeyGenerator) Execute(ctx context.Context, client models.Client) ([]byte, jwt.SigningMethod, string) {
+func (_m *MockSigningKeyGenerator) Execute(ctx context.Context, client models.Client) ([]byte, jwt.SigningMethod, string, error) {
 	ret := _m.Called(ctx, client)
 
 	if len(ret) == 0 {
@@ -35,7 +35,8 @@ func (_m *MockSigningKeyGenerator) Execute(ctx context.Context, client models.Cl
 	var r0 []byte
 	var r1 jwt.SigningMethod
 	var r2 string
-	if rf, ok := ret.Get(0).(func(context.Context, models.Client) ([]byte, jwt.SigningMethod, string)); ok {
+	var r3 error
+	if rf, ok := ret.Get(0).(func(context.Context, models.Client) ([]byte, jwt.SigningMethod, string, error)); ok {
 		return rf(ctx, client)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, models.Client) []byte); ok {
@@ -60,7 +61,13 @@ func (_m *MockSigningKeyGenerator) Execute(ctx context.Context, client models.Cl
 		r2 = ret.Get(2).(string)
 	}
 
-	return r0, r1, r2
+	if rf, ok := ret.Get(3).(func(context.Context, models.Client) error); ok {
+		r3 = rf(ctx, client)
+	} else {
+		r3 = ret.Error(3)
+	}
+
+	return r0, r1, r2, r3
 }
 
 // MockSigningKeyGenerator_Execute_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Execute'
@@ -82,12 +89,12 @@ func (_c *MockSigningKeyGenerator_Execute_Call) Run(run func(ctx context.Context
 	return _c
 }
 
-func (_c *MockSigningKeyGenerator_Execute_Call) Return(_a0 []byte, _a1 jwt.SigningMethod, _a2 string) *MockSigningKeyGenerator_Execute_Call {
-	_c.Call.Return(_a0, _a1, _a2)
+func (_c *MockSigningKeyGenerator_Execute_Call) Return(_a0 []byte, _a1 jwt.SigningMethod, _a2 string, _a3 error) *MockSigningKeyGenerator_Execute_Call {
+	_c.Call.Return(_a0, _a1, _a2, _a3)
 	return _c
 }
 
-func (_c *MockSigningKeyGenerator_Execute_Call) RunAndReturn(run func(context.Context, models.Client) ([]byte, jwt.SigningMethod, string)) *MockSigningKeyGenerator_Execute_Call {
+func (_c *MockSigningKeyGenerator_Execute_Call) RunAndReturn(run func(context.Context, models.Client) ([]byte, jwt.SigningMethod, string, error)) *MockSigningKeyGenerator_Execute_Call {
 	_c.Call.Return(run)
 	return _c
 }
