@@ -33,8 +33,8 @@ func (f *TokenIntrospectionFlow) CheckEndpoint(name string) bool {
 
 func (f *TokenIntrospectionFlow) EndpointResponse(r *http.Request, rw http.ResponseWriter) error {
 	client, err := f.clientManager.Authenticate(r, f.supportedClientAuthMethods, f.endpointName)
-	if err != nil {
-		return err
+	if err != nil || client == nil {
+		return autherrors.InvalidClientError()
 	}
 
 	req := NewRequestFromHTTP(r)
