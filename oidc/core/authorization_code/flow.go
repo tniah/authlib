@@ -62,19 +62,19 @@ func (f *Flow) ValidateConsentRequest(r *requests.AuthorizationRequest) error {
 		r.Prompts = types.Prompts{types.PromptLogin}
 	}
 
-	if user == nil && r.Prompts.ContainLogin() {
+	if utils.IsNil(user) && r.Prompts.ContainLogin() {
 		return nil
 	}
 
-	if user == nil && r.Prompts.ContainNone() {
+	if utils.IsNil(user) && r.Prompts.ContainNone() {
 		return autherrors.LoginRequiredError().WithState(r.State).WithRedirectURI(r.RedirectURI)
 	}
 
-	if user == nil && r.Prompts.ContainConsent() {
+	if utils.IsNil(user) && r.Prompts.ContainConsent() {
 		return autherrors.ConsentRequiredError().WithState(r.State).WithRedirectURI(r.RedirectURI)
 	}
 
-	if user == nil && r.Prompts.ContainSelectAccount() {
+	if utils.IsNil(user) && r.Prompts.ContainSelectAccount() {
 		return autherrors.AccountSelectionRequiredError().WithState(r.State).WithRedirectURI(r.RedirectURI)
 	}
 
