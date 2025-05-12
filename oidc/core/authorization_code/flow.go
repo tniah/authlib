@@ -58,7 +58,7 @@ func (f *Flow) ValidateConsentRequest(r *requests.AuthorizationRequest) error {
 	}
 
 	user := r.User
-	if len(r.Prompts) == 0 && user == nil {
+	if len(r.Prompts) == 0 && utils.IsNil(user) {
 		r.Prompts = types.Prompts{types.PromptLogin}
 	}
 
