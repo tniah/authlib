@@ -315,7 +315,7 @@ func (f *Flow) queryUserByAuthCode(r *requests.TokenRequest) error {
 		return autherrors.InvalidGrantError().WithDescription("No user could be found associated with this authorization code")
 	}
 
-	user, err := f.userMgr.QueryByUserID(r.Request.Context(), userID)
+	user, err := f.userMgr.QueryUserByCode(r.Request.Context(), r.AuthCode, r)
 	if err != nil {
 		return err
 	}
