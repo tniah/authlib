@@ -10,6 +10,8 @@ type AuthLibError struct {
 	State string
 	// RedirectURI
 	RedirectURI string
+	// Error
+	Error error
 	*OAuth2Error
 }
 
@@ -48,6 +50,11 @@ func (e *AuthLibError) WithState(state string) *AuthLibError {
 
 func (e *AuthLibError) WithRedirectURI(redirectURI string) *AuthLibError {
 	e.RedirectURI = redirectURI
+	return e
+}
+
+func (e *AuthLibError) WithError(err error) *AuthLibError {
+	e.Error = err
 	return e
 }
 

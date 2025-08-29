@@ -8,6 +8,7 @@ import (
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/rfc6749"
 	"github.com/tniah/authlib/types"
+	"github.com/tniah/authlib/utils"
 	"net/http"
 )
 
@@ -122,8 +123,8 @@ func (f *Flow) validateGrantType(r *requests.TokenRequest) error {
 
 func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 	client, err := f.clientMgr.Authenticate(r.Request, f.supportedClientAuthMethods, EndpointToken)
-	if err != nil || client == nil {
-		return autherrors.InvalidClientError()
+	if err != nil || utils.IsNil(client) {
+		return autherrors.InvalidClientError().WithError(err)
 	}
 
 	if allowed := client.CheckGrantType(types.GrantTypeROPC); !allowed {
@@ -136,8 +137,8 @@ func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 
 func (f *Flow) authenticateUser(r *requests.TokenRequest) error {
 	user, err := f.userMgr.Authenticate(r.Username, r.Password, r.Client, r.Request)
-	if err != nil || user == nil {
-		return autherrors.InvalidRequestError().WithDescription("Username or password is incorrect")
+	if err != nil || utils.IsNil(user) {
+		return autherrors.InvalidGrantError().WithError(err).WithDescription("Username or password is incorrect")
 	}
 
 	r.User = user
