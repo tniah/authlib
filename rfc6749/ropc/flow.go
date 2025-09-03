@@ -147,7 +147,7 @@ func (f *Flow) authenticateUser(r *requests.TokenRequest) error {
 
 func (f *Flow) genToken(r *requests.TokenRequest) (models.Token, error) {
 	token := f.tokenMgr.New()
-	if token == nil {
+	if utils.IsNil(token) {
 		return nil, ErrNilToken
 	}
 

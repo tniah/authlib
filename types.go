@@ -28,3 +28,5 @@ type Endpoint interface {
 	CheckEndpoint(name string) bool
 	EndpointResponse(r *http.Request, rw http.ResponseWriter) error
 }
+
+type ErrorHandler func(rw http.ResponseWriter, err error) error
