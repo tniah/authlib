@@ -15,6 +15,7 @@ type Server struct {
 	consentGrants       map[ConsentGrant]bool
 	tokenGrants         map[TokenGrant]bool
 	endpoints           map[Endpoint]bool
+	errHandler          ErrorHandler
 }
 
 func NewServer() *Server {
@@ -196,7 +197,15 @@ func (srv *Server) RegisterEndpoint(endpoint interface{}) {
 	}
 }
 
+func (srv *Server) RegisterErrorHandler(h ErrorHandler) {
+	srv.errHandler = h
+}
+
 func (srv *Server) HandleError(rw http.ResponseWriter, err error) error {
+	if !utils.IsNil(srv.errHandler) {
+		return srv.errHandler(rw, err)
+	}
+
 	authErr, err := autherrors.ToAuthLibError(err)
 	if err != nil {
 		return err
