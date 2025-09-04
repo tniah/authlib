@@ -29,4 +29,4 @@ type Endpoint interface {
 	EndpointResponse(r *http.Request, rw http.ResponseWriter) error
 }
 
-type ErrorHandler func(rw http.ResponseWriter, err error) error
+type ErrorHandler func(hr *http.Request, rw http.ResponseWriter, err error) error

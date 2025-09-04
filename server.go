@@ -43,21 +43,21 @@ func (srv *Server) AuthorizationGrant(r *requests.AuthorizationRequest) (Authori
 func (srv *Server) CreateAuthorizationResponse(hr *http.Request, rw http.ResponseWriter, u models.User) error {
 	r, err := srv.CreateAuthorizationRequest(hr)
 	if err != nil {
-		return srv.HandleError(rw, err)
+		return srv.HandleError(hr, rw, err)
 	}
 
 	r.User = u
 	grant, err := srv.AuthorizationGrant(r)
 	if err != nil {
-		return srv.HandleError(rw, err)
+		return srv.HandleError(hr, rw, err)
 	}
 
 	if err = grant.ValidateAuthorizationRequest(r); err != nil {
-		return srv.HandleError(rw, err)
+		return srv.HandleError(hr, rw, err)
 	}
 
 	if err = grant.AuthorizationResponse(r, rw); err != nil {
-		return srv.HandleError(rw, err)
+		return srv.HandleError(hr, rw, err)
 	}
 
 	return nil
@@ -76,21 +76,21 @@ func (srv *Server) ConsentGrant(r *requests.AuthorizationRequest) (ConsentGrant,
 func (srv *Server) CreateConsentResponse(hr *http.Request, rw http.ResponseWriter, u models.User) error {
 	r, err := srv.CreateAuthorizationRequest(hr)
 	if err != nil {
-		return srv.HandleError(rw, err)
+		return srv.HandleError(hr, rw, err)
 	}
 
 	r.User = u
 	grant, err := srv.ConsentGrant(r)
 	if err != nil {
-		return srv.HandleError(rw, err)
+		return srv.HandleError(hr, rw, err)
 	}
 
 	if err = grant.ValidateConsentRequest(r); err != nil {
-		return srv.HandleError(rw, err)
+		return srv.HandleError(hr, rw, err)
 	}
 
 	if err = grant.AuthorizationResponse(r, rw); err != nil {
-		return srv.HandleError(rw, err)
+		return srv.HandleError(hr, rw, err)
 	}
 
 	return nil
@@ -113,20 +113,20 @@ func (srv *Server) TokenGrant(r *requests.TokenRequest) (TokenGrant, error) {
 func (srv *Server) CreateTokenResponse(hr *http.Request, rw http.ResponseWriter) error {
 	r, err := srv.CreateTokenRequest(hr)
 	if err != nil {
-		return srv.HandleError(rw, err)
+		return srv.HandleError(hr, rw, err)
 	}
 
 	grant, err := srv.TokenGrant(r)
 	if err != nil {
-		return srv.HandleError(rw, err)
+		return srv.HandleError(hr, rw, err)
 	}
 
 	if err = grant.ValidateTokenRequest(r); err != nil {
-		return srv.HandleError(rw, err)
+		return srv.HandleError(hr, rw, err)
 	}
 
 	if err = grant.TokenResponse(r, rw); err != nil {
-		return srv.HandleError(rw, err)
+		return srv.HandleError(hr, rw, err)
 	}
 
 	return nil
@@ -145,11 +145,11 @@ func (srv *Server) Endpoint(name string) (Endpoint, error) {
 func (srv *Server) EndpointResponse(hr *http.Request, rw http.ResponseWriter, name string) error {
 	h, err := srv.Endpoint(name)
 	if err != nil {
-		return srv.HandleError(rw, err)
+		return srv.HandleError(hr, rw, err)
 	}
 
 	if err = h.EndpointResponse(hr, rw); err != nil {
-		return srv.HandleError(rw, err)
+		return srv.HandleError(hr, rw, err)
 	}
 
 	return nil
@@ -201,9 +201,9 @@ func (srv *Server) RegisterErrorHandler(h ErrorHandler) {
 	srv.errHandler = h
 }
 
-func (srv *Server) HandleError(rw http.ResponseWriter, err error) error {
+func (srv *Server) HandleError(hr *http.Request, rw http.ResponseWriter, err error) error {
 	if !utils.IsNil(srv.errHandler) {
-		return srv.errHandler(rw, err)
+		return srv.errHandler(hr, rw, err)
 	}
 
 	authErr, err := autherrors.ToAuthLibError(err)
