@@ -11,7 +11,7 @@ type AuthLibError struct {
 	// RedirectURI
 	RedirectURI string
 	// Error
-	Error error
+	Cause error
 	*OAuth2Error
 }
 
@@ -53,8 +53,8 @@ func (e *AuthLibError) WithRedirectURI(redirectURI string) *AuthLibError {
 	return e
 }
 
-func (e *AuthLibError) WithError(err error) *AuthLibError {
-	e.Error = err
+func (e *AuthLibError) WithCause(err error) *AuthLibError {
+	e.Cause = err
 	return e
 }
 

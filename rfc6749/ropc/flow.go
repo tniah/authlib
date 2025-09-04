@@ -124,7 +124,7 @@ func (f *Flow) validateGrantType(r *requests.TokenRequest) error {
 func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 	client, err := f.clientMgr.Authenticate(r.Request, f.supportedClientAuthMethods, EndpointToken)
 	if err != nil || utils.IsNil(client) {
-		return autherrors.InvalidClientError().WithError(err)
+		return autherrors.InvalidClientError().WithCause(err)
 	}
 
 	if allowed := client.CheckGrantType(types.GrantTypeROPC); !allowed {
@@ -138,7 +138,7 @@ func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 func (f *Flow) authenticateUser(r *requests.TokenRequest) error {
 	user, err := f.userMgr.Authenticate(r.Username, r.Password, r.Client, r.Request)
 	if err != nil || utils.IsNil(user) {
-		return autherrors.InvalidGrantError().WithError(err).WithDescription("Username or password is incorrect")
+		return autherrors.InvalidGrantError().WithDescription("Username or password is incorrect").WithCause(err)
 	}
 
 	r.User = user

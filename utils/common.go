@@ -2,11 +2,21 @@ package utils
 
 import "reflect"
 
-func IsNil(v interface{}) bool {
-	val := reflect.ValueOf(v)
-	if !val.IsValid() || val.Kind() == reflect.Ptr && val.IsNil() {
+func IsNil(i interface{}) bool {
+	if i == nil {
 		return true
 	}
 
-	return false
+	v := reflect.ValueOf(i)
+	if !v.IsValid() {
+		return true
+	}
+
+	switch v.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface,
+		reflect.Map, reflect.Ptr, reflect.Slice:
+		return v.IsNil()
+	default:
+		return false
+	}
 }
