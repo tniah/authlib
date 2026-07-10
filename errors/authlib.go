@@ -2,7 +2,9 @@ package errors
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"strings"
 )
 
 // AuthLibError extends OAuth2Error with authorization-server-specific context:
@@ -45,8 +47,16 @@ func (e *AuthLibError) Data() map[string]interface{} {
 }
 
 // Response returns the HTTP status code, headers, and JSON body for the error
-// response. Delegates to OAuth2Error.Response after merging the state field.
+// response. For invalid_client (401), the WWW-Authenticate header is built at
+// this point using the current Description so it always reflects the latest value
+// set via WithDescription.
 func (e *AuthLibError) Response() (statusCode int, header http.Header, data map[string]interface{}) {
+	if errors.Is(e.Code, ErrInvalidClient) && e.HttpCode == http.StatusUnauthorized {
+		errDesc := strings.ReplaceAll(e.Description, `"`, `\"`)
+		challenge := fmt.Sprintf(`Basic error="%s", error_description="%s"`, e.Code, errDesc)
+		e.SetHeader("WWW-Authenticate", challenge)
+	}
+
 	return e.HttpCode, e.HttpHeader, e.Data()
 }
 
@@ -104,6 +114,9 @@ func InvalidRequestError() *AuthLibError {
 
 // InvalidClientError returns a 401 error for failed client authentication —
 // unknown client, wrong secret, or unsupported auth method (RFC 6749 §5.2 "invalid_client").
+// The WWW-Authenticate header is built lazily in Response() so it always reflects
+// the description at the time the response is written, including any value set
+// via WithDescription.
 func InvalidClientError() *AuthLibError {
 	return NewAuthLibError(ErrInvalidClient)
 }

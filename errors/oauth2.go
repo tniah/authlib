@@ -67,6 +67,13 @@ func (e *OAuth2Error) Error() string {
 	return fmt.Sprintf("error=%v, description=%s", e.Code, e.Description)
 }
 
+// SetHttpCode overrides the HTTP status code determined automatically from
+// HttpCodes. Use only when a specific RFC or custom requirement calls for a
+// status code that differs from the default mapping.
+func (e *OAuth2Error) SetHttpCode(code int) {
+	e.HttpCode = code
+}
+
 // SetHeader adds an HTTP response header to this error. Useful for protocol-level
 // headers such as WWW-Authenticate that must accompany the error response.
 func (e *OAuth2Error) SetHeader(key, value string) {
