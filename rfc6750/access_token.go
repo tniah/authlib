@@ -34,7 +34,7 @@ func NewOpaqueAccessTokenGenerator(opts ...*TokenGeneratorOptions) *OpaqueAccess
 // User may be nil (e.g. client credentials flow); in that case UserID is left empty.
 func (g *OpaqueAccessTokenGenerator) Generate(token models.Token, r *requests.TokenRequest) error {
 	client := r.Client
-	if client == nil {
+	if utils.IsNil(client) {
 		return ErrNilClient
 	}
 

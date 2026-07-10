@@ -30,12 +30,12 @@ func New(opts ...*Options) *Generator {
 
 func (g *Generator) Generate(authCode models.AuthorizationCode, r *requests.AuthorizationRequest) error {
 	client := r.Client
-	if client == nil {
+	if utils.IsNil(client) {
 		return ErrNilClient
 	}
 
 	user := r.User
-	if user == nil {
+	if utils.IsNil(user) {
 		return ErrNilUser
 	}
 

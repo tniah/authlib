@@ -88,7 +88,7 @@ func (f *Flow) ValidateConsentRequest(r *requests.AuthorizationRequest) error {
 }
 
 func (f *Flow) AuthorizationResponse(r *requests.AuthorizationRequest, rw http.ResponseWriter) error {
-	if r.User == nil {
+	if utils.IsNil(r.User) {
 		return autherrors.AccessDeniedError().WithState(r.State).WithRedirectURI(r.RedirectURI)
 	}
 
@@ -201,7 +201,7 @@ func (f *Flow) checkClient(r *requests.AuthorizationRequest) error {
 		return err
 	}
 
-	if client == nil {
+	if utils.IsNil(client) {
 		return autherrors.InvalidRequestError().
 			WithDescription("No client was found that matches \"client_id\" value").
 			WithState(r.State)
@@ -250,7 +250,7 @@ func (f *Flow) validateResponseType(r *requests.AuthorizationRequest) error {
 
 func (f *Flow) genAuthCode(r *requests.AuthorizationRequest) (models.AuthorizationCode, error) {
 	authCode := f.authCodeMgr.New()
-	if authCode == nil {
+	if utils.IsNil(authCode) {
 		return nil, ErrNilAuthCode
 	}
 
@@ -275,7 +275,7 @@ func (f *Flow) validateGrantType(r *requests.TokenRequest) error {
 
 func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 	cl, err := f.clientMgr.Authenticate(r.Request, f.supportedClientAuthMethods, EndpointToken)
-	if err != nil || cl == nil {
+	if err != nil || utils.IsNil(cl) {
 		return autherrors.InvalidClientError().WithCause(err)
 	}
 
@@ -293,7 +293,7 @@ func (f *Flow) validateAuthCode(r *requests.TokenRequest) error {
 		return err
 	}
 
-	if authCode == nil {
+	if utils.IsNil(authCode) {
 		return autherrors.InvalidGrantError().WithDescription("Invalid \"code\" in request")
 	}
 
@@ -326,7 +326,7 @@ func (f *Flow) queryUserByAuthCode(r *requests.TokenRequest) error {
 		return err
 	}
 
-	if user == nil {
+	if utils.IsNil(user) {
 		return autherrors.InvalidGrantError().WithDescription("No user could be found associated with this authorization code")
 	}
 
@@ -336,7 +336,7 @@ func (f *Flow) queryUserByAuthCode(r *requests.TokenRequest) error {
 
 func (f *Flow) genToken(r *requests.TokenRequest) (models.Token, error) {
 	token := f.tokenMgr.New()
-	if token == nil {
+	if utils.IsNil(token) {
 		return nil, ErrNilToken
 	}
 

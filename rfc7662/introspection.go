@@ -34,7 +34,7 @@ func (f *TokenIntrospectionFlow) CheckEndpoint(name string) bool {
 
 func (f *TokenIntrospectionFlow) EndpointResponse(r *http.Request, rw http.ResponseWriter) error {
 	client, err := f.clientManager.Authenticate(r, f.supportedClientAuthMethods, f.endpointName)
-	if err != nil || client == nil {
+	if err != nil || utils.IsNil(client) {
 		return autherrors.InvalidClientError()
 	}
 
@@ -93,7 +93,7 @@ func (f *TokenIntrospectionFlow) introspectionPayload(r *Request) map[string]int
 	payload := map[string]interface{}{
 		"active": false,
 	}
-	if r.Tok == nil {
+	if utils.IsNil(r.Tok) {
 		return payload
 	}
 
