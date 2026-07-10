@@ -1,8 +1,11 @@
 package clientauth
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 
+	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/types"
 )
@@ -48,7 +51,22 @@ func (m *Manager) Authenticate(r *http.Request, supportedMethods map[types.Clien
 		}
 	}
 
-	return nil, ErrInvalidClient
+	methods := make([]string, 0, len(supportedMethods))
+	for method, ok := range supportedMethods {
+		if ok {
+			methods = append(methods, fmt.Sprintf("%q", string(method)))
+		}
+	}
+
+	authErr := autherrors.InvalidClientError().WithDescription(
+		fmt.Sprintf("The client failed to authenticate using any of the following methods: [%s]", strings.Join(methods, ", ")),
+	)
+
+	if supportedMethods[types.ClientBasicAuthentication] {
+		authErr.SetHttpCode(http.StatusUnauthorized)
+	}
+
+	return nil, authErr
 }
 
 // Register adds h to the manager, keyed by h.Method(). Registering a handler

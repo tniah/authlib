@@ -1,11 +1,14 @@
 package clientauth
 
 import (
+	"errors"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/integrations/sql"
 	rfc6749 "github.com/tniah/authlib/mocks/rfc6749/client_authentication"
 	"github.com/tniah/authlib/types"
@@ -53,8 +56,14 @@ func TestManager_Authenticate(t *testing.T) {
 
 	t.Run("error_when_method_is_not_supported", func(t *testing.T) {
 		c, err := m.Authenticate(r, map[types.ClientAuthMethod]bool{"password": true}, "token")
-		assert.ErrorIs(t, err, ErrInvalidClient)
 		assert.Nil(t, c)
+
+		var authErr *autherrors.AuthLibError
+		assert.True(t, errors.As(err, &authErr))
+		assert.Contains(t, authErr.Description, `"password"`)
+
+		_, header, _ := authErr.Response()
+		assert.Contains(t, header.Get("WWW-Authenticate"), "Basic")
 	})
 
 	t.Run("error_when_method_is_not_supported_by_client", func(t *testing.T) {
@@ -65,7 +74,15 @@ func TestManager_Authenticate(t *testing.T) {
 
 		c, err := m.Authenticate(r, map[types.ClientAuthMethod]bool{types.ClientBasicAuthentication: true}, "token")
 		assert.Nil(t, c)
-		assert.ErrorIs(t, err, ErrInvalidClient)
+
+		var authErr *autherrors.AuthLibError
+		assert.True(t, errors.As(err, &authErr))
+		assert.Contains(t, authErr.Description, `"client_secret_basic"`)
+		assert.Equal(t, http.StatusUnauthorized, authErr.HttpCode)
+
+		_, header, _ := authErr.Response()
+		assert.Contains(t, header.Get("WWW-Authenticate"), "Basic")
+		assert.Contains(t, header.Get("WWW-Authenticate"), "client_secret_basic")
 
 		mockHandler.AssertExpectations(t)
 	})
