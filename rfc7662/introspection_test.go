@@ -116,8 +116,7 @@ func TestTokenIntrospectionFlow_authenticateToken(t *testing.T) {
 		r.Client = mockClient
 
 		err := h.authenticateToken(r)
-		authErr, err := autherrors.ToAuthLibError(err)
-		assert.NoError(t, err)
+		authErr := autherrors.ToAuthLibError(err)
 		assert.Equal(t, "client does not have permission to inspect token", authErr.Description)
 
 		mockTokenMgr.AssertExpectations(t)
@@ -140,8 +139,7 @@ func TestTokenIntrospectionFlow_checkParams(t *testing.T) {
 		hr := httptest.NewRequest(http.MethodGet, "/", nil)
 		r := NewRequestFromHTTP(hr)
 		err := h.checkParams(r)
-		authErr, err := autherrors.ToAuthLibError(err)
-		assert.NoError(t, err)
+		authErr := autherrors.ToAuthLibError(err)
 		assert.Equal(t, "request must be \"POST\"", authErr.Description)
 	})
 
@@ -149,8 +147,7 @@ func TestTokenIntrospectionFlow_checkParams(t *testing.T) {
 		hr := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("token=my-token&token_type_hint=access_token"))
 		r := NewRequestFromHTTP(hr)
 		err := h.checkParams(r)
-		authErr, err := autherrors.ToAuthLibError(err)
-		assert.NoError(t, err)
+		authErr := autherrors.ToAuthLibError(err)
 		assert.Equal(t, autherrors.ErrInvalidRequest, authErr.Code)
 	})
 
@@ -159,8 +156,7 @@ func TestTokenIntrospectionFlow_checkParams(t *testing.T) {
 		hr.Header.Set("Content-Type", "application/json")
 		r := NewRequestFromHTTP(hr)
 		err := h.checkParams(r)
-		authErr, err := autherrors.ToAuthLibError(err)
-		assert.NoError(t, err)
+		authErr := autherrors.ToAuthLibError(err)
 		assert.Equal(t, "content type must be \"application/x-www-form-urlencoded\"", authErr.Description)
 	})
 
@@ -169,8 +165,7 @@ func TestTokenIntrospectionFlow_checkParams(t *testing.T) {
 		hr.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		r := NewRequestFromHTTP(hr)
 		err := h.checkParams(r)
-		authErr, err := autherrors.ToAuthLibError(err)
-		assert.NoError(t, err)
+		authErr := autherrors.ToAuthLibError(err)
 		assert.Equal(t, "token type hint must be set to \"access_token\" or \"refresh_token\"", authErr.Description)
 	})
 }

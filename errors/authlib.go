@@ -94,16 +94,16 @@ func (e *AuthLibError) WithCause(err error) *AuthLibError {
 }
 
 // ToAuthLibError unwraps err into an *AuthLibError using errors.As.
-// Returns (authErr, nil) on success, or (nil, err) if err is not an AuthLibError.
-// Used by Server.HandleError to decide whether to write a structured response.
-func ToAuthLibError(err error) (*AuthLibError, error) {
+// If err is already an *AuthLibError it is returned as-is; otherwise an
+// InternalServerError wrapping err as Cause is returned. Never returns nil.
+func ToAuthLibError(err error) *AuthLibError {
 	var authErr *AuthLibError
 
 	if errors.As(err, &authErr) {
-		return authErr, nil
+		return authErr
 	}
 
-	return nil, err
+	return InternalServerError().WithCause(err)
 }
 
 // InvalidRequestError returns a 400 error for a malformed or missing parameter
