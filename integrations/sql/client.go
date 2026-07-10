@@ -1,6 +1,7 @@
 package sql
 
 import (
+	"crypto/subtle"
 	"time"
 
 	"github.com/tniah/authlib/types"
@@ -49,14 +50,6 @@ func (c *Client) GetClientSecret() string {
 
 func (c *Client) SetClientSecret(secret string) {
 	c.ClientSecret = secret
-}
-
-func (c *Client) GetClientRedirectURIs() []string {
-	return c.RedirectURIs
-}
-
-func (c *Client) SetClientRedirectURIs(uris []string) {
-	c.RedirectURIs = uris
 }
 
 func (c *Client) GetRedirectURIs() []string {
@@ -154,5 +147,5 @@ func (c *Client) CheckTokenEndpointAuthMethod(method types.ClientAuthMethod, end
 }
 
 func (c *Client) CheckClientSecret(secret string) bool {
-	return c.ClientSecret == secret
+	return subtle.ConstantTimeCompare([]byte(c.ClientSecret), []byte(secret)) == 1
 }

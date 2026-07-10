@@ -297,6 +297,11 @@ func (f *Flow) validateAuthCode(r *requests.TokenRequest) error {
 		return autherrors.InvalidGrantError().WithDescription("Invalid \"code\" in request")
 	}
 
+	// RFC 6749 §4.1.3: verify the code was issued to the authenticated client.
+	if authCode.GetClientID() != r.Client.GetClientID() {
+		return autherrors.InvalidGrantError().WithDescription("\"code\" was not issued to this client")
+	}
+
 	if authCode.GetAuthTime().Add(authCode.GetExpiresIn()).Before(time.Now().UTC().Round(time.Second)) {
 		return autherrors.InvalidGrantError().WithDescription("\"code\" has been expired")
 	}

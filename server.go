@@ -11,11 +11,6 @@ import (
 	"github.com/tniah/authlib/utils"
 )
 
-const (
-	errCodeServerError         = "server_error"
-	errDescInternalServerError = "An unexpected error occurred"
-)
-
 // Server is the central OAuth2 coordinator. It dispatches incoming HTTP
 // requests to the appropriate grant flow or endpoint based on response_type
 // or grant_type. Flows and endpoints must be registered before handling requests.

@@ -64,7 +64,7 @@ func (cfg *Config) ValidateConfig() error {
 		return ErrNilTokenManager
 	}
 
-	if cfg.supportedClientAuthMethods == nil {
+	if len(cfg.supportedClientAuthMethods) == 0 {
 		return ErrEmptyClientAuthMethods
 	}
 
