@@ -8,10 +8,14 @@ import (
 	"github.com/tniah/authlib/utils"
 )
 
+// PostAuthHandler implements client_secret_post authentication (RFC 6749 §2.3.1).
+// The client authenticates by including client_id and client_secret as POST body
+// parameters with Content-Type: application/x-www-form-urlencoded.
 type PostAuthHandler struct {
 	*BaseHandler
 }
 
+// NewPostAuthHandler creates a PostAuthHandler with the given store.
 func NewPostAuthHandler(store ClientStore) *PostAuthHandler {
 	h := &PostAuthHandler{
 		BaseHandler: &BaseHandler{},
@@ -21,6 +25,7 @@ func NewPostAuthHandler(store ClientStore) *PostAuthHandler {
 	return h
 }
 
+// MustPostAuthHandler creates a PostAuthHandler and returns an error if store is nil.
 func MustPostAuthHandler(store ClientStore) (*PostAuthHandler, error) {
 	h := &PostAuthHandler{
 		BaseHandler: &BaseHandler{},
@@ -33,10 +38,15 @@ func MustPostAuthHandler(store ClientStore) (*PostAuthHandler, error) {
 	return h, nil
 }
 
+// Method returns client_secret_post.
 func (h *PostAuthHandler) Method() types.ClientAuthMethod {
 	return types.ClientPostAuthentication
 }
 
+// Authenticate extracts client_id and client_secret from the POST form body and
+// validates them. Returns ErrInvalidClient if the request method is not POST,
+// the content type is not application/x-www-form-urlencoded, the client is not
+// found, or the secret does not match.
 func (h *PostAuthHandler) Authenticate(r *http.Request) (models.Client, error) {
 	if r.Method != http.MethodPost {
 		return nil, ErrInvalidClient
