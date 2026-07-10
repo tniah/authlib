@@ -130,8 +130,12 @@ func (f *Flow) validateGrantType(r *requests.TokenRequest) error {
 
 func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 	client, err := f.clientMgr.Authenticate(r.Request, f.supportedClientAuthMethods, EndpointToken)
-	if err != nil || utils.IsNil(client) {
-		return autherrors.InvalidClientError().WithCause(err)
+	if err != nil {
+		return autherrors.ToAuthLibError(err)
+	}
+
+	if utils.IsNil(client) {
+		return autherrors.InvalidClientError()
 	}
 
 	// Verify the client is explicitly permitted to use the password grant.

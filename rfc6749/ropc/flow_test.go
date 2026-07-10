@@ -212,18 +212,28 @@ func TestFlow_authenticateClient(t *testing.T) {
 		mockClientMgr.AssertExpectations(t)
 	})
 
-	t.Run("error_when_client_authentication_failed", func(t *testing.T) {
+	t.Run("error_when_client_not_found", func(t *testing.T) {
 		mockClientMgr.On("Authenticate", mock.Anything, mock.Anything, mock.AnythingOfType("string")).Return(nil, nil).Once()
+
+		r := &requests.TokenRequest{
+			Request: httptest.NewRequest(http.MethodPost, "/", nil),
+		}
+		err := f.authenticateClient(r)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid_client")
+
+		mockClientMgr.AssertExpectations(t)
+	})
+
+	t.Run("error_when_store_returns_error", func(t *testing.T) {
 		mockClientMgr.On("Authenticate", mock.Anything, mock.Anything, mock.AnythingOfType("string")).Return(nil, errors.New("unexpected")).Once()
 
-		for i := 0; i < 2; i++ {
-			r := &requests.TokenRequest{
-				Request: httptest.NewRequest(http.MethodPost, "/", nil),
-			}
-			err := f.authenticateClient(r)
-			assert.Error(t, err)
-			assert.Contains(t, err.Error(), "invalid_client")
+		r := &requests.TokenRequest{
+			Request: httptest.NewRequest(http.MethodPost, "/", nil),
 		}
+		err := f.authenticateClient(r)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "server_error")
 
 		mockClientMgr.AssertExpectations(t)
 	})

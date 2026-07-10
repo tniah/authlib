@@ -1,22 +1,35 @@
 package clientauth
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 
+	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/types"
 )
 
+// Manager dispatches client authentication to the appropriate Handler based on
+// the authentication method. Each grant flow holds a Manager and passes its
+// supportedMethods to Authenticate so that only permitted methods are tried.
 type Manager struct {
 	handlers map[types.ClientAuthMethod]Handler
 }
 
+// NewManager creates an empty Manager. Call Register to add authentication handlers
+// before use.
 func NewManager() *Manager {
 	return &Manager{
 		handlers: make(map[types.ClientAuthMethod]Handler),
 	}
 }
 
+// Authenticate iterates over supportedMethods and delegates to the matching
+// registered Handler. The first handler that returns a valid client whose
+// registered auth method matches the attempted method wins.
+//
+// Returns ErrInvalidClient if no handler succeeds.
 func (m *Manager) Authenticate(r *http.Request, supportedMethods map[types.ClientAuthMethod]bool, endpoint string) (models.Client, error) {
 	for method, ok := range supportedMethods {
 		if !ok {
@@ -38,9 +51,26 @@ func (m *Manager) Authenticate(r *http.Request, supportedMethods map[types.Clien
 		}
 	}
 
-	return nil, ErrInvalidClient
+	methods := make([]string, 0, len(supportedMethods))
+	for method, ok := range supportedMethods {
+		if ok {
+			methods = append(methods, fmt.Sprintf("%q", string(method)))
+		}
+	}
+
+	authErr := autherrors.InvalidClientError().WithDescription(
+		fmt.Sprintf("The client failed to authenticate using any of the following methods: [%s]", strings.Join(methods, ", ")),
+	)
+
+	if supportedMethods[types.ClientBasicAuthentication] {
+		authErr.SetHttpCode(http.StatusUnauthorized)
+	}
+
+	return nil, authErr
 }
 
+// Register adds h to the manager, keyed by h.Method(). Registering a handler
+// for an already-registered method replaces the previous one.
 func (m *Manager) Register(h Handler) {
 	if m.handlers == nil {
 		m.handlers = make(map[types.ClientAuthMethod]Handler)

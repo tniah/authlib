@@ -229,19 +229,14 @@ func (srv *Server) RegisterErrorHandler(h ErrorHandler) {
 //   - If err carries a RedirectURI, the client is redirected with the error params.
 //   - Otherwise a JSON error body is written with the appropriate HTTP status.
 //
-// Non-AuthLibError values (e.g. unexpected DB errors) are returned as-is; the
-// caller is responsible for writing a 500 response in that case.
+// Non-AuthLibError values (e.g. unexpected DB errors) are wrapped in a 500
+// InternalServerError automatically via ToAuthLibError.
 func (srv *Server) HandleError(hr *http.Request, rw http.ResponseWriter, err error) error {
 	if !utils.IsNil(srv.errHandler) {
 		return srv.errHandler(hr, rw, err)
 	}
 
-	authErr, err := autherrors.ToAuthLibError(err)
-	if err != nil {
-		// err is not an AuthLibError (e.g. unexpected internal error).
-		// Return it to the caller without writing a response.
-		return err
-	}
+	authErr := autherrors.ToAuthLibError(err)
 
 	if authErr.RedirectURI != "" {
 		return utils.Redirect(rw, authErr.RedirectURI, authErr.Data())
