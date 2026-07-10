@@ -18,16 +18,16 @@ type Config struct {
 	userMgr                    UserManager
 	tokenMgr                   TokenManager
 	tokenEndpointHttpMethods   []string
-	tokenReqValidators         map[TokenRequestValidator]bool
-	tokenProcessors            map[TokenProcessor]bool
+	tokenReqValidators         []TokenRequestValidator
+	tokenProcessors            []TokenProcessor
 	supportedClientAuthMethods map[types.ClientAuthMethod]bool
 }
 
 func NewConfig() *Config {
 	return &Config{
 		tokenEndpointHttpMethods: []string{http.MethodPost},
-		tokenReqValidators:       map[TokenRequestValidator]bool{},
-		tokenProcessors:          map[TokenProcessor]bool{},
+		tokenReqValidators:       []TokenRequestValidator{},
+		tokenProcessors:          []TokenProcessor{},
 		supportedClientAuthMethods: map[types.ClientAuthMethod]bool{
 			types.ClientBasicAuthentication: true,
 		},
@@ -61,19 +61,11 @@ func (cfg *Config) SetTokenEndpointHttpMethods(methods []string) *Config {
 
 func (cfg *Config) RegisterExtension(ext interface{}) *Config {
 	if h, ok := ext.(TokenRequestValidator); ok {
-		if cfg.tokenReqValidators == nil {
-			cfg.tokenReqValidators = map[TokenRequestValidator]bool{}
-		}
-
-		cfg.tokenReqValidators[h] = true
+		cfg.tokenReqValidators = append(cfg.tokenReqValidators, h)
 	}
 
 	if h, ok := ext.(TokenProcessor); ok {
-		if cfg.tokenProcessors == nil {
-			cfg.tokenProcessors = map[TokenProcessor]bool{}
-		}
-
-		cfg.tokenProcessors[h] = true
+		cfg.tokenProcessors = append(cfg.tokenProcessors, h)
 	}
 
 	return cfg

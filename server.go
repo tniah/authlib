@@ -10,20 +10,21 @@ import (
 	"net/http"
 )
 
+const (
+	errCodeServerError         = "server_error"
+	errDescInternalServerError = "An unexpected error occurred"
+)
+
 type Server struct {
-	authorizationGrants map[AuthorizationGrant]bool
-	consentGrants       map[ConsentGrant]bool
-	tokenGrants         map[TokenGrant]bool
-	endpoints           map[Endpoint]bool
+	authorizationGrants []AuthorizationGrant
+	consentGrants       []ConsentGrant
+	tokenGrants         []TokenGrant
+	endpoints           []Endpoint
 	errHandler          ErrorHandler
 }
 
 func NewServer() *Server {
-	return &Server{
-		authorizationGrants: make(map[AuthorizationGrant]bool),
-		consentGrants:       make(map[ConsentGrant]bool),
-		tokenGrants:         make(map[TokenGrant]bool),
-	}
+	return &Server{}
 }
 
 func (srv *Server) CreateAuthorizationRequest(r *http.Request) (*requests.AuthorizationRequest, error) {
@@ -31,7 +32,7 @@ func (srv *Server) CreateAuthorizationRequest(r *http.Request) (*requests.Author
 }
 
 func (srv *Server) AuthorizationGrant(r *requests.AuthorizationRequest) (AuthorizationGrant, error) {
-	for grant := range srv.authorizationGrants {
+	for _, grant := range srv.authorizationGrants {
 		if grant.CheckResponseType(r.ResponseType) {
 			return grant, nil
 		}
@@ -64,7 +65,7 @@ func (srv *Server) CreateAuthorizationResponse(hr *http.Request, rw http.Respons
 }
 
 func (srv *Server) ConsentGrant(r *requests.AuthorizationRequest) (ConsentGrant, error) {
-	for grant := range srv.consentGrants {
+	for _, grant := range srv.consentGrants {
 		if grant.CheckResponseType(r.ResponseType) {
 			return grant, nil
 		}
@@ -101,7 +102,7 @@ func (srv *Server) CreateTokenRequest(r *http.Request) (*requests.TokenRequest, 
 }
 
 func (srv *Server) TokenGrant(r *requests.TokenRequest) (TokenGrant, error) {
-	for grant := range srv.tokenGrants {
+	for _, grant := range srv.tokenGrants {
 		if grant.CheckGrantType(r.GrantType) {
 			return grant, nil
 		}
@@ -133,7 +134,7 @@ func (srv *Server) CreateTokenResponse(hr *http.Request, rw http.ResponseWriter)
 }
 
 func (srv *Server) Endpoint(name string) (Endpoint, error) {
-	for endpoint := range srv.endpoints {
+	for _, endpoint := range srv.endpoints {
 		if endpoint.CheckEndpoint(name) {
 			return endpoint, nil
 		}
@@ -163,37 +164,25 @@ func (srv *Server) RegisterGrant(grant interface{}) {
 
 func (srv *Server) RegisterAuthorizationGrant(grant interface{}) {
 	if g, ok := grant.(AuthorizationGrant); ok {
-		if srv.authorizationGrants == nil {
-			srv.authorizationGrants = make(map[AuthorizationGrant]bool)
-		}
-		srv.authorizationGrants[g] = true
+		srv.authorizationGrants = append(srv.authorizationGrants, g)
 	}
 }
 
 func (srv *Server) RegisterConsentGrant(grant interface{}) {
 	if g, ok := grant.(ConsentGrant); ok {
-		if srv.consentGrants == nil {
-			srv.consentGrants = make(map[ConsentGrant]bool)
-		}
-		srv.consentGrants[g] = true
+		srv.consentGrants = append(srv.consentGrants, g)
 	}
 }
 
 func (srv *Server) RegisterTokenGrant(grant interface{}) {
 	if g, ok := grant.(TokenGrant); ok {
-		if srv.tokenGrants == nil {
-			srv.tokenGrants = make(map[TokenGrant]bool)
-		}
-		srv.tokenGrants[g] = true
+		srv.tokenGrants = append(srv.tokenGrants, g)
 	}
 }
 
 func (srv *Server) RegisterEndpoint(endpoint interface{}) {
 	if g, ok := endpoint.(Endpoint); ok {
-		if srv.endpoints == nil {
-			srv.endpoints = make(map[Endpoint]bool)
-		}
-		srv.endpoints[g] = true
+		srv.endpoints = append(srv.endpoints, g)
 	}
 }
 

@@ -271,7 +271,7 @@ func TestFlow_authenticateUser(t *testing.T) {
 			}
 			err := f.authenticateUser(r)
 			assert.Error(t, err)
-			assert.Contains(t, err.Error(), "invalid_request")
+			assert.Contains(t, err.Error(), "invalid_grant")
 		}
 
 		mockUserMgr.AssertExpectations(t)

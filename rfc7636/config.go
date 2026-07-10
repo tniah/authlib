@@ -15,7 +15,7 @@ type Options struct {
 func NewOptions() *Options {
 	return &Options{
 		required:                   true,
-		defaultCodeChallengeMethod: types.CodeChallengeMethodPlain,
+		defaultCodeChallengeMethod: types.CodeChallengeMethodS256,
 	}
 }
 

@@ -50,7 +50,7 @@ func (f *Flow) ValidateTokenRequest(r *requests.TokenRequest) error {
 		return err
 	}
 
-	for h, _ := range f.tokenReqValidators {
+	for _, h := range f.tokenReqValidators {
 		if err := h.ValidateTokenRequest(r); err != nil {
 			return err
 		}
@@ -66,7 +66,7 @@ func (f *Flow) TokenResponse(r *requests.TokenRequest, rw http.ResponseWriter) e
 	}
 
 	data := f.StandardTokenData(token)
-	for h, _ := range f.tokenProcessors {
+	for _, h := range f.tokenProcessors {
 		if err = h.ProcessToken(r, token, data); err != nil {
 			return err
 		}
