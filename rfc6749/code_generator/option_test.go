@@ -1,10 +1,11 @@
 package codegen
 
 import (
-	"github.com/stretchr/testify/assert"
-	codegen "github.com/tniah/authlib/mocks/rfc6749/code_generator"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	codegen "github.com/tniah/authlib/mocks/rfc6749/code_generator"
 )
 
 func TestOptions(t *testing.T) {

@@ -1,11 +1,12 @@
 package ropc
 
 import (
+	"net/http"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/tniah/authlib/mocks/rfc6749/ropc"
 	"github.com/tniah/authlib/types"
-	"net/http"
-	"testing"
 )
 
 func TestConfig(t *testing.T) {

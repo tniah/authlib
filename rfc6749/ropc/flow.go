@@ -3,28 +3,34 @@ package ropc
 import (
 	"errors"
 	"fmt"
+	"net/http"
+
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/rfc6749"
 	"github.com/tniah/authlib/types"
 	"github.com/tniah/authlib/utils"
-	"net/http"
 )
 
 const EndpointToken = "token"
 
 var ErrNilToken = errors.New("token is nil")
 
+// Flow implements the Resource Owner Password Credentials grant (RFC 6749 §4.3).
+// It authenticates both the client and the end-user on a single /token request.
+// NOTE: ROPC is a legacy grant; prefer Authorization Code + PKCE for new integrations.
 type Flow struct {
 	*Config
 	*rfc6749.TokenFlowMixin
 }
 
+// New creates a Flow without validating config. Use Must for production use.
 func New(cfg *Config) *Flow {
 	return &Flow{Config: cfg}
 }
 
+// Must creates a Flow and returns an error if the config is incomplete.
 func Must(cfg *Config) (*Flow, error) {
 	if err := cfg.ValidateConfig(); err != nil {
 		return nil, err
@@ -33,6 +39,7 @@ func Must(cfg *Config) (*Flow, error) {
 	return New(cfg), nil
 }
 
+// CheckGrantType reports whether this flow handles the given grant_type.
 func (f *Flow) CheckGrantType(gt types.GrantType) bool {
 	return gt.IsROPC()
 }
@@ -127,6 +134,7 @@ func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 		return autherrors.InvalidClientError().WithCause(err)
 	}
 
+	// Verify the client is explicitly permitted to use the password grant.
 	if allowed := client.CheckGrantType(types.GrantTypeROPC); !allowed {
 		return autherrors.UnauthorizedClientError().WithDescription("The client is not authorized to use grant type \"password\"")
 	}
@@ -138,6 +146,7 @@ func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 func (f *Flow) authenticateUser(r *requests.TokenRequest) error {
 	user, err := f.userMgr.Authenticate(r.Username, r.Password, r.Client, r.Request)
 	if err != nil || utils.IsNil(user) {
+		// Return a generic message to avoid leaking whether the username exists.
 		return autherrors.InvalidGrantError().WithDescription("Username or password is incorrect").WithCause(err)
 	}
 
@@ -151,6 +160,7 @@ func (f *Flow) genToken(r *requests.TokenRequest) (models.Token, error) {
 		return nil, ErrNilToken
 	}
 
+	// Include a refresh token only if the client has the refresh_token grant enabled.
 	if err := f.tokenMgr.Generate(token, r, r.Client.CheckGrantType(types.GrantTypeRefreshToken)); err != nil {
 		return nil, err
 	}

@@ -2,10 +2,11 @@ package rfc6749
 
 import (
 	"encoding/json"
-	"github.com/tniah/authlib/models"
-	"github.com/tniah/authlib/utils"
 	"net/http"
 	"strings"
+
+	"github.com/tniah/authlib/models"
+	"github.com/tniah/authlib/utils"
 )
 
 type TokenFlowMixin struct{}

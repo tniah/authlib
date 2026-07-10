@@ -2,18 +2,22 @@ package rfc6750
 
 import (
 	"context"
+	"time"
+
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/utils"
-	"time"
 )
 
 const DefaultRefreshTokenExpiresIn = time.Hour * 24
 
+// OpaqueRefreshTokenGenerator generates a random opaque refresh token.
+// Default expiry is 24 hours (DefaultRefreshTokenExpiresIn).
 type OpaqueRefreshTokenGenerator struct {
 	*TokenGeneratorOptions
 }
 
+// NewOpaqueRefreshTokenGenerator creates a generator with optional custom options.
 func NewOpaqueRefreshTokenGenerator(opts ...*TokenGeneratorOptions) *OpaqueRefreshTokenGenerator {
 	if len(opts) > 0 {
 		return &OpaqueRefreshTokenGenerator{TokenGeneratorOptions: opts[0]}
@@ -23,7 +27,9 @@ func NewOpaqueRefreshTokenGenerator(opts ...*TokenGeneratorOptions) *OpaqueRefre
 	return &OpaqueRefreshTokenGenerator{defaultOpts}
 }
 
+// Generate populates token with a refresh token and its expiry duration.
 func (g *OpaqueRefreshTokenGenerator) Generate(token models.Token, r *requests.TokenRequest) error {
+	// Prefer request context for custom generators; fall back to Background.
 	ctx := context.Background()
 	if r.Request != nil {
 		ctx = r.Request.Context()

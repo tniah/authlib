@@ -3,10 +3,11 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/tniah/authlib/types"
 	"mime"
 	"net/http"
 	"net/url"
+
+	"github.com/tniah/authlib/types"
 )
 
 func ContentType(r *http.Request) (types.ContentType, error) {

@@ -2,8 +2,9 @@ package ropc
 
 import (
 	"errors"
-	"github.com/tniah/authlib/types"
 	"net/http"
+
+	"github.com/tniah/authlib/types"
 )
 
 var (
@@ -13,16 +14,28 @@ var (
 	ErrEmptyClientAuthMethods = errors.New("client auth methods are empty")
 )
 
+// Config holds all dependencies and extension hooks for the ROPC flow.
+// Use NewConfig() to get a config with sensible defaults, then chain Set*/RegisterExtension
+// calls before passing to Must() or New().
 type Config struct {
-	clientMgr                  ClientManager
-	userMgr                    UserManager
-	tokenMgr                   TokenManager
-	tokenEndpointHttpMethods   []string
-	tokenReqValidators         []TokenRequestValidator
-	tokenProcessors            []TokenProcessor
+	clientMgr ClientManager
+	userMgr   UserManager
+	tokenMgr  TokenManager
+
+	tokenEndpointHttpMethods []string
+
+	// Extension slices are executed in registration order.
+	tokenReqValidators []TokenRequestValidator
+	tokenProcessors    []TokenProcessor
+
+	// supportedClientAuthMethods controls which client authentication methods
+	// are accepted at the token endpoint. ROPC defaults to basic auth only.
 	supportedClientAuthMethods map[types.ClientAuthMethod]bool
 }
 
+// NewConfig returns a Config with secure defaults:
+//   - Accepts POST on /token.
+//   - Supports basic client authentication only (client_secret_basic).
 func NewConfig() *Config {
 	return &Config{
 		tokenEndpointHttpMethods: []string{http.MethodPost},
@@ -59,6 +72,8 @@ func (cfg *Config) SetTokenEndpointHttpMethods(methods []string) *Config {
 	return cfg
 }
 
+// RegisterExtension adds ext to every extension slice whose interface it satisfies.
+// A single object may implement both TokenRequestValidator and TokenProcessor.
 func (cfg *Config) RegisterExtension(ext interface{}) *Config {
 	if h, ok := ext.(TokenRequestValidator); ok {
 		cfg.tokenReqValidators = append(cfg.tokenReqValidators, h)

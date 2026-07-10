@@ -2,8 +2,9 @@ package rfc9068
 
 import (
 	"errors"
-	"github.com/golang-jwt/jwt/v5"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 const DefaultExpiresIn = time.Minute * 60

@@ -1,13 +1,14 @@
 package clientauth
 
 import (
+	"net/http/httptest"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/tniah/authlib/integrations/sql"
 	rfc6749 "github.com/tniah/authlib/mocks/rfc6749/client_authentication"
 	"github.com/tniah/authlib/types"
-	"net/http/httptest"
-	"testing"
 )
 
 func TestManager_New(t *testing.T) {

@@ -2,6 +2,7 @@ package rfc7662
 
 import (
 	"errors"
+
 	"github.com/tniah/authlib/types"
 )
 

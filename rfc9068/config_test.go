@@ -1,11 +1,12 @@
 package rfc9068
 
 import (
+	"testing"
+	"time"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/tniah/authlib/mocks/rfc9068"
-	"testing"
-	"time"
 )
 
 func TestConfig(t *testing.T) {

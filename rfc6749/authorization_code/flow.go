@@ -3,14 +3,15 @@ package authorizationcode
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"time"
+
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/rfc6749"
 	"github.com/tniah/authlib/types"
 	"github.com/tniah/authlib/utils"
-	"net/http"
-	"time"
 )
 
 const EndpointToken = "token"

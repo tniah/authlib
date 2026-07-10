@@ -1,11 +1,12 @@
 package authorizationcode
 
 import (
+	"testing"
+	"time"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/tniah/authlib/mocks/oidc/core/authorization_code"
-	"testing"
-	"time"
 )
 
 func TestConfig(t *testing.T) {

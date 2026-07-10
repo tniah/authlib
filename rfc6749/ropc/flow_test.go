@@ -2,6 +2,10 @@ package ropc
 
 import (
 	"errors"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -9,9 +13,6 @@ import (
 	"github.com/tniah/authlib/mocks/rfc6749/ropc"
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/types"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 func TestFlow_Must(t *testing.T) {

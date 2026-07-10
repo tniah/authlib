@@ -1,10 +1,11 @@
 package rfc6750
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/tniah/authlib/integrations/sql"
 	"github.com/tniah/authlib/requests"
-	"testing"
 )
 
 func TestOpaqueRefreshTokenGenerator(t *testing.T) {

@@ -1,15 +1,16 @@
 package rfc9068
 
 import (
+	"net/http/httptest"
+	"testing"
+	"time"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/tniah/authlib/integrations/sql"
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/types"
-	"net/http/httptest"
-	"testing"
-	"time"
 )
 
 func TestJWTAccessTokenGenerator(t *testing.T) {

@@ -1,10 +1,11 @@
 package clientauth
 
 import (
+	"net/http"
+
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/types"
 	"github.com/tniah/authlib/utils"
-	"net/http"
 )
 
 type PostAuthHandler struct {

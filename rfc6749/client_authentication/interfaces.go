@@ -2,9 +2,10 @@ package clientauth
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/types"
-	"net/http"
 )
 
 type ClientStore interface {

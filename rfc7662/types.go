@@ -2,9 +2,10 @@ package rfc7662
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/types"
-	"net/http"
 )
 
 type ClientManager interface {

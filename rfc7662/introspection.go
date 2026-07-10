@@ -1,10 +1,11 @@
 package rfc7662
 
 import (
-	autherrors "github.com/tniah/authlib/errors"
-	"github.com/tniah/authlib/utils"
 	"net/http"
 	"time"
+
+	autherrors "github.com/tniah/authlib/errors"
+	"github.com/tniah/authlib/utils"
 )
 
 type TokenIntrospectionFlow struct {

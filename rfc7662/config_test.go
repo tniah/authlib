@@ -1,10 +1,11 @@
 package rfc7662
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	mock "github.com/tniah/authlib/mocks/rfc7662"
 	"github.com/tniah/authlib/types"
-	"testing"
 )
 
 func TestConfig(t *testing.T) {

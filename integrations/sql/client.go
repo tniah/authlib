@@ -1,8 +1,9 @@
 package sql
 
 import (
-	"github.com/tniah/authlib/types"
 	"time"
+
+	"github.com/tniah/authlib/types"
 )
 
 type Client struct {

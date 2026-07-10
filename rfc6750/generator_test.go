@@ -1,12 +1,13 @@
 package rfc6750
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/tniah/authlib/integrations/sql"
 	"github.com/tniah/authlib/mocks/rfc6750"
 	"github.com/tniah/authlib/requests"
-	"testing"
 )
 
 func TestTestBearerTokenGenerator(t *testing.T) {

@@ -1,8 +1,9 @@
 package models
 
 import (
-	"github.com/tniah/authlib/types"
 	"time"
+
+	"github.com/tniah/authlib/types"
 )
 
 type AuthorizationCode interface {

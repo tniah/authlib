@@ -1,11 +1,12 @@
 package requests
 
 import (
+	"net/http"
+	"strings"
+
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/types"
-	"net/http"
-	"strings"
 )
 
 type TokenRequest struct {
