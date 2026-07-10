@@ -1,11 +1,13 @@
 package authorizationcode
 
 import (
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/stretchr/testify/assert"
-	"github.com/tniah/authlib/mocks/oidc/core/authorization_code"
 	"testing"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/stretchr/testify/assert"
+	autherrors "github.com/tniah/authlib/errors"
+	"github.com/tniah/authlib/mocks/oidc/core/authorization_code"
 )
 
 func TestConfig(t *testing.T) {
@@ -46,20 +48,20 @@ func TestConfig(t *testing.T) {
 	t.Run("error", func(t *testing.T) {
 		cfg := NewConfig()
 		err := cfg.ValidateConfig()
-		assert.ErrorIs(t, err, ErrMissingIssuer)
+		assert.ErrorIs(t, err, autherrors.ErrMissingIssuer)
 
 		issGen := oidc.NewMockIssuerGenerator(t).Execute
 		cfg.SetIssuerGenerator(issGen)
 		cfg.SetExpiresIn(0)
 		err = cfg.ValidateConfig()
-		assert.ErrorIs(t, err, ErrMissingExpiresIn)
+		assert.ErrorIs(t, err, autherrors.ErrMissingExpiresIn)
 
 		cfg.SetExpiresIn(time.Second * 60)
 		err = cfg.ValidateConfig()
-		assert.ErrorIs(t, err, ErrMissingSigningKey)
+		assert.ErrorIs(t, err, autherrors.ErrMissingSigningKey)
 
 		cfg.SetSigningKey([]byte("test"), nil)
 		err = cfg.ValidateConfig()
-		assert.ErrorIs(t, err, ErrMissingSigningKeyMethod)
+		assert.ErrorIs(t, err, autherrors.ErrMissingSigningKeyMethod)
 	})
 }

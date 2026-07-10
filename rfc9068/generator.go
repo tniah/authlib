@@ -3,13 +3,14 @@ package rfc9068
 import (
 	"context"
 	"errors"
+	"strings"
+	"time"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/utils"
-	"strings"
-	"time"
 )
 
 var ErrNilClient = errors.New("client is nil")

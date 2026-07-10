@@ -1,9 +1,10 @@
 package clientauth
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	rfc6749 "github.com/tniah/authlib/mocks/rfc6749/client_authentication"
-	"testing"
 )
 
 func TestBaseHandler(t *testing.T) {

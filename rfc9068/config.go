@@ -1,19 +1,13 @@
 package rfc9068
 
 import (
-	"errors"
-	"github.com/golang-jwt/jwt/v5"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	autherrors "github.com/tniah/authlib/errors"
 )
 
 const DefaultExpiresIn = time.Minute * 60
-
-var (
-	ErrMissingIssuer           = errors.New("\"issuer\" or \"issuerGenerator\" is required")
-	ErrMissingExpiresIn        = errors.New("\"expiresIn\" or \"expiresInGenerator\" is required")
-	ErrMissingSigningKey       = errors.New("\"signingKey\" or \"signingKeyGenerator\" is required")
-	ErrMissingSigningKeyMethod = errors.New("\"signingKeyMethod\" is required")
-)
 
 type GeneratorConfig struct {
 	issuer              string
@@ -80,19 +74,19 @@ func (cfg *GeneratorConfig) SetJWTIDGenerator(fn JWTIDGenerator) *GeneratorConfi
 
 func (cfg *GeneratorConfig) ValidateConfig() error {
 	if cfg.issuer == "" && cfg.issuerGenerator == nil {
-		return ErrMissingIssuer
+		return autherrors.ErrMissingIssuer
 	}
 
 	if cfg.expiresIn == 0 && cfg.expiresInGenerator == nil {
-		return ErrMissingExpiresIn
+		return autherrors.ErrMissingExpiresIn
 	}
 
 	if cfg.signingKey == nil && cfg.signingKeyGenerator == nil {
-		return ErrMissingSigningKey
+		return autherrors.ErrMissingSigningKey
 	}
 
 	if cfg.signingKey != nil && cfg.signingKeyMethod == nil {
-		return ErrMissingSigningKeyMethod
+		return autherrors.ErrMissingSigningKeyMethod
 	}
 
 	return nil

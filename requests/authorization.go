@@ -1,12 +1,13 @@
 package requests
 
 import (
-	autherrors "github.com/tniah/authlib/errors"
-	"github.com/tniah/authlib/models"
-	"github.com/tniah/authlib/types"
 	"net/http"
 	"strconv"
 	"strings"
+
+	autherrors "github.com/tniah/authlib/errors"
+	"github.com/tniah/authlib/models"
+	"github.com/tniah/authlib/types"
 )
 
 type AuthorizationRequest struct {

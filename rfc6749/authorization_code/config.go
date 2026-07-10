@@ -2,8 +2,9 @@ package authorizationcode
 
 import (
 	"errors"
-	"github.com/tniah/authlib/types"
 	"net/http"
+
+	"github.com/tniah/authlib/types"
 )
 
 var (
@@ -14,21 +15,36 @@ var (
 	ErrEmptyClientAuthMethods = errors.New("client auth methods are empty")
 )
 
+// Config holds all dependencies and extension hooks for the Authorization Code flow.
+// Use NewConfig() to get a config with sensible defaults, then chain Set*/RegisterExtension
+// calls before passing to Must() or New().
 type Config struct {
-	clientMgr                  ClientManager
-	userMgr                    UserManager
-	authCodeMgr                AuthCodeManager
-	tokenMgr                   TokenManager
-	authEndpointHttpMethods    []string
-	tokenEndpointHttpMethods   []string
-	authReqValidators          map[AuthorizationRequestValidator]bool
-	consentReqValidators       map[ConsentRequestValidator]bool
-	authCodeProcessors         map[AuthCodeProcessor]bool
-	tokenReqValidators         map[TokenRequestValidator]bool
-	tokenProcessors            map[TokenProcessor]bool
+	clientMgr   ClientManager
+	userMgr     UserManager
+	authCodeMgr AuthCodeManager
+	tokenMgr    TokenManager
+
+	authEndpointHttpMethods  []string
+	tokenEndpointHttpMethods []string
+
+	// Extension slices are executed in registration order. A single object may
+	// implement multiple extension interfaces and will be appended to each
+	// applicable slice (e.g. PKCE registers as both AuthCodeProcessor and
+	// TokenRequestValidator).
+	authReqValidators    []AuthorizationRequestValidator
+	consentReqValidators []ConsentRequestValidator
+	authCodeProcessors   []AuthCodeProcessor
+	tokenReqValidators   []TokenRequestValidator
+	tokenProcessors      []TokenProcessor
+
+	// supportedClientAuthMethods controls which authentication methods are
+	// accepted at the token endpoint (basic, post, none).
 	supportedClientAuthMethods map[types.ClientAuthMethod]bool
 }
 
+// NewConfig returns a Config with secure defaults:
+//   - Accepts GET on /authorize, POST on /token.
+//   - Supports basic and none client authentication methods.
 func NewConfig() *Config {
 	return &Config{
 		supportedClientAuthMethods: map[types.ClientAuthMethod]bool{
@@ -37,11 +53,11 @@ func NewConfig() *Config {
 		},
 		authEndpointHttpMethods:  []string{http.MethodGet},
 		tokenEndpointHttpMethods: []string{http.MethodPost},
-		authReqValidators:        map[AuthorizationRequestValidator]bool{},
-		consentReqValidators:     map[ConsentRequestValidator]bool{},
-		authCodeProcessors:       map[AuthCodeProcessor]bool{},
-		tokenReqValidators:       map[TokenRequestValidator]bool{},
-		tokenProcessors:          map[TokenProcessor]bool{},
+		authReqValidators:        []AuthorizationRequestValidator{},
+		consentReqValidators:     []ConsentRequestValidator{},
+		authCodeProcessors:       []AuthCodeProcessor{},
+		tokenReqValidators:       []TokenRequestValidator{},
+		tokenProcessors:          []TokenProcessor{},
 	}
 }
 
@@ -75,45 +91,29 @@ func (cfg *Config) SetTokenEndpointHttpMethods(methods []string) *Config {
 	return cfg
 }
 
+// RegisterExtension adds ext to every extension slice whose interface it satisfies.
+// Call this once per extension object; it will automatically register for all
+// applicable hooks (e.g. a PKCE object implements both AuthCodeProcessor and
+// TokenRequestValidator, so it is added to both slices in one call).
 func (cfg *Config) RegisterExtension(ext interface{}) *Config {
 	if h, ok := ext.(AuthorizationRequestValidator); ok {
-		if cfg.authReqValidators == nil {
-			cfg.authReqValidators = map[AuthorizationRequestValidator]bool{}
-		}
-
-		cfg.authReqValidators[h] = true
+		cfg.authReqValidators = append(cfg.authReqValidators, h)
 	}
 
 	if h, ok := ext.(ConsentRequestValidator); ok {
-		if cfg.consentReqValidators == nil {
-			cfg.consentReqValidators = map[ConsentRequestValidator]bool{}
-		}
-
-		cfg.consentReqValidators[h] = true
+		cfg.consentReqValidators = append(cfg.consentReqValidators, h)
 	}
 
 	if h, ok := ext.(AuthCodeProcessor); ok {
-		if cfg.authCodeProcessors == nil {
-			cfg.authCodeProcessors = map[AuthCodeProcessor]bool{}
-		}
-
-		cfg.authCodeProcessors[h] = true
+		cfg.authCodeProcessors = append(cfg.authCodeProcessors, h)
 	}
 
 	if h, ok := ext.(TokenRequestValidator); ok {
-		if cfg.tokenReqValidators == nil {
-			cfg.tokenReqValidators = map[TokenRequestValidator]bool{}
-		}
-
-		cfg.tokenReqValidators[h] = true
+		cfg.tokenReqValidators = append(cfg.tokenReqValidators, h)
 	}
 
 	if h, ok := ext.(TokenProcessor); ok {
-		if cfg.tokenProcessors == nil {
-			cfg.tokenProcessors = map[TokenProcessor]bool{}
-		}
-
-		cfg.tokenProcessors[h] = true
+		cfg.tokenProcessors = append(cfg.tokenProcessors, h)
 	}
 
 	return cfg
@@ -124,7 +124,7 @@ func (cfg *Config) SetSupportedClientAuthMethods(methods map[types.ClientAuthMet
 	return cfg
 }
 
-func (cfg *Config) Validate() error {
+func (cfg *Config) ValidateConfig() error {
 	if cfg.clientMgr == nil {
 		return ErrNilClientManager
 	}

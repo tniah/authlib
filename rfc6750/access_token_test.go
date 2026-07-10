@@ -1,12 +1,13 @@
 package rfc6750
 
 import (
+	"testing"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/tniah/authlib/integrations/sql"
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/types"
-	"testing"
 )
 
 func TestOpaqueAccessTokenGenerator(t *testing.T) {

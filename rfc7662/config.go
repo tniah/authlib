@@ -2,6 +2,7 @@ package rfc7662
 
 import (
 	"errors"
+
 	"github.com/tniah/authlib/types"
 )
 
@@ -63,7 +64,7 @@ func (cfg *Config) ValidateConfig() error {
 		return ErrNilTokenManager
 	}
 
-	if cfg.supportedClientAuthMethods == nil {
+	if len(cfg.supportedClientAuthMethods) == 0 {
 		return ErrEmptyClientAuthMethods
 	}
 

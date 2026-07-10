@@ -2,10 +2,11 @@ package authorizationcode
 
 import (
 	"context"
+	"time"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
-	"time"
 )
 
 type IssuerGenerator func(ctx context.Context, client models.Client) string

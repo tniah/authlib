@@ -2,11 +2,12 @@ package codegen
 
 import (
 	"errors"
+	"time"
+
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/types"
 	"github.com/tniah/authlib/utils"
-	"time"
 )
 
 var (

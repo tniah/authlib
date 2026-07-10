@@ -1,17 +1,18 @@
 package rfc7662
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/integrations/sql"
 	"github.com/tniah/authlib/mocks/rfc7662"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"testing"
-	"time"
 )
 
 func TestTokenIntrospectionFlow_EndpointResponse(t *testing.T) {

@@ -2,10 +2,11 @@ package rfc9068
 
 import (
 	"context"
+	"time"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/types"
-	"time"
 )
 
 type IssuerGenerator func(ctx context.Context, client models.Client) string

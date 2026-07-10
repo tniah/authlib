@@ -3,14 +3,15 @@ package authorizationcode
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"time"
+
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/rfc6749"
 	"github.com/tniah/authlib/types"
 	"github.com/tniah/authlib/utils"
-	"net/http"
-	"time"
 )
 
 const EndpointToken = "token"
@@ -30,7 +31,7 @@ func New(cfg *Config) *Flow {
 }
 
 func Must(cfg *Config) (*Flow, error) {
-	if err := cfg.Validate(); err != nil {
+	if err := cfg.ValidateConfig(); err != nil {
 		return nil, err
 	}
 
@@ -63,7 +64,7 @@ func (f *Flow) ValidateAuthorizationRequest(r *requests.AuthorizationRequest) er
 	}
 
 	r.GrantType = types.GrantTypeAuthorizationCode
-	for h, _ := range f.authReqValidators {
+	for _, h := range f.authReqValidators {
 		if err := h.ValidateAuthorizationRequest(r); err != nil {
 			return err
 		}
@@ -77,7 +78,7 @@ func (f *Flow) ValidateConsentRequest(r *requests.AuthorizationRequest) error {
 		return err
 	}
 
-	for h, _ := range f.consentReqValidators {
+	for _, h := range f.consentReqValidators {
 		if err := h.ValidateConsentRequest(r); err != nil {
 			return err
 		}
@@ -103,7 +104,7 @@ func (f *Flow) AuthorizationResponse(r *requests.AuthorizationRequest, rw http.R
 		params["state"] = r.State
 	}
 
-	for h, _ := range f.authCodeProcessors {
+	for _, h := range f.authCodeProcessors {
 		if err = h.ProcessAuthorizationCode(r, authCode, params); err != nil {
 			return err
 		}
@@ -133,7 +134,7 @@ func (f *Flow) ValidateTokenRequest(r *requests.TokenRequest) error {
 		return err
 	}
 
-	for h, _ := range f.tokenReqValidators {
+	for _, h := range f.tokenReqValidators {
 		if err := h.ValidateTokenRequest(r); err != nil {
 			return err
 		}
@@ -153,7 +154,7 @@ func (f *Flow) TokenResponse(r *requests.TokenRequest, rw http.ResponseWriter) e
 	}
 
 	data := f.StandardTokenData(token)
-	for h, _ := range f.tokenProcessors {
+	for _, h := range f.tokenProcessors {
 		if err = h.ProcessToken(r, token, data); err != nil {
 			return err
 		}
@@ -275,7 +276,7 @@ func (f *Flow) validateGrantType(r *requests.TokenRequest) error {
 func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 	cl, err := f.clientMgr.Authenticate(r.Request, f.supportedClientAuthMethods, EndpointToken)
 	if err != nil || cl == nil {
-		return autherrors.InvalidClientError()
+		return autherrors.InvalidClientError().WithCause(err)
 	}
 
 	r.Client = cl
@@ -294,6 +295,11 @@ func (f *Flow) validateAuthCode(r *requests.TokenRequest) error {
 
 	if authCode == nil {
 		return autherrors.InvalidGrantError().WithDescription("Invalid \"code\" in request")
+	}
+
+	// RFC 6749 §4.1.3: verify the code was issued to the authenticated client.
+	if authCode.GetClientID() != r.Client.GetClientID() {
+		return autherrors.InvalidGrantError().WithDescription("\"code\" was not issued to this client")
 	}
 
 	if authCode.GetAuthTime().Add(authCode.GetExpiresIn()).Before(time.Now().UTC().Round(time.Second)) {

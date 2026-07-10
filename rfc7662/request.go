@@ -1,11 +1,12 @@
 package rfc7662
 
 import (
+	"net/http"
+
 	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/types"
 	"github.com/tniah/authlib/utils"
-	"net/http"
 )
 
 type Request struct {

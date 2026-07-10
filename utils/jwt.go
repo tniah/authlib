@@ -2,9 +2,10 @@ package utils
 
 import (
 	"errors"
-	"github.com/golang-jwt/jwt/v5"
 	"strings"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 var ErrUnsupportedSigningMethod = errors.New("unsupported signing method")

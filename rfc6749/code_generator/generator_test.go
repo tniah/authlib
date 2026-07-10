@@ -1,6 +1,9 @@
 package codegen
 
 import (
+	"testing"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -8,8 +11,6 @@ import (
 	codegen "github.com/tniah/authlib/mocks/rfc6749/code_generator"
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/types"
-	"testing"
-	"time"
 )
 
 func TestGenerator_New(t *testing.T) {
