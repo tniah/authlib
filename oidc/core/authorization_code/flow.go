@@ -92,7 +92,7 @@ func (f *Flow) ProcessToken(r *requests.TokenRequest, token models.Token, data m
 		return nil
 	}
 
-	if r.AuthCode == nil {
+	if utils.IsNil(r.AuthCode) {
 		return ErrNilAuthorizationCode
 	}
 

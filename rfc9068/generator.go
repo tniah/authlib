@@ -33,7 +33,7 @@ func MustJWTAccessTokenGenerator(cfg *GeneratorConfig) (*JWTAccessTokenGenerator
 
 func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.TokenRequest) error {
 	client := r.Client
-	if client == nil {
+	if utils.IsNil(client) {
 		return ErrNilClient
 	}
 

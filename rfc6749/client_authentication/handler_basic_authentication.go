@@ -5,6 +5,7 @@ import (
 
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/types"
+	"github.com/tniah/authlib/utils"
 )
 
 type BasicAuthHandler struct {
@@ -47,7 +48,7 @@ func (h *BasicAuthHandler) Authenticate(r *http.Request) (models.Client, error) 
 		return nil, err
 	}
 
-	if client == nil {
+	if utils.IsNil(client) {
 		return nil, ErrInvalidClient
 	}
 

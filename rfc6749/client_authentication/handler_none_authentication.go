@@ -60,7 +60,7 @@ func (h *NoneAuthHandler) Authenticate(r *http.Request) (models.Client, error) {
 		return nil, err
 	}
 
-	if client == nil {
+	if utils.IsNil(client) {
 		return nil, ErrInvalidClient
 	}
 
