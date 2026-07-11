@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	ErrNilClient = errors.New("client is nil")
-	ErrNilUser   = errors.New("user is nil")
+	ErrNilClient         = errors.New("client is nil")
+	ErrNilUser           = errors.New("user is nil")
+	ErrInvalidCodeLength = errors.New("code length must be greater than 0")
 )
 
 type Generator struct {
@@ -39,7 +40,11 @@ func (g *Generator) Generate(authCode models.AuthorizationCode, r *requests.Auth
 		return ErrNilUser
 	}
 
-	code := g.genCode(r.GrantType, client)
+	code, err := g.genCode(r.GrantType, client)
+	if err != nil {
+		return err
+	}
+
 	authCode.SetCode(code)
 	authCode.SetClientID(client.GetClientID())
 	authCode.SetUserID(user.GetUserID())
@@ -62,13 +67,16 @@ func (g *Generator) Generate(authCode models.AuthorizationCode, r *requests.Auth
 	return nil
 }
 
-func (g *Generator) genCode(grantType types.GrantType, client models.Client) string {
+func (g *Generator) genCode(grantType types.GrantType, client models.Client) (string, error) {
 	if fn := g.randStringGenerator; fn != nil {
 		return fn(grantType, client)
 	}
 
-	s, _ := utils.GenerateRandString(g.codeLength, utils.AlphaNum)
-	return s
+	if g.codeLength < 1 {
+		return "", ErrInvalidCodeLength
+	}
+
+	return utils.GenerateRandString(g.codeLength, utils.AlphaNum)
 }
 
 func (g *Generator) expiresInHandler(grantType types.GrantType, client models.Client) time.Duration {

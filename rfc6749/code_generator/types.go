@@ -10,6 +10,6 @@ import (
 
 type ExpiresInGenerator func(gt types.GrantType, client models.Client) time.Duration
 
-type RandStringGenerator func(gt types.GrantType, client models.Client) string
+type RandStringGenerator func(gt types.GrantType, client models.Client) (string, error)
 
 type ExtraDataGenerator func(r *requests.AuthorizationRequest) (map[string]interface{}, error)

@@ -8,23 +8,60 @@ import (
 	codegen "github.com/tniah/authlib/mocks/rfc6749/code_generator"
 )
 
-func TestOptions(t *testing.T) {
+func TestNewOptions(t *testing.T) {
 	opts := NewOptions()
 	assert.Equal(t, DefaultCodeLength, opts.codeLength)
 	assert.Equal(t, DefaultExpiresIn, opts.expiresIn)
+	assert.Nil(t, opts.expiresInGenerator)
+	assert.Nil(t, opts.randStringGenerator)
+	assert.Nil(t, opts.extraDataGenerator)
+}
 
-	opts.SetCodeLength(10)
-	assert.Equal(t, 10, opts.codeLength)
+func TestOptions_Setters(t *testing.T) {
+	t.Run("SetCodeLength", func(t *testing.T) {
+		opts := NewOptions()
+		result := opts.SetCodeLength(64)
+		assert.Equal(t, 64, opts.codeLength)
+		assert.Equal(t, opts, result)
+	})
 
-	opts.SetExpiresIn(60 * time.Second)
-	assert.Equal(t, 60*time.Second, opts.expiresIn)
+	t.Run("SetExpiresIn", func(t *testing.T) {
+		opts := NewOptions()
+		result := opts.SetExpiresIn(10 * time.Minute)
+		assert.Equal(t, 10*time.Minute, opts.expiresIn)
+		assert.Equal(t, opts, result)
+	})
 
-	opts.SetExpiresInGenerator(codegen.NewMockExpiresInGenerator(t).Execute)
-	assert.NotNil(t, opts.expiresInGenerator)
+	t.Run("SetExpiresInGenerator", func(t *testing.T) {
+		fn := codegen.NewMockExpiresInGenerator(t).Execute
+		opts := NewOptions()
+		result := opts.SetExpiresInGenerator(fn)
+		assert.NotNil(t, opts.expiresInGenerator)
+		assert.Equal(t, opts, result)
 
-	opts.SetRandStringGenerator(codegen.NewMockRandStringGenerator(t).Execute)
-	assert.NotNil(t, opts.randStringGenerator)
+		opts.SetExpiresInGenerator(nil)
+		assert.Nil(t, opts.expiresInGenerator)
+	})
 
-	opts.SetExtraDataGenerator(codegen.NewMockExtraDataGenerator(t).Execute)
-	assert.NotNil(t, opts.extraDataGenerator)
+	t.Run("SetRandStringGenerator", func(t *testing.T) {
+		fn := codegen.NewMockRandStringGenerator(t).Execute
+		opts := NewOptions()
+		result := opts.SetRandStringGenerator(fn)
+		assert.NotNil(t, opts.randStringGenerator)
+		assert.Equal(t, opts, result)
+
+		opts.SetRandStringGenerator(nil)
+		assert.Nil(t, opts.randStringGenerator)
+	})
+
+	t.Run("SetExtraDataGenerator", func(t *testing.T) {
+		fn := codegen.NewMockExtraDataGenerator(t).Execute
+		opts := NewOptions()
+		result := opts.SetExtraDataGenerator(fn)
+		assert.NotNil(t, opts.extraDataGenerator)
+		assert.Equal(t, opts, result)
+
+		opts.SetExtraDataGenerator(nil)
+		assert.Nil(t, opts.extraDataGenerator)
+	})
 }
