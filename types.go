@@ -13,15 +13,24 @@ import (
 type AuthorizationGrant interface {
 	// CheckResponseType reports whether this grant handles the given response_type.
 	CheckResponseType(typ types.ResponseType) bool
+	// ValidateAuthorizationRequest validates the incoming /authorize request,
+	// including client lookup, redirect URI, scope, and any extension checks.
 	ValidateAuthorizationRequest(r *requests.AuthorizationRequest) error
+	// AuthorizationResponse issues the authorization response (e.g. redirects
+	// the browser with a code or token).
 	AuthorizationResponse(r *requests.AuthorizationRequest, rw http.ResponseWriter) error
 }
 
 // ConsentGrant extends a flow with a dedicated consent validation step called
 // after the user has confirmed or denied the consent screen.
 type ConsentGrant interface {
+	// CheckResponseType reports whether this grant handles the given response_type.
 	CheckResponseType(typ types.ResponseType) bool
+	// ValidateConsentRequest validates the request after the user acts on the
+	// consent screen. Typically, checks session state and user approval.
 	ValidateConsentRequest(r *requests.AuthorizationRequest) error
+	// AuthorizationResponse issues the final authorization response once
+	// consent has been validated.
 	AuthorizationResponse(r *requests.AuthorizationRequest, rw http.ResponseWriter) error
 }
 
@@ -29,7 +38,11 @@ type ConsentGrant interface {
 type TokenGrant interface {
 	// CheckGrantType reports whether this grant handles the given grant_type.
 	CheckGrantType(gt types.GrantType) bool
+	// ValidateTokenRequest validates the /token request, including client
+	// authentication, grant-specific parameters, and scope.
 	ValidateTokenRequest(r *requests.TokenRequest) error
+	// TokenResponse generates the access token and writes the JSON response
+	// (RFC 6749 §5.1).
 	TokenResponse(r *requests.TokenRequest, rw http.ResponseWriter) error
 }
 
@@ -38,6 +51,7 @@ type TokenGrant interface {
 type Endpoint interface {
 	// CheckEndpoint reports whether this handler owns the named endpoint.
 	CheckEndpoint(name string) bool
+	// EndpointResponse processes the request and writes the HTTP response.
 	EndpointResponse(r *http.Request, rw http.ResponseWriter) error
 }
 

@@ -30,7 +30,9 @@ func NewServer() *Server {
 	return &Server{}
 }
 
-// CreateAuthorizationRequest parses the HTTP request into an AuthorizationRequest.
+// CreateAuthorizationRequest parses the incoming HTTP request into an
+// AuthorizationRequest, extracting OAuth2 parameters such as response_type,
+// client_id, redirect_uri, scope, and state.
 func (srv *Server) CreateAuthorizationRequest(r *http.Request) (*requests.AuthorizationRequest, error) {
 	return requests.NewAuthorizationRequestFromHttp(r)
 }
@@ -49,7 +51,8 @@ func (srv *Server) AuthorizationGrant(r *requests.AuthorizationRequest) (Authori
 
 // CreateAuthorizationResponse handles the /authorize endpoint. It parses the
 // request, finds the matching grant, validates it, and writes the redirect response.
-// u is the authenticated user; pass nil to trigger an access denied error.
+// u is the authenticated user populated into the request before validation;
+// whether a nil user results in an error is determined by the grant flow.
 func (srv *Server) CreateAuthorizationResponse(hr *http.Request, rw http.ResponseWriter, u models.User) error {
 	r, err := srv.CreateAuthorizationRequest(hr)
 	if err != nil {
