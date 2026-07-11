@@ -9,63 +9,106 @@ import (
 	"github.com/tniah/authlib/types"
 )
 
-func TestConfig(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
+func TestNewConfig(t *testing.T) {
+	cfg := NewConfig()
+	assert.Equal(t, []string{http.MethodPost}, cfg.tokenEndpointHttpMethods)
+	assert.Equal(t, map[types.ClientAuthMethod]bool{
+		types.ClientBasicAuthentication: true,
+	}, cfg.supportedClientAuthMethods)
+	assert.Empty(t, cfg.tokenReqValidators)
+	assert.Empty(t, cfg.tokenProcessors)
+	assert.Nil(t, cfg.clientMgr)
+	assert.Nil(t, cfg.userMgr)
+	assert.Nil(t, cfg.tokenMgr)
+}
+
+func TestConfig_Setters(t *testing.T) {
+	cfg := NewConfig()
+
+	mockClientMgr := ropc.NewMockClientManager(t)
+	cfg.SetClientManager(mockClientMgr)
+	assert.Equal(t, mockClientMgr, cfg.clientMgr)
+
+	mockUserMgr := ropc.NewMockUserManager(t)
+	cfg.SetUserManager(mockUserMgr)
+	assert.Equal(t, mockUserMgr, cfg.userMgr)
+
+	mockTokenMgr := ropc.NewMockTokenManager(t)
+	cfg.SetTokenManager(mockTokenMgr)
+	assert.Equal(t, mockTokenMgr, cfg.tokenMgr)
+
+	methods := map[types.ClientAuthMethod]bool{types.ClientNoneAuthentication: true}
+	cfg.SetSupportedClientAuthMethods(methods)
+	assert.Equal(t, methods, cfg.supportedClientAuthMethods)
+
+	cfg.SetTokenEndpointHttpMethods([]string{http.MethodPut})
+	assert.Equal(t, []string{http.MethodPut}, cfg.tokenEndpointHttpMethods)
+}
+
+func TestConfig_RegisterExtension(t *testing.T) {
+	t.Run("registers_to_single_slice", func(t *testing.T) {
 		cfg := NewConfig()
-		assert.Equal(t, []string{http.MethodPost}, cfg.tokenEndpointHttpMethods)
-		assert.NotNil(t, cfg.tokenReqValidators)
-		assert.NotNil(t, cfg.tokenProcessors)
-		assert.Equal(t, map[types.ClientAuthMethod]bool{types.ClientBasicAuthentication: true}, cfg.supportedClientAuthMethods)
-		assert.Nil(t, cfg.clientMgr)
-		assert.Nil(t, cfg.userMgr)
-		assert.Nil(t, cfg.tokenMgr)
-
-		cfg.SetClientManager(ropc.NewMockClientManager(t))
-		assert.NotNil(t, cfg.clientMgr)
-
-		cfg.SetUserManager(ropc.NewMockUserManager(t))
-		assert.NotNil(t, cfg.userMgr)
-
-		cfg.SetTokenManager(ropc.NewMockTokenManager(t))
-		assert.NotNil(t, cfg.tokenMgr)
-
-		cfg.SetSupportedClientAuthMethods(map[types.ClientAuthMethod]bool{types.ClientNoneAuthentication: true})
-		assert.Equal(t, map[types.ClientAuthMethod]bool{types.ClientNoneAuthentication: true}, cfg.supportedClientAuthMethods)
-
-		cfg.SetTokenEndpointHttpMethods([]string{http.MethodPut})
-		assert.Equal(t, []string{http.MethodPut}, cfg.tokenEndpointHttpMethods)
-
 		cfg.RegisterExtension(ropc.NewMockTokenRequestValidator(t))
 		cfg.RegisterExtension(ropc.NewMockTokenProcessor(t))
-		assert.NotNil(t, cfg.tokenReqValidators)
-		assert.NotNil(t, cfg.tokenProcessors)
+
+		assert.Len(t, cfg.tokenReqValidators, 1)
+		assert.Len(t, cfg.tokenProcessors, 1)
 	})
 
-	t.Run("validation_success", func(t *testing.T) {
+	t.Run("registers_to_all_matching_slices", func(t *testing.T) {
+		type multiExt struct {
+			ropc.MockTokenRequestValidator
+			ropc.MockTokenProcessor
+		}
+
 		cfg := NewConfig()
-		cfg.SetClientManager(ropc.NewMockClientManager(t))
-		cfg.SetUserManager(ropc.NewMockUserManager(t))
-		cfg.SetTokenManager(ropc.NewMockTokenManager(t))
-		err := cfg.ValidateConfig()
-		assert.NoError(t, err)
+		cfg.RegisterExtension(&multiExt{})
+
+		assert.Len(t, cfg.tokenReqValidators, 1)
+		assert.Len(t, cfg.tokenProcessors, 1)
 	})
 
-	t.Run("validation_failed", func(t *testing.T) {
+	t.Run("ignores_non_extension_types", func(t *testing.T) {
 		cfg := NewConfig()
-		err := cfg.ValidateConfig()
-		assert.ErrorIs(t, err, ErrNilClientManager)
+		cfg.RegisterExtension(struct{}{})
 
-		cfg.SetClientManager(ropc.NewMockClientManager(t))
-		err = cfg.ValidateConfig()
-		assert.ErrorIs(t, err, ErrNilUserManager)
+		assert.Empty(t, cfg.tokenReqValidators)
+		assert.Empty(t, cfg.tokenProcessors)
+	})
+}
 
-		cfg.SetUserManager(ropc.NewMockUserManager(t))
-		err = cfg.ValidateConfig()
-		assert.ErrorIs(t, err, ErrNilTokenManager)
+func TestConfig_ValidateConfig(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		cfg := NewConfig().
+			SetClientManager(ropc.NewMockClientManager(t)).
+			SetUserManager(ropc.NewMockUserManager(t)).
+			SetTokenManager(ropc.NewMockTokenManager(t))
+		assert.NoError(t, cfg.ValidateConfig())
+	})
 
-		cfg.SetTokenManager(ropc.NewMockTokenManager(t))
-		cfg.SetSupportedClientAuthMethods(nil)
-		err = cfg.ValidateConfig()
-		assert.ErrorIs(t, err, ErrEmptyClientAuthMethods)
+	t.Run("error_when_client_manager_nil", func(t *testing.T) {
+		cfg := NewConfig()
+		assert.ErrorIs(t, cfg.ValidateConfig(), ErrNilClientManager)
+	})
+
+	t.Run("error_when_user_manager_nil", func(t *testing.T) {
+		cfg := NewConfig().SetClientManager(ropc.NewMockClientManager(t))
+		assert.ErrorIs(t, cfg.ValidateConfig(), ErrNilUserManager)
+	})
+
+	t.Run("error_when_token_manager_nil", func(t *testing.T) {
+		cfg := NewConfig().
+			SetClientManager(ropc.NewMockClientManager(t)).
+			SetUserManager(ropc.NewMockUserManager(t))
+		assert.ErrorIs(t, cfg.ValidateConfig(), ErrNilTokenManager)
+	})
+
+	t.Run("error_when_client_auth_methods_empty", func(t *testing.T) {
+		cfg := NewConfig().
+			SetClientManager(ropc.NewMockClientManager(t)).
+			SetUserManager(ropc.NewMockUserManager(t)).
+			SetTokenManager(ropc.NewMockTokenManager(t)).
+			SetSupportedClientAuthMethods(nil)
+		assert.ErrorIs(t, cfg.ValidateConfig(), ErrEmptyClientAuthMethods)
 	})
 }

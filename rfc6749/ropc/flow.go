@@ -30,7 +30,7 @@ func New(cfg *Config) *Flow {
 	return &Flow{Config: cfg}
 }
 
-// Must creates a Flow and returns an error if the config is incomplete.
+// Must create a Flow and returns an error if the config is incomplete.
 func Must(cfg *Config) (*Flow, error) {
 	if err := cfg.ValidateConfig(); err != nil {
 		return nil, err
@@ -44,12 +44,19 @@ func (f *Flow) CheckGrantType(gt types.GrantType) bool {
 	return gt.IsROPC()
 }
 
+// ValidateTokenRequest validates the /token request: HTTP method, grant_type,
+// username, password, client authentication, scope, and any registered
+// TokenRequestValidator extensions.
 func (f *Flow) ValidateTokenRequest(r *requests.TokenRequest) error {
 	if err := f.checkParams(r); err != nil {
 		return err
 	}
 
 	if err := f.authenticateClient(r); err != nil {
+		return err
+	}
+
+	if err := f.validateScope(r); err != nil {
 		return err
 	}
 
@@ -66,6 +73,8 @@ func (f *Flow) ValidateTokenRequest(r *requests.TokenRequest) error {
 	return nil
 }
 
+// TokenResponse generates the access token, runs TokenProcessor extensions,
+// saves the token, and writes the JSON response (RFC 6749 §4.3.3 / §5.1).
 func (f *Flow) TokenResponse(r *requests.TokenRequest, rw http.ResponseWriter) error {
 	token, err := f.genToken(r)
 	if err != nil {
@@ -86,6 +95,8 @@ func (f *Flow) TokenResponse(r *requests.TokenRequest, rw http.ResponseWriter) e
 	return f.HandleTokenResponse(rw, data)
 }
 
+// checkParams validates the HTTP method, grant_type, username, and password
+// before any manager calls are made.
 func (f *Flow) checkParams(r *requests.TokenRequest) error {
 	if err := f.checkTokenEndpointHttpMethod(r); err != nil {
 		return err
@@ -106,6 +117,8 @@ func (f *Flow) checkParams(r *requests.TokenRequest) error {
 	return nil
 }
 
+// checkTokenEndpointHttpMethod rejects requests whose HTTP method is not in
+// tokenEndpointHttpMethods (default: POST).
 func (f *Flow) checkTokenEndpointHttpMethod(r *requests.TokenRequest) error {
 	for _, method := range f.tokenEndpointHttpMethods {
 		if r.Method() == method {
@@ -116,6 +129,7 @@ func (f *Flow) checkTokenEndpointHttpMethod(r *requests.TokenRequest) error {
 	return autherrors.InvalidRequestError().WithDescription(fmt.Sprintf("unsupported http method \"%s\"", r.Method()))
 }
 
+// validateGrantType checks that grant_type is present and equals "password".
 func (f *Flow) validateGrantType(r *requests.TokenRequest) error {
 	if err := r.ValidateGrantType(); err != nil {
 		return err
@@ -128,14 +142,17 @@ func (f *Flow) validateGrantType(r *requests.TokenRequest) error {
 	return nil
 }
 
+// authenticateClient delegates to ClientManager.Authenticate, then verifies the
+// client is permitted to use the password grant. Returns unauthorized_client if
+// the grant type is not enabled.
 func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 	client, err := f.clientMgr.Authenticate(r.Request, f.supportedClientAuthMethods, EndpointToken)
 	if err != nil {
-		return autherrors.ToAuthLibError(err)
+		return err
 	}
 
 	if utils.IsNil(client) {
-		return autherrors.InvalidClientError()
+		return autherrors.InvalidClientError().WithCause(err)
 	}
 
 	// Verify the client is explicitly permitted to use the password grant.
@@ -147,9 +164,33 @@ func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 	return nil
 }
 
+// validateScope filters the requested scopes through the client's allowed list
+// and returns invalid_scope if all requested scopes are denied (RFC 6749 §3.3).
+// If no scope is requested the check is skipped.
+func (f *Flow) validateScope(r *requests.TokenRequest) error {
+	if len(r.Scopes) == 0 {
+		return nil
+	}
+
+	allowed := r.Client.GetAllowedScopes(r.Scopes)
+	if len(allowed) == 0 {
+		return autherrors.InvalidScopeError()
+	}
+
+	r.Scopes = allowed
+	return nil
+}
+
+// authenticateUser delegates to UserManager.Authenticate. Both a nil user and
+// an error from the manager are reported as invalid_grant with a generic
+// message to avoid leaking whether the username exists (RFC 6749 §4.3.2).
 func (f *Flow) authenticateUser(r *requests.TokenRequest) error {
 	user, err := f.userMgr.Authenticate(r.Username, r.Password, r.Client, r.Request)
-	if err != nil || utils.IsNil(user) {
+	if err != nil {
+		return err
+	}
+
+	if utils.IsNil(user) {
 		// Return a generic message to avoid leaking whether the username exists.
 		return autherrors.InvalidGrantError().WithDescription("Username or password is incorrect").WithCause(err)
 	}
@@ -158,6 +199,8 @@ func (f *Flow) authenticateUser(r *requests.TokenRequest) error {
 	return nil
 }
 
+// genToken allocates and populates a new token. A refresh token is included
+// when the client has the refresh_token grant type registered.
 func (f *Flow) genToken(r *requests.TokenRequest) (models.Token, error) {
 	token := f.tokenMgr.New()
 	if utils.IsNil(token) {

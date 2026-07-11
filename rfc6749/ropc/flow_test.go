@@ -60,23 +60,79 @@ func TestFlow_CheckGrantType(t *testing.T) {
 }
 
 func TestFlow_TokenResponse(t *testing.T) {
-	mockToken := &sql.Token{}
 	mockTokenMgr := ropc.NewMockTokenManager(t)
-	mockTokenMgr.On("New").Return(mockToken).Once()
-	mockTokenMgr.On("Generate", mock.AnythingOfType("*sql.Token"), mock.AnythingOfType("*requests.TokenRequest"), mock.AnythingOfType("bool")).Return(nil).Once()
-	mockTokenMgr.On("Save", mock.Anything, mock.AnythingOfType("*sql.Token")).Return(nil).Once()
-
 	f := New(NewConfig().SetTokenManager(mockTokenMgr))
-	r := &requests.TokenRequest{
-		GrantType: types.GrantTypeROPC,
-		Username:  "makai",
-		Password:  "123456",
-		Client:    &sql.Client{},
-		Request:   httptest.NewRequest("POST", "/oauth/token", nil),
+
+	newReq := func() *requests.TokenRequest {
+		return &requests.TokenRequest{
+			GrantType: types.GrantTypeROPC,
+			Username:  "makai",
+			Password:  "123456",
+			Client:    &sql.Client{},
+			Request:   httptest.NewRequest(http.MethodPost, "/oauth/token", nil),
+		}
 	}
 
-	err := f.TokenResponse(r, httptest.NewRecorder())
-	assert.NoError(t, err)
+	t.Run("success", func(t *testing.T) {
+		mockToken := &sql.Token{}
+		mockTokenMgr.On("New").Return(mockToken).Once()
+		mockTokenMgr.On("Generate", mock.Anything, mock.Anything, mock.AnythingOfType("bool")).Return(nil).Once()
+		mockTokenMgr.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
+
+		err := f.TokenResponse(newReq(), httptest.NewRecorder())
+		assert.NoError(t, err)
+	})
+
+	t.Run("error_when_gen_token_fails", func(t *testing.T) {
+		mockTokenMgr.On("New").Return(nil).Once()
+
+		err := f.TokenResponse(newReq(), httptest.NewRecorder())
+		assert.ErrorIs(t, err, ErrNilToken)
+	})
+
+	t.Run("error_when_save_fails", func(t *testing.T) {
+		mockToken := &sql.Token{}
+		mockTokenMgr.On("New").Return(mockToken).Once()
+		mockTokenMgr.On("Generate", mock.Anything, mock.Anything, mock.AnythingOfType("bool")).Return(nil).Once()
+		mockTokenMgr.On("Save", mock.Anything, mock.Anything).Return(errors.New("db error")).Once()
+
+		err := f.TokenResponse(newReq(), httptest.NewRecorder())
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "db error")
+	})
+}
+
+func TestFlow_TokenResponse_WithProcessor(t *testing.T) {
+	mockTokenMgr := ropc.NewMockTokenManager(t)
+	mockProcessor := ropc.NewMockTokenProcessor(t)
+	f := New(NewConfig().SetTokenManager(mockTokenMgr).RegisterExtension(mockProcessor))
+
+	r := &requests.TokenRequest{
+		Client:  &sql.Client{},
+		Request: httptest.NewRequest(http.MethodPost, "/oauth/token", nil),
+	}
+
+	t.Run("success_processor_called", func(t *testing.T) {
+		mockToken := &sql.Token{}
+		mockTokenMgr.On("New").Return(mockToken).Once()
+		mockTokenMgr.On("Generate", mock.Anything, mock.Anything, mock.AnythingOfType("bool")).Return(nil).Once()
+		mockProcessor.On("ProcessToken", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
+		mockTokenMgr.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
+
+		err := f.TokenResponse(r, httptest.NewRecorder())
+		assert.NoError(t, err)
+	})
+
+	t.Run("error_when_processor_fails", func(t *testing.T) {
+		mockToken := &sql.Token{}
+		mockTokenMgr.On("New").Return(mockToken).Once()
+		mockTokenMgr.On("Generate", mock.Anything, mock.Anything, mock.AnythingOfType("bool")).Return(nil).Once()
+		mockProcessor.On("ProcessToken", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("processor error")).Once()
+
+		err := f.TokenResponse(r, httptest.NewRecorder())
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "processor error")
+	})
 }
 
 func TestFlow_checkTokenEndpointHttpMethod(t *testing.T) {
@@ -233,7 +289,7 @@ func TestFlow_authenticateClient(t *testing.T) {
 		}
 		err := f.authenticateClient(r)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "server_error")
+		assert.Contains(t, err.Error(), "unexpected")
 
 		mockClientMgr.AssertExpectations(t)
 	})
@@ -268,36 +324,228 @@ func TestFlow_authenticateUser(t *testing.T) {
 
 		err := f.authenticateUser(r)
 		assert.NoError(t, err)
+		assert.Equal(t, mockUser, r.User)
 
 		mockUserMgr.AssertExpectations(t)
 	})
 
-	t.Run("error_when_user_authentication_failed", func(t *testing.T) {
+	t.Run("error_when_user_not_found", func(t *testing.T) {
 		mockUserMgr.On("Authenticate", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(nil, nil).Once()
-		mockUserMgr.On("Authenticate", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(nil, errors.New("unexpected")).Once()
-
-		for i := 0; i < 2; i++ {
-			r := &requests.TokenRequest{
-				Request: httptest.NewRequest(http.MethodPost, "/", nil),
-			}
-			err := f.authenticateUser(r)
-			assert.Error(t, err)
-			assert.Contains(t, err.Error(), "invalid_grant")
+		r := &requests.TokenRequest{
+			Request: httptest.NewRequest(http.MethodPost, "/", nil),
 		}
+
+		err := f.authenticateUser(r)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid_grant")
+
+		mockUserMgr.AssertExpectations(t)
+	})
+
+	t.Run("error_when_store_returns_error", func(t *testing.T) {
+		mockUserMgr.On("Authenticate", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(nil, errors.New("unexpected")).Once()
+		r := &requests.TokenRequest{
+			Request: httptest.NewRequest(http.MethodPost, "/", nil),
+		}
+
+		err := f.authenticateUser(r)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "unexpected")
 
 		mockUserMgr.AssertExpectations(t)
 	})
 }
 
+func TestFlow_validateScope(t *testing.T) {
+	f := New(NewConfig())
+
+	t.Run("success_when_no_scope_requested", func(t *testing.T) {
+		r := &requests.TokenRequest{
+			Client: &sql.Client{Scopes: []string{"read"}},
+			Scopes: types.Scopes{},
+		}
+		assert.NoError(t, f.validateScope(r))
+	})
+
+	t.Run("success_filters_allowed_scopes", func(t *testing.T) {
+		r := &requests.TokenRequest{
+			Client: &sql.Client{Scopes: []string{"read", "write"}},
+			Scopes: types.NewScopes([]string{"read", "write"}),
+		}
+		err := f.validateScope(r)
+		assert.NoError(t, err)
+		assert.ElementsMatch(t, []string{"read", "write"}, r.Scopes.String())
+	})
+
+	t.Run("success_filters_to_allowed_subset", func(t *testing.T) {
+		r := &requests.TokenRequest{
+			Client: &sql.Client{Scopes: []string{"read"}},
+			Scopes: types.NewScopes([]string{"read", "admin"}),
+		}
+		err := f.validateScope(r)
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"read"}, r.Scopes.String())
+	})
+
+	t.Run("error_when_all_scopes_denied", func(t *testing.T) {
+		r := &requests.TokenRequest{
+			Client: &sql.Client{Scopes: []string{"read"}},
+			Scopes: types.NewScopes([]string{"admin", "superuser"}),
+		}
+		err := f.validateScope(r)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid_scope")
+	})
+}
+
+func TestFlow_ValidateTokenRequest(t *testing.T) {
+	mockClientMgr := ropc.NewMockClientManager(t)
+	mockUserMgr := ropc.NewMockUserManager(t)
+	f := New(NewConfig().SetClientManager(mockClientMgr).SetUserManager(mockUserMgr))
+
+	validClient := &sql.Client{
+		GrantTypes: []string{types.GrantTypeROPC.String()},
+		Scopes:     []string{"read"},
+	}
+
+	t.Run("success", func(t *testing.T) {
+		mockClientMgr.On("Authenticate", mock.Anything, mock.Anything, mock.AnythingOfType("string")).Return(validClient, nil).Once()
+		mockUserMgr.On("Authenticate", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(&sql.User{}, nil).Once()
+
+		r := &requests.TokenRequest{
+			Request:   httptest.NewRequest(http.MethodPost, "/oauth/token", nil),
+			GrantType: types.GrantTypeROPC,
+			Username:  "makai",
+			Password:  "123456",
+		}
+		err := f.ValidateTokenRequest(r)
+		assert.NoError(t, err)
+		assert.Equal(t, validClient, r.Client)
+
+		mockClientMgr.AssertExpectations(t)
+		mockUserMgr.AssertExpectations(t)
+	})
+
+	t.Run("error_when_check_params_fails", func(t *testing.T) {
+		r := &requests.TokenRequest{
+			Request:   httptest.NewRequest(http.MethodPost, "/oauth/token", nil),
+			GrantType: types.GrantTypeROPC,
+			Username:  "",
+		}
+		err := f.ValidateTokenRequest(r)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid_request")
+	})
+
+	t.Run("error_when_client_auth_fails", func(t *testing.T) {
+		mockClientMgr.On("Authenticate", mock.Anything, mock.Anything, mock.AnythingOfType("string")).Return(nil, nil).Once()
+
+		r := &requests.TokenRequest{
+			Request:   httptest.NewRequest(http.MethodPost, "/oauth/token", nil),
+			GrantType: types.GrantTypeROPC,
+			Username:  "makai",
+			Password:  "123456",
+		}
+		err := f.ValidateTokenRequest(r)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid_client")
+
+		mockClientMgr.AssertExpectations(t)
+	})
+
+	t.Run("error_when_scope_invalid", func(t *testing.T) {
+		mockClientMgr.On("Authenticate", mock.Anything, mock.Anything, mock.AnythingOfType("string")).Return(validClient, nil).Once()
+
+		r := &requests.TokenRequest{
+			Request:   httptest.NewRequest(http.MethodPost, "/oauth/token", nil),
+			GrantType: types.GrantTypeROPC,
+			Username:  "makai",
+			Password:  "123456",
+			Scopes:    types.NewScopes([]string{"admin", "superuser"}),
+		}
+		err := f.ValidateTokenRequest(r)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid_scope")
+
+		mockClientMgr.AssertExpectations(t)
+	})
+
+	t.Run("error_when_user_auth_fails", func(t *testing.T) {
+		mockClientMgr.On("Authenticate", mock.Anything, mock.Anything, mock.AnythingOfType("string")).Return(validClient, nil).Once()
+		mockUserMgr.On("Authenticate", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(nil, nil).Once()
+
+		r := &requests.TokenRequest{
+			Request:   httptest.NewRequest(http.MethodPost, "/oauth/token", nil),
+			GrantType: types.GrantTypeROPC,
+			Username:  "makai",
+			Password:  "wrongpassword",
+		}
+		err := f.ValidateTokenRequest(r)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid_grant")
+
+		mockClientMgr.AssertExpectations(t)
+		mockUserMgr.AssertExpectations(t)
+	})
+}
+
+func TestFlow_ValidateTokenRequest_WithExtension(t *testing.T) {
+	mockClientMgr := ropc.NewMockClientManager(t)
+	mockUserMgr := ropc.NewMockUserManager(t)
+	mockValidator := ropc.NewMockTokenRequestValidator(t)
+	f := New(NewConfig().SetClientManager(mockClientMgr).SetUserManager(mockUserMgr).RegisterExtension(mockValidator))
+
+	validClient := &sql.Client{GrantTypes: []string{types.GrantTypeROPC.String()}}
+
+	t.Run("success_validator_called", func(t *testing.T) {
+		mockClientMgr.On("Authenticate", mock.Anything, mock.Anything, mock.AnythingOfType("string")).Return(validClient, nil).Once()
+		mockUserMgr.On("Authenticate", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(&sql.User{}, nil).Once()
+		mockValidator.On("ValidateTokenRequest", mock.Anything).Return(nil).Once()
+
+		r := &requests.TokenRequest{
+			Request:   httptest.NewRequest(http.MethodPost, "/oauth/token", nil),
+			GrantType: types.GrantTypeROPC,
+			Username:  "makai",
+			Password:  "123456",
+		}
+		err := f.ValidateTokenRequest(r)
+		assert.NoError(t, err)
+
+		mockClientMgr.AssertExpectations(t)
+		mockUserMgr.AssertExpectations(t)
+		mockValidator.AssertExpectations(t)
+	})
+
+	t.Run("error_when_validator_fails", func(t *testing.T) {
+		mockClientMgr.On("Authenticate", mock.Anything, mock.Anything, mock.AnythingOfType("string")).Return(validClient, nil).Once()
+		mockUserMgr.On("Authenticate", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(&sql.User{}, nil).Once()
+		mockValidator.On("ValidateTokenRequest", mock.Anything).Return(errors.New("validator error")).Once()
+
+		r := &requests.TokenRequest{
+			Request:   httptest.NewRequest(http.MethodPost, "/oauth/token", nil),
+			GrantType: types.GrantTypeROPC,
+			Username:  "makai",
+			Password:  "123456",
+		}
+		err := f.ValidateTokenRequest(r)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "validator error")
+
+		mockClientMgr.AssertExpectations(t)
+		mockUserMgr.AssertExpectations(t)
+		mockValidator.AssertExpectations(t)
+	})
+}
+
 func TestFlow_genToken(t *testing.T) {
 	mockToken := &sql.Token{}
-	mockClient := &sql.Client{}
 	mockTokenMgr := ropc.NewMockTokenManager(t)
 	f := New(NewConfig().SetTokenManager(mockTokenMgr))
 
-	t.Run("success", func(t *testing.T) {
+	t.Run("success_without_refresh_token", func(t *testing.T) {
+		mockClient := &sql.Client{GrantTypes: []string{types.GrantTypeROPC.String()}}
 		mockTokenMgr.On("New").Return(mockToken).Once()
-		mockTokenMgr.On("Generate", mock.Anything, mock.Anything, mock.AnythingOfType("bool")).Return(nil).Once()
+		mockTokenMgr.On("Generate", mock.Anything, mock.Anything, false).Return(nil).Once()
 
 		r := &requests.TokenRequest{
 			Request: httptest.NewRequest(http.MethodPost, "/", nil),
@@ -310,10 +558,25 @@ func TestFlow_genToken(t *testing.T) {
 		mockTokenMgr.AssertExpectations(t)
 	})
 
-	t.Run("error", func(t *testing.T) {
-		mockTokenMgr.On("New").Return(nil).Once()
+	t.Run("success_with_refresh_token", func(t *testing.T) {
+		mockClient := &sql.Client{GrantTypes: []string{types.GrantTypeROPC.String(), types.GrantTypeRefreshToken.String()}}
 		mockTokenMgr.On("New").Return(mockToken).Once()
-		mockTokenMgr.On("Generate", mock.Anything, mock.Anything, mock.AnythingOfType("bool")).Return(errors.New("unexpected")).Once()
+		mockTokenMgr.On("Generate", mock.Anything, mock.Anything, true).Return(nil).Once()
+
+		r := &requests.TokenRequest{
+			Request: httptest.NewRequest(http.MethodPost, "/", nil),
+			Client:  mockClient,
+		}
+		tok, err := f.genToken(r)
+		assert.NoError(t, err)
+		assert.Equal(t, mockToken, tok)
+
+		mockTokenMgr.AssertExpectations(t)
+	})
+
+	t.Run("error_when_new_returns_nil", func(t *testing.T) {
+		mockClient := &sql.Client{}
+		mockTokenMgr.On("New").Return(nil).Once()
 
 		r := &requests.TokenRequest{
 			Request: httptest.NewRequest(http.MethodPost, "/", nil),
@@ -323,9 +586,22 @@ func TestFlow_genToken(t *testing.T) {
 		assert.ErrorIs(t, err, ErrNilToken)
 		assert.Nil(t, tok)
 
-		tok, err = f.genToken(r)
+		mockTokenMgr.AssertExpectations(t)
+	})
+
+	t.Run("error_when_generate_fails", func(t *testing.T) {
+		mockClient := &sql.Client{}
+		mockTokenMgr.On("New").Return(mockToken).Once()
+		mockTokenMgr.On("Generate", mock.Anything, mock.Anything, mock.AnythingOfType("bool")).Return(errors.New("unexpected")).Once()
+
+		r := &requests.TokenRequest{
+			Request: httptest.NewRequest(http.MethodPost, "/", nil),
+			Client:  mockClient,
+		}
+		tok, err := f.genToken(r)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "unexpected")
+		assert.Nil(t, tok)
 
 		mockTokenMgr.AssertExpectations(t)
 	})
