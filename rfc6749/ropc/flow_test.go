@@ -289,6 +289,48 @@ func TestFlow_authenticateUser(t *testing.T) {
 	})
 }
 
+func TestFlow_validateScope(t *testing.T) {
+	f := New(NewConfig())
+
+	t.Run("success_when_no_scope_requested", func(t *testing.T) {
+		r := &requests.TokenRequest{
+			Client: &sql.Client{Scopes: []string{"read"}},
+			Scopes: types.Scopes{},
+		}
+		assert.NoError(t, f.validateScope(r))
+	})
+
+	t.Run("success_filters_allowed_scopes", func(t *testing.T) {
+		r := &requests.TokenRequest{
+			Client: &sql.Client{Scopes: []string{"read", "write"}},
+			Scopes: types.NewScopes([]string{"read", "write"}),
+		}
+		err := f.validateScope(r)
+		assert.NoError(t, err)
+		assert.ElementsMatch(t, []string{"read", "write"}, r.Scopes.String())
+	})
+
+	t.Run("success_filters_to_allowed_subset", func(t *testing.T) {
+		r := &requests.TokenRequest{
+			Client: &sql.Client{Scopes: []string{"read"}},
+			Scopes: types.NewScopes([]string{"read", "admin"}),
+		}
+		err := f.validateScope(r)
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"read"}, r.Scopes.String())
+	})
+
+	t.Run("error_when_all_scopes_denied", func(t *testing.T) {
+		r := &requests.TokenRequest{
+			Client: &sql.Client{Scopes: []string{"read"}},
+			Scopes: types.NewScopes([]string{"admin", "superuser"}),
+		}
+		err := f.validateScope(r)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid_scope")
+	})
+}
+
 func TestFlow_genToken(t *testing.T) {
 	mockToken := &sql.Token{}
 	mockClient := &sql.Client{}
