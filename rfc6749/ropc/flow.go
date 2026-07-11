@@ -143,16 +143,16 @@ func (f *Flow) validateGrantType(r *requests.TokenRequest) error {
 }
 
 // authenticateClient delegates to ClientManager.Authenticate, then verifies the
-// client is permitted to use the password grant. Wraps unexpected errors as
-// server_error; returns unauthorized_client if the grant type is not enabled.
+// client is permitted to use the password grant. Returns unauthorized_client if
+// the grant type is not enabled.
 func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 	client, err := f.clientMgr.Authenticate(r.Request, f.supportedClientAuthMethods, EndpointToken)
 	if err != nil {
-		return autherrors.ToAuthLibError(err)
+		return err
 	}
 
 	if utils.IsNil(client) {
-		return autherrors.InvalidClientError()
+		return autherrors.InvalidClientError().WithCause(err)
 	}
 
 	// Verify the client is explicitly permitted to use the password grant.
@@ -186,7 +186,11 @@ func (f *Flow) validateScope(r *requests.TokenRequest) error {
 // message to avoid leaking whether the username exists (RFC 6749 §4.3.2).
 func (f *Flow) authenticateUser(r *requests.TokenRequest) error {
 	user, err := f.userMgr.Authenticate(r.Username, r.Password, r.Client, r.Request)
-	if err != nil || utils.IsNil(user) {
+	if err != nil {
+		return err
+	}
+
+	if utils.IsNil(user) {
 		// Return a generic message to avoid leaking whether the username exists.
 		return autherrors.InvalidGrantError().WithDescription("Username or password is incorrect").WithCause(err)
 	}

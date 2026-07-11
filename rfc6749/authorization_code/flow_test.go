@@ -342,7 +342,7 @@ func TestFlow_authenticateClient(t *testing.T) {
 		r := newTokenReq()
 		err := f.authenticateClient(r)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "server_error")
+		assert.Contains(t, err.Error(), "db error")
 	})
 }
 

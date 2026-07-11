@@ -340,11 +340,11 @@ func (f *Flow) validateGrantType(r *requests.TokenRequest) error {
 func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 	cl, err := f.clientMgr.Authenticate(r.Request, f.supportedClientAuthMethods, EndpointToken)
 	if err != nil {
-		return autherrors.ToAuthLibError(err)
+		return err
 	}
 
 	if utils.IsNil(cl) {
-		return autherrors.InvalidClientError()
+		return autherrors.InvalidClientError().WithCause(err)
 	}
 
 	r.Client = cl

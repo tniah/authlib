@@ -10,11 +10,12 @@ import (
 )
 
 type TokenRequest struct {
-	GrantType   types.GrantType
-	Code        string
-	RedirectURI string
-	ClientID    string
-	Scopes      types.Scopes
+	GrantType    types.GrantType
+	Code         string
+	RedirectURI  string
+	ClientID     string
+	Scopes       types.Scopes
+	RefreshToken string
 
 	Username string
 	Password string
@@ -25,6 +26,7 @@ type TokenRequest struct {
 	Client   models.Client
 	User     models.User
 	AuthCode models.AuthorizationCode
+	OldToken models.Token
 
 	Request *http.Request
 }
@@ -38,6 +40,7 @@ func NewTokenRequestFromHttp(r *http.Request) (*TokenRequest, error) {
 		Scopes:       types.NewScopes(strings.Fields(r.PostFormValue("scope"))),
 		Username:     r.PostFormValue("username"),
 		Password:     r.PostFormValue("password"),
+		RefreshToken: r.PostFormValue("refresh_token"),
 		CodeVerifier: r.PostFormValue("code_verifier"),
 		Request:      r,
 	}
@@ -80,6 +83,14 @@ func (r *TokenRequest) ValidateUsername() error {
 func (r *TokenRequest) ValidatePassword() error {
 	if r.Password == "" {
 		return autherrors.InvalidRequestError().WithDescription("missing \"password\" in request")
+	}
+
+	return nil
+}
+
+func (r *TokenRequest) ValidateRefreshToken() error {
+	if r.RefreshToken == "" {
+		return autherrors.InvalidRequestError().WithDescription("missing \"refresh_token\" in request")
 	}
 
 	return nil
