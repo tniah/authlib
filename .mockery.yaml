@@ -15,6 +15,17 @@ packages:
       ExpiresInGenerator:
       RandStringGenerator:
       ExtraDataGenerator:
+  github.com/tniah/authlib/rfc6749/authorization_code:
+    interfaces:
+      ClientManager:
+      UserManager:
+      AuthCodeManager:
+      TokenManager:
+      AuthorizationRequestValidator:
+      ConsentRequestValidator:
+      AuthCodeProcessor:
+      TokenRequestValidator:
+      TokenProcessor:
   github.com/tniah/authlib/rfc6749/ropc:
     interfaces:
       ClientManager:

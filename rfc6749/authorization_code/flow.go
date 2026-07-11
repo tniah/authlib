@@ -14,6 +14,8 @@ import (
 	"github.com/tniah/authlib/utils"
 )
 
+// EndpointToken is the endpoint name passed to ClientManager.Authenticate so
+// that the client store can apply per-endpoint auth method policies.
 const EndpointToken = "token"
 
 var (
@@ -21,15 +23,22 @@ var (
 	ErrNilToken    = errors.New("token is nil")
 )
 
+// Flow implements the Authorization Code Grant (RFC 6749 §4.1).
+// It satisfies the server.AuthorizationGrant, server.ConsentGrant, and
+// server.TokenGrant interfaces, enabling registration with Server.RegisterGrant.
 type Flow struct {
 	*Config
 	*rfc6749.TokenFlowMixin
 }
 
+// New creates a Flow from cfg without validating dependencies. Prefer Must for
+// production use to catch missing managers at startup.
 func New(cfg *Config) *Flow {
 	return &Flow{Config: cfg}
 }
 
+// Must create a Flow and returns an error if any required Config dependency
+// is missing. Use this in application startup to fail fast.
 func Must(cfg *Config) (*Flow, error) {
 	if err := cfg.ValidateConfig(); err != nil {
 		return nil, err
@@ -38,14 +47,21 @@ func Must(cfg *Config) (*Flow, error) {
 	return New(cfg), nil
 }
 
+// CheckGrantType returns true for grant_type=authorization_code, used by the
+// server dispatcher to route token requests to this flow.
 func (f *Flow) CheckGrantType(gt types.GrantType) bool {
 	return gt.IsAuthorizationCode()
 }
 
+// CheckResponseType returns true for response_type=code, used by the server
+// dispatcher to route authorization requests to this flow.
 func (f *Flow) CheckResponseType(typ types.ResponseType) bool {
 	return typ.IsCode()
 }
 
+// ValidateAuthorizationRequest validates the incoming /authorize request:
+// HTTP method, client_id, redirect_uri, response_type, and any registered
+// AuthorizationRequestValidator extensions (e.g. PKCE, OIDC).
 func (f *Flow) ValidateAuthorizationRequest(r *requests.AuthorizationRequest) error {
 	if err := f.checkAuthEndpointHttpMethod(r); err != nil {
 		return err
@@ -63,6 +79,10 @@ func (f *Flow) ValidateAuthorizationRequest(r *requests.AuthorizationRequest) er
 		return err
 	}
 
+	if err := f.validateScope(r); err != nil {
+		return err
+	}
+
 	r.GrantType = types.GrantTypeAuthorizationCode
 	for _, h := range f.authReqValidators {
 		if err := h.ValidateAuthorizationRequest(r); err != nil {
@@ -73,6 +93,9 @@ func (f *Flow) ValidateAuthorizationRequest(r *requests.AuthorizationRequest) er
 	return nil
 }
 
+// ValidateConsentRequest re-runs ValidateAuthorizationRequest and then invokes
+// all registered ConsentRequestValidator extensions. Call this before rendering
+// the consent screen to verify the request is still valid.
 func (f *Flow) ValidateConsentRequest(r *requests.AuthorizationRequest) error {
 	if err := f.ValidateAuthorizationRequest(r); err != nil {
 		return err
@@ -87,6 +110,10 @@ func (f *Flow) ValidateConsentRequest(r *requests.AuthorizationRequest) error {
 	return nil
 }
 
+// AuthorizationResponse generates the authorization code, runs AuthCodeProcessor
+// extensions, saves the code, and redirects the user-agent back to redirect_uri
+// with code and state parameters (RFC 6749 §4.1.2).
+// Returns access_denied if r.User is nil (i.e. the user did not authenticate).
 func (f *Flow) AuthorizationResponse(r *requests.AuthorizationRequest, rw http.ResponseWriter) error {
 	if utils.IsNil(r.User) {
 		return autherrors.AccessDeniedError().WithState(r.State).WithRedirectURI(r.RedirectURI)
@@ -117,6 +144,9 @@ func (f *Flow) AuthorizationResponse(r *requests.AuthorizationRequest, rw http.R
 	return utils.Redirect(rw, r.RedirectURI, params)
 }
 
+// ValidateTokenRequest validates the /token request: HTTP method, grant_type,
+// client authentication, authorization code validity, and any registered
+// TokenRequestValidator extensions (e.g. PKCE code_verifier check).
 func (f *Flow) ValidateTokenRequest(r *requests.TokenRequest) error {
 	if err := f.checkTokenEndpointHttpMethod(r); err != nil {
 		return err
@@ -143,6 +173,8 @@ func (f *Flow) ValidateTokenRequest(r *requests.TokenRequest) error {
 	return nil
 }
 
+// TokenResponse issues the access token
+// (RFC 6749 §4.1.4 / §5.1).
 func (f *Flow) TokenResponse(r *requests.TokenRequest, rw http.ResponseWriter) error {
 	if err := f.queryUserByAuthCode(r); err != nil {
 		return err
@@ -160,17 +192,19 @@ func (f *Flow) TokenResponse(r *requests.TokenRequest, rw http.ResponseWriter) e
 		}
 	}
 
-	if err = f.tokenMgr.Save(r.Request.Context(), token); err != nil {
+	if err = f.authCodeMgr.DeleteByCode(r.Request.Context(), r.AuthCode.GetCode()); err != nil {
 		return err
 	}
 
-	if err = f.authCodeMgr.DeleteByCode(r.Request.Context(), r.AuthCode.GetCode()); err != nil {
+	if err = f.tokenMgr.Save(r.Request.Context(), token); err != nil {
 		return err
 	}
 
 	return f.HandleTokenResponse(rw, data)
 }
 
+// checkAuthEndpointHttpMethod rejects requests whose HTTP method is not in
+// authEndpointHttpMethods (default: GET).
 func (f *Flow) checkAuthEndpointHttpMethod(r *requests.AuthorizationRequest) error {
 	for _, method := range f.authEndpointHttpMethods {
 		if r.Method() == method {
@@ -181,6 +215,8 @@ func (f *Flow) checkAuthEndpointHttpMethod(r *requests.AuthorizationRequest) err
 	return autherrors.InvalidRequestError().WithDescription(fmt.Sprintf("unsupported http method \"%s\"", r.Method()))
 }
 
+// checkTokenEndpointHttpMethod rejects requests whose HTTP method is not in
+// tokenEndpointHttpMethods (default: POST).
 func (f *Flow) checkTokenEndpointHttpMethod(r *requests.TokenRequest) error {
 	for _, method := range f.tokenEndpointHttpMethods {
 		if r.Method() == method {
@@ -191,6 +227,7 @@ func (f *Flow) checkTokenEndpointHttpMethod(r *requests.TokenRequest) error {
 	return autherrors.InvalidRequestError().WithDescription(fmt.Sprintf("unsupported http method \"%s\"", r.Method()))
 }
 
+// checkClient validates client_id and loads the client record into r.Client.
 func (f *Flow) checkClient(r *requests.AuthorizationRequest) error {
 	if err := r.ValidateClientID(true); err != nil {
 		return err
@@ -211,6 +248,8 @@ func (f *Flow) checkClient(r *requests.AuthorizationRequest) error {
 	return nil
 }
 
+// validateRedirectURI ensures redirect_uri is present and registered for the
+// client. Falls back to the client's default redirect URI when omitted.
 func (f *Flow) validateRedirectURI(r *requests.AuthorizationRequest) error {
 	if r.RedirectURI == "" {
 		r.RedirectURI = r.Client.GetDefaultRedirectURI()
@@ -232,6 +271,8 @@ func (f *Flow) validateRedirectURI(r *requests.AuthorizationRequest) error {
 	return nil
 }
 
+// validateResponseType verifies response_type=code and that the client is
+// permitted to use this response type.
 func (f *Flow) validateResponseType(r *requests.AuthorizationRequest) error {
 	if err := r.ValidateResponseType(true); err != nil {
 		return err
@@ -248,6 +289,25 @@ func (f *Flow) validateResponseType(r *requests.AuthorizationRequest) error {
 	return nil
 }
 
+// validateScope filters the requested scopes through the client's allowed list
+// and returns invalid_scope if the client explicitly requested scopes that are
+// all disallowed (RFC 6749 §3.3). If no scope is requested the check is skipped;
+// the caller or a downstream handler is responsible for applying any defaults.
+func (f *Flow) validateScope(r *requests.AuthorizationRequest) error {
+	if len(r.Scopes) == 0 {
+		return nil
+	}
+
+	allowed := r.Client.GetAllowedScopes(r.Scopes)
+	if len(allowed) == 0 {
+		return autherrors.InvalidScopeError().WithState(r.State).WithRedirectURI(r.RedirectURI)
+	}
+
+	r.Scopes = allowed
+	return nil
+}
+
+// genAuthCode allocates and populates a new authorization code via AuthCodeManager.
 func (f *Flow) genAuthCode(r *requests.AuthorizationRequest) (models.AuthorizationCode, error) {
 	authCode := f.authCodeMgr.New()
 	if utils.IsNil(authCode) {
@@ -261,6 +321,7 @@ func (f *Flow) genAuthCode(r *requests.AuthorizationRequest) (models.Authorizati
 	return authCode, nil
 }
 
+// validateGrantType checks that grant_type is present and equals authorization_code.
 func (f *Flow) validateGrantType(r *requests.TokenRequest) error {
 	if err := r.ValidateGrantType(); err != nil {
 		return err
@@ -273,6 +334,9 @@ func (f *Flow) validateGrantType(r *requests.TokenRequest) error {
 	return nil
 }
 
+// authenticateClient delegates to ClientManager.Authenticate using the configured
+// supported methods. Propagates any AuthLibError from the manager (e.g. one
+// carrying a WWW-Authenticate header); wraps unexpected errors as server_error.
 func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 	cl, err := f.clientMgr.Authenticate(r.Request, f.supportedClientAuthMethods, EndpointToken)
 	if err != nil {
@@ -287,6 +351,8 @@ func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 	return nil
 }
 
+// validateAuthCode verifies the authorization code: existence, client binding,
+// expiry, and redirect_uri match (RFC 6749 §4.1.3). Populates r.AuthCode on success.
 func (f *Flow) validateAuthCode(r *requests.TokenRequest) error {
 	if err := r.ValidateCode(); err != nil {
 		return err
@@ -319,6 +385,8 @@ func (f *Flow) validateAuthCode(r *requests.TokenRequest) error {
 	return nil
 }
 
+// queryUserByAuthCode resolves the resource owner from the authorization code
+// and populates r.User. Returns invalid_grant if no user is found.
 func (f *Flow) queryUserByAuthCode(r *requests.TokenRequest) error {
 	userID := r.AuthCode.GetUserID()
 	if userID == "" {
@@ -338,6 +406,8 @@ func (f *Flow) queryUserByAuthCode(r *requests.TokenRequest) error {
 	return nil
 }
 
+// genToken allocates and populates a new token. A refresh token is included
+// when the client has the refresh_token grant type registered.
 func (f *Flow) genToken(r *requests.TokenRequest) (models.Token, error) {
 	token := f.tokenMgr.New()
 	if utils.IsNil(token) {
