@@ -112,6 +112,13 @@ func InvalidRequestError() *AuthLibError {
 	return NewAuthLibError(ErrInvalidRequest)
 }
 
+// InvalidScopeError returns a 400 error when the requested scope is invalid,
+// unknown, or exceeds what the client is permitted to request
+// (RFC 6749 §5.2 "invalid_scope").
+func InvalidScopeError() *AuthLibError {
+	return NewAuthLibError(ErrInvalidScope)
+}
+
 // InvalidClientError returns a 401 error for failed client authentication —
 // unknown client, wrong secret, or unsupported auth method (RFC 6749 §5.2 "invalid_client").
 // The WWW-Authenticate header is built lazily in Response() so it always reflects

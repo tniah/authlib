@@ -79,6 +79,10 @@ func (f *Flow) ValidateAuthorizationRequest(r *requests.AuthorizationRequest) er
 		return err
 	}
 
+	if err := f.validateScope(r); err != nil {
+		return err
+	}
+
 	r.GrantType = types.GrantTypeAuthorizationCode
 	for _, h := range f.authReqValidators {
 		if err := h.ValidateAuthorizationRequest(r); err != nil {
@@ -169,9 +173,7 @@ func (f *Flow) ValidateTokenRequest(r *requests.TokenRequest) error {
 	return nil
 }
 
-// TokenResponse issues the access token: resolves the resource owner, generates
-// the token, runs TokenProcessor extensions (e.g. OIDC id_token), saves the
-// token, deletes the authorization code, and writes the JSON response
+// TokenResponse issues the access token
 // (RFC 6749 §4.1.4 / §5.1).
 func (f *Flow) TokenResponse(r *requests.TokenRequest, rw http.ResponseWriter) error {
 	if err := f.queryUserByAuthCode(r); err != nil {
@@ -190,11 +192,11 @@ func (f *Flow) TokenResponse(r *requests.TokenRequest, rw http.ResponseWriter) e
 		}
 	}
 
-	if err = f.tokenMgr.Save(r.Request.Context(), token); err != nil {
+	if err = f.authCodeMgr.DeleteByCode(r.Request.Context(), r.AuthCode.GetCode()); err != nil {
 		return err
 	}
 
-	if err = f.authCodeMgr.DeleteByCode(r.Request.Context(), r.AuthCode.GetCode()); err != nil {
+	if err = f.tokenMgr.Save(r.Request.Context(), token); err != nil {
 		return err
 	}
 
@@ -284,6 +286,24 @@ func (f *Flow) validateResponseType(r *requests.AuthorizationRequest) error {
 		return autherrors.UnauthorizedClientError().WithState(r.State).WithRedirectURI(r.RedirectURI)
 	}
 
+	return nil
+}
+
+// validateScope filters the requested scopes through the client's allowed list
+// and returns invalid_scope if the client explicitly requested scopes that are
+// all disallowed (RFC 6749 §3.3). If no scope is requested the check is skipped;
+// the caller or a downstream handler is responsible for applying any defaults.
+func (f *Flow) validateScope(r *requests.AuthorizationRequest) error {
+	if len(r.Scopes) == 0 {
+		return nil
+	}
+
+	allowed := r.Client.GetAllowedScopes(r.Scopes)
+	if len(allowed) == 0 {
+		return autherrors.InvalidScopeError().WithState(r.State).WithRedirectURI(r.RedirectURI)
+	}
+
+	r.Scopes = allowed
 	return nil
 }
 
