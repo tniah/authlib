@@ -7,6 +7,7 @@ import (
 	"github.com/tniah/authlib/types"
 )
 
+// Sentinel errors returned by ValidateConfig when a required dependency is missing.
 var (
 	ErrNilClientManager       = errors.New("client manager is nil")
 	ErrNilUserManager         = errors.New("user manager is nil")
@@ -61,31 +62,40 @@ func NewConfig() *Config {
 	}
 }
 
+// SetClientManager sets the client lookup and authentication manager.
 func (cfg *Config) SetClientManager(mgr ClientManager) *Config {
 	cfg.clientMgr = mgr
 	return cfg
 }
 
+// SetUserManager sets the user resolver used to look up the resource owner
+// associated with an authorization code during token exchange.
 func (cfg *Config) SetUserManager(mgr UserManager) *Config {
 	cfg.userMgr = mgr
 	return cfg
 }
 
+// SetAuthCodeManager sets the authorization code lifecycle manager.
 func (cfg *Config) SetAuthCodeManager(mgr AuthCodeManager) *Config {
 	cfg.authCodeMgr = mgr
 	return cfg
 }
 
+// SetTokenManager sets the token generation and persistence manager.
 func (cfg *Config) SetTokenManager(mgr TokenManager) *Config {
 	cfg.tokenMgr = mgr
 	return cfg
 }
 
+// SetAuthEndpointHttpMethods overrides the HTTP methods accepted at /authorize.
+// Default: [GET].
 func (cfg *Config) SetAuthEndpointHttpMethods(methods []string) *Config {
 	cfg.authEndpointHttpMethods = methods
 	return cfg
 }
 
+// SetTokenEndpointHttpMethods overrides the HTTP methods accepted at /token.
+// Default: [POST].
 func (cfg *Config) SetTokenEndpointHttpMethods(methods []string) *Config {
 	cfg.tokenEndpointHttpMethods = methods
 	return cfg
@@ -119,11 +129,15 @@ func (cfg *Config) RegisterExtension(ext interface{}) *Config {
 	return cfg
 }
 
+// SetSupportedClientAuthMethods overrides which client authentication methods
+// are accepted at the token endpoint. Default: basic and none.
 func (cfg *Config) SetSupportedClientAuthMethods(methods map[types.ClientAuthMethod]bool) *Config {
 	cfg.supportedClientAuthMethods = methods
 	return cfg
 }
 
+// ValidateConfig checks that all required dependencies are set and returns the
+// first sentinel error encountered. Call this via Must() rather than directly.
 func (cfg *Config) ValidateConfig() error {
 	if cfg.clientMgr == nil {
 		return ErrNilClientManager
