@@ -265,7 +265,7 @@ func (srv *Server) RegisterErrorHandler(h ErrorHandler) {
 // Non-AuthLibError values (e.g. unexpected DB errors) are wrapped in a 500
 // InternalServerError automatically via ToAuthLibError.
 func (srv *Server) HandleError(hr *http.Request, rw http.ResponseWriter, err error) error {
-	if !utils.IsNil(srv.errHandler) {
+	if srv.errHandler != nil {
 		return srv.errHandler(hr, rw, err)
 	}
 
@@ -286,8 +286,8 @@ func (srv *Server) JSONResponse(rw http.ResponseWriter, status int, header http.
 		rw.Header().Set(k, v)
 	}
 
-	for k := range header {
-		rw.Header().Set(k, header.Get(k))
+	for k, v := range header {
+		rw.Header()[k] = v
 	}
 
 	rw.WriteHeader(status)

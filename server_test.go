@@ -575,12 +575,13 @@ func TestServer_JSONResponse(t *testing.T) {
 		rw := httptest.NewRecorder()
 
 		extraHeader := http.Header{}
-		extraHeader.Set("X-Custom", "value")
+		extraHeader.Add("WWW-Authenticate", `Bearer realm="example"`)
+		extraHeader.Add("WWW-Authenticate", `Basic realm="example"`)
 
-		err := srv.JSONResponse(rw, http.StatusCreated, extraHeader, map[string]interface{}{})
+		err := srv.JSONResponse(rw, http.StatusUnauthorized, extraHeader, map[string]interface{}{})
 		assert.NoError(t, err)
-		assert.Equal(t, http.StatusCreated, rw.Code)
-		assert.Equal(t, "value", rw.Header().Get("X-Custom"))
+		assert.Equal(t, http.StatusUnauthorized, rw.Code)
+		assert.Equal(t, []string{`Bearer realm="example"`, `Basic realm="example"`}, rw.Header()["Www-Authenticate"])
 	})
 
 	t.Run("sets_cache_control_headers", func(t *testing.T) {
