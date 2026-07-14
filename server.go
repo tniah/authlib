@@ -49,23 +49,38 @@ func (srv *Server) AuthorizationGrant(r *requests.AuthorizationRequest) (Authori
 	return nil, autherrors.UnsupportedResponseTypeError()
 }
 
+// ValidateAuthorizationRequest parses the HTTP request, sets the authenticated
+// user, finds the matching AuthorizationGrant, and runs its validation step.
+// It returns the grant and the populated request so the caller can proceed to
+// issue the authorization response. Errors are returned unwrapped; use
+// HandleError to convert them into HTTP responses.
+func (srv *Server) ValidateAuthorizationRequest(hr *http.Request, u models.User) (AuthorizationGrant, *requests.AuthorizationRequest, error) {
+	r, err := srv.CreateAuthorizationRequest(hr)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	r.User = u
+
+	grant, err := srv.AuthorizationGrant(r)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if err = grant.ValidateAuthorizationRequest(r); err != nil {
+		return nil, nil, err
+	}
+
+	return grant, r, nil
+}
+
 // CreateAuthorizationResponse handles the /authorize endpoint. It parses the
 // request, finds the matching grant, validates it, and writes the redirect response.
 // u is the authenticated user populated into the request before validation;
 // whether a nil user results in an error is determined by the grant flow.
 func (srv *Server) CreateAuthorizationResponse(hr *http.Request, rw http.ResponseWriter, u models.User) error {
-	r, err := srv.CreateAuthorizationRequest(hr)
+	grant, r, err := srv.ValidateAuthorizationRequest(hr, u)
 	if err != nil {
-		return srv.HandleError(hr, rw, err)
-	}
-
-	r.User = u
-	grant, err := srv.AuthorizationGrant(r)
-	if err != nil {
-		return srv.HandleError(hr, rw, err)
-	}
-
-	if err = grant.ValidateAuthorizationRequest(r); err != nil {
 		return srv.HandleError(hr, rw, err)
 	}
 
@@ -88,21 +103,36 @@ func (srv *Server) ConsentGrant(r *requests.AuthorizationRequest) (ConsentGrant,
 	return nil, autherrors.UnsupportedResponseTypeError()
 }
 
-// CreateConsentResponse handles the consent page callback. It re-validates the
-// authorization request after the user has approved (or denied) the consent screen.
-func (srv *Server) CreateConsentResponse(hr *http.Request, rw http.ResponseWriter, u models.User) error {
+// ValidateConsentRequest parses the HTTP request, sets the authenticated user,
+// finds the matching ConsentGrant, and runs its consent validation step.
+// It returns the grant and the populated request so the caller can proceed to
+// issue the authorization response. Errors are returned unwrapped; use
+// HandleError to convert them into HTTP responses.
+func (srv *Server) ValidateConsentRequest(hr *http.Request, u models.User) (ConsentGrant, *requests.AuthorizationRequest, error) {
 	r, err := srv.CreateAuthorizationRequest(hr)
 	if err != nil {
-		return srv.HandleError(hr, rw, err)
+		return nil, nil, err
 	}
 
 	r.User = u
+
 	grant, err := srv.ConsentGrant(r)
 	if err != nil {
-		return srv.HandleError(hr, rw, err)
+		return nil, nil, err
 	}
 
 	if err = grant.ValidateConsentRequest(r); err != nil {
+		return nil, nil, err
+	}
+
+	return grant, r, nil
+}
+
+// CreateConsentResponse handles the consent page callback. It re-validates the
+// authorization request after the user has approved (or denied) the consent screen.
+func (srv *Server) CreateConsentResponse(hr *http.Request, rw http.ResponseWriter, u models.User) error {
+	grant, r, err := srv.ValidateConsentRequest(hr, u)
+	if err != nil {
 		return srv.HandleError(hr, rw, err)
 	}
 
