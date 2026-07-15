@@ -401,6 +401,44 @@ func TestServer_CreateConsentResponse(t *testing.T) {
 	})
 }
 
+func TestServer_ValidateTokenRequest(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		srv := NewServer()
+		grant := &stubTokenGrant{grantType: types.GrantTypeAuthorizationCode}
+		srv.RegisterTokenGrant(grant)
+
+		g, r, err := srv.ValidateTokenRequest(newTokenFormRequest("authorization_code"))
+		require.NoError(t, err)
+		assert.Equal(t, grant, g)
+		assert.NotNil(t, r)
+	})
+
+	t.Run("error_when_no_matching_grant", func(t *testing.T) {
+		srv := NewServer()
+		g, r, err := srv.ValidateTokenRequest(newTokenFormRequest("authorization_code"))
+		assert.Nil(t, g)
+		assert.Nil(t, r)
+		var authErr *autherrors.AuthLibError
+		require.ErrorAs(t, err, &authErr)
+		assert.ErrorIs(t, authErr.Code, autherrors.ErrUnsupportedGrantType)
+	})
+
+	t.Run("error_when_validate_fails", func(t *testing.T) {
+		srv := NewServer()
+		srv.RegisterTokenGrant(&stubTokenGrant{
+			grantType:   types.GrantTypeAuthorizationCode,
+			validateErr: autherrors.InvalidClientError(),
+		})
+
+		g, r, err := srv.ValidateTokenRequest(newTokenFormRequest("authorization_code"))
+		assert.Nil(t, g)
+		assert.Nil(t, r)
+		var authErr *autherrors.AuthLibError
+		require.ErrorAs(t, err, &authErr)
+		assert.ErrorIs(t, authErr.Code, autherrors.ErrInvalidClient)
+	})
+}
+
 func TestServer_CreateTokenResponse(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		srv := NewServer()

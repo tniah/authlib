@@ -30,13 +30,6 @@ func NewServer() *Server {
 	return &Server{}
 }
 
-// CreateAuthorizationRequest parses the incoming HTTP request into an
-// AuthorizationRequest, extracting OAuth2 parameters such as response_type,
-// client_id, redirect_uri, scope, and state.
-func (srv *Server) CreateAuthorizationRequest(r *http.Request) (*requests.AuthorizationRequest, error) {
-	return requests.NewAuthorizationRequestFromHttp(r)
-}
-
 // AuthorizationGrant returns the first registered grant that supports the
 // requested response_type, or UnsupportedResponseTypeError if none match.
 func (srv *Server) AuthorizationGrant(r *requests.AuthorizationRequest) (AuthorizationGrant, error) {
@@ -55,7 +48,7 @@ func (srv *Server) AuthorizationGrant(r *requests.AuthorizationRequest) (Authori
 // issue the authorization response. Errors are returned unwrapped; use
 // HandleError to convert them into HTTP responses.
 func (srv *Server) ValidateAuthorizationRequest(hr *http.Request, u models.User) (AuthorizationGrant, *requests.AuthorizationRequest, error) {
-	r, err := srv.CreateAuthorizationRequest(hr)
+	r, err := requests.NewAuthorizationRequestFromHttp(hr)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -109,7 +102,7 @@ func (srv *Server) ConsentGrant(r *requests.AuthorizationRequest) (ConsentGrant,
 // issue the authorization response. Errors are returned unwrapped; use
 // HandleError to convert them into HTTP responses.
 func (srv *Server) ValidateConsentRequest(hr *http.Request, u models.User) (ConsentGrant, *requests.AuthorizationRequest, error) {
-	r, err := srv.CreateAuthorizationRequest(hr)
+	r, err := requests.NewAuthorizationRequestFromHttp(hr)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -143,11 +136,6 @@ func (srv *Server) CreateConsentResponse(hr *http.Request, rw http.ResponseWrite
 	return nil
 }
 
-// CreateTokenRequest parses the HTTP request into a TokenRequest.
-func (srv *Server) CreateTokenRequest(r *http.Request) (*requests.TokenRequest, error) {
-	return requests.NewTokenRequestFromHttp(r)
-}
-
 // TokenGrant returns the first registered grant that supports the requested
 // grant_type, or UnsupportedGrantTypeError if none match.
 func (srv *Server) TokenGrant(r *requests.TokenRequest) (TokenGrant, error) {
@@ -160,20 +148,33 @@ func (srv *Server) TokenGrant(r *requests.TokenRequest) (TokenGrant, error) {
 	return nil, autherrors.UnsupportedGrantTypeError()
 }
 
-// CreateTokenResponse handles the /token endpoint. It parses the request,
-// finds the matching grant, validates it, and writes the JSON token response.
-func (srv *Server) CreateTokenResponse(hr *http.Request, rw http.ResponseWriter) error {
-	r, err := srv.CreateTokenRequest(hr)
+// ValidateTokenRequest parses the HTTP request, finds the matching TokenGrant,
+// and runs its validation step. It returns the grant and the populated request
+// so the caller can proceed to issue the token response. Errors are returned
+// unwrapped; use HandleError to convert them into HTTP responses.
+func (srv *Server) ValidateTokenRequest(hr *http.Request) (TokenGrant, *requests.TokenRequest, error) {
+	r, err := requests.NewTokenRequestFromHttp(hr)
 	if err != nil {
-		return srv.HandleError(hr, rw, err)
+		return nil, nil, err
 	}
 
 	grant, err := srv.TokenGrant(r)
 	if err != nil {
-		return srv.HandleError(hr, rw, err)
+		return nil, nil, err
 	}
 
 	if err = grant.ValidateTokenRequest(r); err != nil {
+		return nil, nil, err
+	}
+
+	return grant, r, nil
+}
+
+// CreateTokenResponse handles the /token endpoint. It parses the request,
+// finds the matching grant, validates it, and writes the JSON token response.
+func (srv *Server) CreateTokenResponse(hr *http.Request, rw http.ResponseWriter) error {
+	grant, r, err := srv.ValidateTokenRequest(hr)
+	if err != nil {
 		return srv.HandleError(hr, rw, err)
 	}
 
@@ -213,7 +214,7 @@ func (srv *Server) EndpointResponse(hr *http.Request, rw http.ResponseWriter, na
 // RegisterGrant registers a grant flow for all applicable roles
 // (AuthorizationGrant, ConsentGrant, TokenGrant) that it implements.
 // A single flow struct may implement multiple interfaces simultaneously.
-func (srv *Server) RegisterGrant(grant interface{}) {
+func (srv *Server) RegisterGrant(grant any) {
 	srv.RegisterAuthorizationGrant(grant)
 	srv.RegisterConsentGrant(grant)
 	srv.RegisterTokenGrant(grant)
@@ -221,7 +222,7 @@ func (srv *Server) RegisterGrant(grant interface{}) {
 
 // RegisterAuthorizationGrant registers grant as an AuthorizationGrant if it
 // implements the interface. Grants are matched in registration order.
-func (srv *Server) RegisterAuthorizationGrant(grant interface{}) {
+func (srv *Server) RegisterAuthorizationGrant(grant any) {
 	if g, ok := grant.(AuthorizationGrant); ok {
 		srv.authorizationGrants = append(srv.authorizationGrants, g)
 	}
@@ -229,7 +230,7 @@ func (srv *Server) RegisterAuthorizationGrant(grant interface{}) {
 
 // RegisterConsentGrant registers grant as a ConsentGrant if it implements
 // the interface. Grants are matched in registration order.
-func (srv *Server) RegisterConsentGrant(grant interface{}) {
+func (srv *Server) RegisterConsentGrant(grant any) {
 	if g, ok := grant.(ConsentGrant); ok {
 		srv.consentGrants = append(srv.consentGrants, g)
 	}
@@ -237,7 +238,7 @@ func (srv *Server) RegisterConsentGrant(grant interface{}) {
 
 // RegisterTokenGrant registers grant as a TokenGrant if it implements the
 // interface. Grants are matched in registration order.
-func (srv *Server) RegisterTokenGrant(grant interface{}) {
+func (srv *Server) RegisterTokenGrant(grant any) {
 	if g, ok := grant.(TokenGrant); ok {
 		srv.tokenGrants = append(srv.tokenGrants, g)
 	}
@@ -245,7 +246,7 @@ func (srv *Server) RegisterTokenGrant(grant interface{}) {
 
 // RegisterEndpoint registers an endpoint (e.g. token introspection) that can
 // be dispatched to via EndpointResponse.
-func (srv *Server) RegisterEndpoint(endpoint interface{}) {
+func (srv *Server) RegisterEndpoint(endpoint any) {
 	if g, ok := endpoint.(Endpoint); ok {
 		srv.endpoints = append(srv.endpoints, g)
 	}
@@ -281,7 +282,7 @@ func (srv *Server) HandleError(hr *http.Request, rw http.ResponseWriter, err err
 
 // JSONResponse writes a JSON-encoded response with the given status code and
 // optional extra headers. It also sets Content-Type: application/json.
-func (srv *Server) JSONResponse(rw http.ResponseWriter, status int, header http.Header, data map[string]interface{}) error {
+func (srv *Server) JSONResponse(rw http.ResponseWriter, status int, header http.Header, data map[string]any) error {
 	for k, v := range utils.JSONHeaders() {
 		rw.Header().Set(k, v)
 	}
