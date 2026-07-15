@@ -16,7 +16,7 @@ type ExpiresInGenerator func(ctx context.Context, grantType string, client model
 // RandStringGenerator is a pluggable function for producing the opaque token
 // string itself (e.g. to use a different charset or prefix). If nil, a
 // cryptographically random string of the configured length is generated.
-type RandStringGenerator func(ctx context.Context, grantType string, client models.Client) string
+type RandStringGenerator func(ctx context.Context, grantType string, client models.Client) (string, error)
 
 // TokenGenerator is the common interface implemented by both
 // OpaqueAccessTokenGenerator and OpaqueRefreshTokenGenerator.

@@ -10,7 +10,12 @@ import (
 	"github.com/tniah/authlib/utils"
 )
 
-var ErrNilClient = errors.New("client is nil")
+const DefaultAccessTokenExpiresIn = time.Minute * 60
+
+var (
+	ErrNilClient          = errors.New("client is nil")
+	ErrInvalidTokenLength = errors.New("token length must be greater than 0")
+)
 
 // OpaqueAccessTokenGenerator generates a random opaque (non-JWT) access token.
 // All fields are configurable via TokenGeneratorOptions; defaults produce a
@@ -26,7 +31,7 @@ func NewOpaqueAccessTokenGenerator(opts ...*TokenGeneratorOptions) *OpaqueAccess
 		return &OpaqueAccessTokenGenerator{opts[0]}
 	}
 
-	defaultOpts := NewTokenGeneratorOptions()
+	defaultOpts := NewTokenGeneratorOptions().SetExpiresIn(DefaultAccessTokenExpiresIn)
 	return &OpaqueAccessTokenGenerator{defaultOpts}
 }
 
@@ -40,7 +45,7 @@ func (g *OpaqueAccessTokenGenerator) Generate(token models.Token, r *requests.To
 
 	// Prefer request context so custom generators can do context-aware work
 	// (e.g. database lookups). Fall back to Background when called outside
-	// of an HTTP request (e.g. unit tests).
+	//  an HTTP request (e.g. unit tests).
 	ctx := context.Background()
 	if r.Request != nil {
 		ctx = r.Request.Context()
@@ -49,8 +54,8 @@ func (g *OpaqueAccessTokenGenerator) Generate(token models.Token, r *requests.To
 	token.SetClientID(client.GetClientID())
 
 	// User is optional (absent in client credentials flows).
-	if user := r.User; user != nil {
-		token.SetUserID(user.GetUserID())
+	if !utils.IsNil(r.User) {
+		token.SetUserID(r.User.GetUserID())
 	}
 
 	// Intersect requested scopes with the scopes allowed for this client.
@@ -63,7 +68,11 @@ func (g *OpaqueAccessTokenGenerator) Generate(token models.Token, r *requests.To
 	expiresIn := g.expiresInHandler(ctx, r.GrantType.String(), client)
 	token.SetAccessTokenExpiresIn(expiresIn)
 
-	opaqueToken := g.genToken(ctx, r.GrantType.String(), client)
+	opaqueToken, err := g.genToken(ctx, r.GrantType.String(), client)
+	if err != nil {
+		return err
+	}
+
 	token.SetAccessToken(opaqueToken)
 	return nil
 }
@@ -80,11 +89,14 @@ func (g *OpaqueAccessTokenGenerator) expiresInHandler(ctx context.Context, grant
 
 // genToken delegates to the custom RandStringGenerator if set,
 // otherwise generates a cryptographically random string of configured length.
-func (g *OpaqueAccessTokenGenerator) genToken(ctx context.Context, grantType string, c models.Client) string {
+func (g *OpaqueAccessTokenGenerator) genToken(ctx context.Context, grantType string, c models.Client) (string, error) {
 	if fn := g.randStringGenerator; fn != nil {
 		return fn(ctx, grantType, c)
 	}
 
-	randStr, _ := utils.GenerateRandString(g.tokenLength, utils.SecretCharset)
-	return randStr
+	if g.tokenLength < 1 {
+		return "", ErrInvalidTokenLength
+	}
+
+	return utils.GenerateRandString(g.tokenLength, utils.SecretCharset)
 }

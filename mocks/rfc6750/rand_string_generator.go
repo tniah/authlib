@@ -23,7 +23,7 @@ func (_m *MockRandStringGenerator) EXPECT() *MockRandStringGenerator_Expecter {
 }
 
 // Execute provides a mock function with given fields: ctx, grantType, client
-func (_m *MockRandStringGenerator) Execute(ctx context.Context, grantType string, client models.Client) string {
+func (_m *MockRandStringGenerator) Execute(ctx context.Context, grantType string, client models.Client) (string, error) {
 	ret := _m.Called(ctx, grantType, client)
 
 	if len(ret) == 0 {
@@ -37,7 +37,14 @@ func (_m *MockRandStringGenerator) Execute(ctx context.Context, grantType string
 		r0 = ret.Get(0).(string)
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string, models.Client) error); ok {
+		r1 = rf(ctx, grantType, client)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // MockRandStringGenerator_Execute_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Execute'
@@ -60,12 +67,12 @@ func (_c *MockRandStringGenerator_Execute_Call) Run(run func(ctx context.Context
 	return _c
 }
 
-func (_c *MockRandStringGenerator_Execute_Call) Return(_a0 string) *MockRandStringGenerator_Execute_Call {
-	_c.Call.Return(_a0)
+func (_c *MockRandStringGenerator_Execute_Call) Return(_a0 string, _a1 error) *MockRandStringGenerator_Execute_Call {
+	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockRandStringGenerator_Execute_Call) RunAndReturn(run func(context.Context, string, models.Client) string) *MockRandStringGenerator_Execute_Call {
+func (_c *MockRandStringGenerator_Execute_Call) RunAndReturn(run func(context.Context, string, models.Client) (string, error)) *MockRandStringGenerator_Execute_Call {
 	_c.Call.Return(run)
 	return _c
 }
