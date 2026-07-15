@@ -18,7 +18,7 @@ type ProofKeyForCodeExchangeFlow struct {
 // defaults if none are provided. Options are not validated — use Must to
 // validate at construction time.
 func New(opts ...*Options) *ProofKeyForCodeExchangeFlow {
-	if len(opts) > 0 {
+	if len(opts) > 0 && opts[0] != nil {
 		return &ProofKeyForCodeExchangeFlow{opts[0]}
 	}
 
@@ -30,7 +30,7 @@ func New(opts ...*Options) *ProofKeyForCodeExchangeFlow {
 // error if they are invalid.
 func Must(opts ...*Options) (*ProofKeyForCodeExchangeFlow, error) {
 	o := NewOptions()
-	if len(opts) > 0 {
+	if len(opts) > 0 && opts[0] != nil {
 		o = opts[0]
 	}
 
@@ -99,11 +99,17 @@ func (f *ProofKeyForCodeExchangeFlow) ValidateTokenRequest(r *requests.TokenRequ
 // ProcessAuthorizationCode stores the PKCE parameters from the authorization
 // request into the authorization code before it is persisted.
 func (f *ProofKeyForCodeExchangeFlow) ProcessAuthorizationCode(r *requests.AuthorizationRequest, authCode models.AuthorizationCode, params map[string]any) error {
+	if utils.IsNil(authCode) {
+		return autherrors.InvalidRequestError().WithDescription("missing authorization code")
+	}
+
 	authCode.SetCodeChallenge(r.CodeChallenge)
 	authCode.SetCodeChallengeMethod(r.CodeChallengeMethod)
 	return nil
 }
 
+// validateCodeVerifier dispatches to the appropriate challenge verifier based
+// on the code_challenge_method. Returns false for unknown methods.
 func (f *ProofKeyForCodeExchangeFlow) validateCodeVerifier(m types.CodeChallengeMethod, verifier, challenge string) bool {
 	if m.IsS256() {
 		return f.validateS256Challenge(verifier, challenge)
@@ -116,10 +122,13 @@ func (f *ProofKeyForCodeExchangeFlow) validateCodeVerifier(m types.CodeChallenge
 	return false
 }
 
+// validatePlainChallenge verifies a plain code_challenge by direct comparison.
 func (f *ProofKeyForCodeExchangeFlow) validatePlainChallenge(verifier, challenge string) bool {
 	return verifier == challenge
 }
 
+// validateS256Challenge verifies an S256 code_challenge by hashing the
+// verifier and comparing it to the stored challenge.
 func (f *ProofKeyForCodeExchangeFlow) validateS256Challenge(verifier, challenge string) bool {
 	return CreateS256CodeChallenge(verifier) == challenge
 }
