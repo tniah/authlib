@@ -5,12 +5,18 @@ import (
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/types"
+	"github.com/tniah/authlib/utils"
 )
 
+// ProofKeyForCodeExchangeFlow implements PKCE (RFC 7636) as an extension for
+// the Authorization Code grant. Register it via cfg.RegisterExtension.
 type ProofKeyForCodeExchangeFlow struct {
 	*Options
 }
 
+// New returns a ProofKeyForCodeExchangeFlow with the given Options, or secure
+// defaults if none are provided. Options are not validated — use Must to
+// validate at construction time.
 func New(opts ...*Options) *ProofKeyForCodeExchangeFlow {
 	if len(opts) > 0 {
 		return &ProofKeyForCodeExchangeFlow{opts[0]}
@@ -20,16 +26,24 @@ func New(opts ...*Options) *ProofKeyForCodeExchangeFlow {
 	return &ProofKeyForCodeExchangeFlow{defaultOpts}
 }
 
+// Must is like New but calls Validate on the resolved Options and returns an
+// error if they are invalid.
 func Must(opts ...*Options) (*ProofKeyForCodeExchangeFlow, error) {
+	o := NewOptions()
 	if len(opts) > 0 {
-		if err := opts[0].ValidateOptions(); err != nil {
-			return nil, err
-		}
+		o = opts[0]
 	}
 
-	return New(opts...), nil
+	if err := o.Validate(); err != nil {
+		return nil, err
+	}
+
+	return &ProofKeyForCodeExchangeFlow{o}, nil
 }
 
+// ValidateAuthorizationRequest checks that the PKCE parameters in the
+// authorization request are well-formed. It is a no-op when neither
+// code_challenge nor code_challenge_method is present.
 func (f *ProofKeyForCodeExchangeFlow) ValidateAuthorizationRequest(r *requests.AuthorizationRequest) error {
 	if r.CodeChallenge == "" && r.CodeChallengeMethod.IsEmpty() {
 		return nil
@@ -40,15 +54,21 @@ func (f *ProofKeyForCodeExchangeFlow) ValidateAuthorizationRequest(r *requests.A
 	}
 
 	if !r.CodeChallengeMethod.IsEmpty() && !r.CodeChallengeMethod.IsS256() && !r.CodeChallengeMethod.IsPlain() {
-		return autherrors.InvalidRequestError().WithDescription("Unsupported \"code_challenge_method\"")
+		return autherrors.InvalidRequestError().WithDescription("unsupported \"code_challenge_method\"")
 	}
 
 	return nil
 }
 
+// ValidateTokenRequest verifies the code_verifier against the stored
+// code_challenge. It enforces PKCE for public clients when required is true.
 func (f *ProofKeyForCodeExchangeFlow) ValidateTokenRequest(r *requests.TokenRequest) error {
 	if f.required && r.ClientAuthMethod.IsNone() && r.CodeVerifier == "" {
 		return autherrors.InvalidRequestError().WithDescription("missing \"code_verifier\" in request")
+	}
+
+	if utils.IsNil(r.AuthCode) {
+		return autherrors.InvalidRequestError().WithDescription("missing authorization code")
 	}
 
 	challenge := r.AuthCode.GetCodeChallenge()
@@ -70,13 +90,15 @@ func (f *ProofKeyForCodeExchangeFlow) ValidateTokenRequest(r *requests.TokenRequ
 	}
 
 	if valid := f.validateCodeVerifier(method, r.CodeVerifier, challenge); !valid {
-		return autherrors.InvalidGrantError().WithDescription("Code verifier validation failed")
+		return autherrors.InvalidGrantError().WithDescription("code verifier validation failed")
 	}
 
 	return nil
 }
 
-func (f *ProofKeyForCodeExchangeFlow) ProcessAuthorizationCode(r *requests.AuthorizationRequest, authCode models.AuthorizationCode, params map[string]interface{}) error {
+// ProcessAuthorizationCode stores the PKCE parameters from the authorization
+// request into the authorization code before it is persisted.
+func (f *ProofKeyForCodeExchangeFlow) ProcessAuthorizationCode(r *requests.AuthorizationRequest, authCode models.AuthorizationCode, params map[string]any) error {
 	authCode.SetCodeChallenge(r.CodeChallenge)
 	authCode.SetCodeChallengeMethod(r.CodeChallengeMethod)
 	return nil

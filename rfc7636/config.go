@@ -41,7 +41,9 @@ func (opts *Options) SetDefaultCodeChallengeMethod(m types.CodeChallengeMethod) 
 	return opts
 }
 
-func (opts *Options) ValidateOptions() error {
+// Validate checks that Options is consistent. It returns
+// ErrMissingDefaultCodeChallengeMethod when no default challenge method is set.
+func (opts *Options) Validate() error {
 	if opts.defaultCodeChallengeMethod.IsEmpty() {
 		return ErrMissingDefaultCodeChallengeMethod
 	}
