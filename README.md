@@ -12,18 +12,18 @@ A modular OAuth 2.0 / OpenID Connect server library for Go, structured around RF
 go get github.com/tniah/authlib
 ```
 
-## Features
+## Supported Specifications
 
-| Specification | Package | Description |
-|---------------|---------|-------------|
-| RFC 6749 §4.1 | `rfc6749/authorization_code` | Authorization Code Grant |
-| RFC 6749 §4.3 | `rfc6749/ropc` | Resource Owner Password Credentials |
-| RFC 6749 §6 | `rfc6749/refresh_token` | Refresh Token Grant |
-| RFC 6750 | `rfc6750` | Bearer Token (opaque access + refresh tokens) |
-| RFC 7636 | `rfc7636` | PKCE (Proof Key for Code Exchange) |
-| RFC 7662 | `rfc7662` | Token Introspection |
-| RFC 9068 | `rfc9068` | JWT Access Tokens |
-| OpenID Connect | `oidc/core/authorization_code` | ID Token generation |
+| Specification  | Package                          | Description                              |
+|----------------|----------------------------------|------------------------------------------|
+| RFC 6749 §4.1  | `rfc6749/authorization_code`     | Authorization Code Grant                 |
+| RFC 6749 §4.3  | `rfc6749/ropc`                   | Resource Owner Password Credentials      |
+| RFC 6749 §2.3  | `rfc6749/client_authentication`  | Client authentication (`client_secret_basic`, `client_secret_post`, `none`)|
+| RFC 6750       | `rfc6750`                        | Bearer Token (opaque access + refresh)   |
+| RFC 7636       | `rfc7636`                        | PKCE (Proof Key for Code Exchange)       |
+| RFC 7662       | `rfc7662`                        | Token Introspection                      |
+| RFC 9068       | `rfc9068`                        | JWT Access Tokens                        |
+| OpenID Connect | `oidc/core/authorization_code`   | ID Token generation                      |
 
 ## Architecture
 
@@ -38,15 +38,15 @@ srv.RegisterGrant(ropcFlow)
 srv.RegisterEndpoint(introspectionFlow)
 
 // In your HTTP handlers:
-srv.CreateAuthorizationResponse(r, w, user)   // /authorize
-srv.CreateConsentResponse(r, w, user)          // /authorize (consent step)
-srv.CreateTokenResponse(r, w)                  // /token
-srv.EndpointResponse(r, w, "introspection")   // /introspect
+srv.CreateAuthorizationResponse(r, w, user)  // GET  /authorize
+srv.CreateConsentResponse(r, w, user)         // POST /authorize (consent step)
+srv.CreateTokenResponse(r, w)                 // POST /token
+srv.EndpointResponse(r, w, "introspection")  // POST /introspect
 ```
 
 ### Grant Flow Pattern
 
-Each flow follows the same `Config` + `Flow` pattern:
+Every flow follows the same `Config` + `Flow` pattern:
 
 ```go
 // 1. Build config
@@ -59,7 +59,7 @@ cfg := authorizationcode.NewConfig().
 cfg.RegisterExtension(pkceFlow)
 cfg.RegisterExtension(oidcFlow)
 
-// 3. Instantiate (validates config)
+// 3. Instantiate — validates config, fails fast on missing dependencies
 flow, err := authorizationcode.Must(cfg)
 
 // 4. Register with server
@@ -68,26 +68,17 @@ srv.RegisterGrant(flow)
 
 ### Extension System
 
-A single object can implement multiple extension interfaces and be registered once. Extensions are executed in registration order.
+A single object can implement multiple extension interfaces and be registered once via `RegisterExtension`. Extensions are called in registration order.
 
-```go
-type MyExtension struct{}
+| Interface                      | Called when                          |
+|--------------------------------|--------------------------------------|
+| `AuthorizationRequestValidator`| Validating `/authorize` request      |
+| `ConsentRequestValidator`      | Validating the consent step          |
+| `AuthCodeProcessor`            | Before saving the authorization code |
+| `TokenRequestValidator`        | Validating `/token` request          |
+| `TokenProcessor`               | Before writing the token response    |
 
-func (e *MyExtension) ValidateAuthorizationRequest(r *requests.AuthorizationRequest) error { ... }
-func (e *MyExtension) ValidateTokenRequest(r *requests.TokenRequest) error { ... }
-
-cfg.RegisterExtension(&MyExtension{})
-```
-
-Extension interfaces per flow:
-
-| Interface | Called when |
-|-----------|-------------|
-| `AuthorizationRequestValidator` | Validating `/authorize` request |
-| `ConsentRequestValidator` | Validating consent step |
-| `AuthCodeProcessor` | Before saving authorization code |
-| `TokenRequestValidator` | Validating `/token` request |
-| `TokenProcessor` | Before sending token response |
+PKCE (`rfc7636`) and OIDC (`oidc/core/authorization_code`) are implemented as extensions and plug into the Authorization Code flow via `RegisterExtension`.
 
 ## Usage
 
@@ -101,7 +92,7 @@ import (
     oidcflow "github.com/tniah/authlib/oidc/core/authorization_code"
 )
 
-// PKCE (S256 by default, per RFC 9700)
+// PKCE — S256 enforced by default (RFC 9700)
 pkce := rfc7636.New()
 
 // OIDC ID Token
@@ -133,6 +124,7 @@ import "github.com/tniah/authlib/rfc9068"
 jwtGen, _ := rfc9068.MustJWTAccessTokenGenerator(
     rfc9068.NewGeneratorConfig().
         SetIssuer("https://auth.example.com").
+        SetAudience("https://api.example.com").
         SetSigningKey(privateKey, jwt.SigningMethodRS256, "key-1"),
 )
 ```
@@ -163,35 +155,25 @@ srv.RegisterErrorHandler(func(r *http.Request, w http.ResponseWriter, err error)
 })
 ```
 
-## Implementing Required Interfaces
+## Models
 
-Implement the interfaces in the `models` package with your own data layer:
+Implement the interfaces in the `models` package with your own data layer. See [`models/README.md`](models/README.md) for the full interface reference and [`integrations/sql/`](integrations/sql/) for example SQL-backed implementations.
 
-```go
-// models.Client — your OAuth2 client entity
-type Client interface {
-    GetClientID() string
-    CheckClientSecret(secret string) bool
-    CheckGrantType(gt types.GrantType) bool
-    CheckRedirectURI(uri string) bool
-    GetAllowedScopes(scopes types.Scopes) types.Scopes
-    // ...
-}
+## Package Documentation
 
-// models.Token — your access/refresh token entity
-type Token interface {
-    GetAccessToken() string
-    GetRefreshToken() string
-    GetUserID() string
-    GetClientID() string
-    GetScopes() types.Scopes
-    GetIssuedAt() time.Time
-    GetAccessTokenExpiresIn() time.Duration
-    // ...
-}
-```
-
-See `integrations/sql/` for example SQL-based implementations.
+| Package                                                                 | README                                                                   |
+|-------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| `rfc6749/authorization_code`                                            | [README](rfc6749/authorization_code/README.md)                           |
+| `rfc6749/ropc`                                                          | [README](rfc6749/ropc/README.md)                                         |
+| `rfc6749/client_authentication`                                         | [README](rfc6749/client_authentication/README.md)                        |
+| `rfc6749/code_generator`                                                | [README](rfc6749/code_generator/README.md)                               |
+| `rfc6750`                                                               | [README](rfc6750/README.md)                                              |
+| `rfc7636`                                                               | [README](rfc7636/README.md)                                              |
+| `rfc7662`                                                               | [README](rfc7662/README.md)                                              |
+| `rfc9068`                                                               | [README](rfc9068/README.md)                                              |
+| `models`                                                                | [README](models/README.md)                                               |
+| `integrations/sql`                                                      | [README](integrations/sql/README.md)                                     |
+| `utils`                                                                 | [README](utils/README.md)                                                |
 
 ## Running Tests
 
