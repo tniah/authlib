@@ -15,8 +15,7 @@ type ProofKeyForCodeExchangeFlow struct {
 }
 
 // New returns a ProofKeyForCodeExchangeFlow with the given Options, or secure
-// defaults if none are provided. Options are not validated — use Must to
-// validate at construction time.
+// defaults if none are provided.
 func New(opts ...*Options) *ProofKeyForCodeExchangeFlow {
 	if len(opts) > 0 && opts[0] != nil {
 		return &ProofKeyForCodeExchangeFlow{opts[0]}
@@ -26,25 +25,17 @@ func New(opts ...*Options) *ProofKeyForCodeExchangeFlow {
 	return &ProofKeyForCodeExchangeFlow{defaultOpts}
 }
 
-// Must is like New but calls Validate on the resolved Options and returns an
-// error if they are invalid.
-func Must(opts ...*Options) (*ProofKeyForCodeExchangeFlow, error) {
-	o := NewOptions()
-	if len(opts) > 0 && opts[0] != nil {
-		o = opts[0]
-	}
-
-	if err := o.Validate(); err != nil {
-		return nil, err
-	}
-
-	return &ProofKeyForCodeExchangeFlow{o}, nil
-}
-
 // ValidateAuthorizationRequest checks that the PKCE parameters in the
 // authorization request are well-formed. It is a no-op when neither
-// code_challenge nor code_challenge_method is present.
+// code_challenge nor code_challenge_method is present, unless PKCE is required
+// for the requesting client (RFC 7636 §4.4.1).
 func (f *ProofKeyForCodeExchangeFlow) ValidateAuthorizationRequest(r *requests.AuthorizationRequest) error {
+	// RFC 7636 §4.4.1: if PKCE is required and the client is public (none auth
+	// method), code_challenge MUST be present in the authorization request.
+	if f.required && !utils.IsNil(r.Client) && r.Client.IsPublic() && r.CodeChallenge == "" {
+		return autherrors.InvalidRequestError().WithDescription("this server requires public clients to use PKCE; \"code_challenge\" is missing from the request")
+	}
+
 	if r.CodeChallenge == "" && r.CodeChallengeMethod.IsEmpty() {
 		return nil
 	}
@@ -57,13 +48,32 @@ func (f *ProofKeyForCodeExchangeFlow) ValidateAuthorizationRequest(r *requests.A
 		return autherrors.InvalidRequestError().WithDescription("unsupported \"code_challenge_method\"")
 	}
 
+	method := r.CodeChallengeMethod
+	if method.IsEmpty() {
+		method = types.CodeChallengeMethodPlain
+	}
+
+	if method.IsPlain() && !f.allowPlain {
+		return autherrors.InvalidRequestError().WithDescription("\"plain\" code_challenge_method is not allowed; use S256")
+	}
+
+	if method.IsS256() {
+		if !ValidateS256CodeChallengePattern(r.CodeChallenge) {
+			return autherrors.InvalidRequestError().WithDescription("\"code_challenge\" is not a valid S256 challenge")
+		}
+	} else if method.IsPlain() {
+		if !ValidateCodeVerifierPattern(r.CodeChallenge) {
+			return autherrors.InvalidRequestError().WithDescription("\"code_challenge\" does not match plain pattern")
+		}
+	}
+
 	return nil
 }
 
 // ValidateTokenRequest verifies the code_verifier against the stored
 // code_challenge. It enforces PKCE for public clients when required is true.
 func (f *ProofKeyForCodeExchangeFlow) ValidateTokenRequest(r *requests.TokenRequest) error {
-	if f.required && r.ClientAuthMethod.IsNone() && r.CodeVerifier == "" {
+	if f.required && !utils.IsNil(r.Client) && r.Client.IsPublic() && r.CodeVerifier == "" {
 		return autherrors.InvalidRequestError().WithDescription("missing \"code_verifier\" in request")
 	}
 
@@ -86,7 +96,15 @@ func (f *ProofKeyForCodeExchangeFlow) ValidateTokenRequest(r *requests.TokenRequ
 
 	method := r.AuthCode.GetCodeChallengeMethod()
 	if method.IsEmpty() {
-		method = f.defaultCodeChallengeMethod
+		// ProcessAuthorizationCode always stores the method explicitly.
+		// An empty method means either the auth code was issued without PKCE
+		// (challenge also empty) or the stored data has been tampered with
+		// (challenge present but method stripped). Reject both to prevent a
+		// downgrade attack (RFC 7636 Security Considerations).
+		if challenge == "" {
+			return autherrors.InvalidGrantError().WithDescription("\"code_verifier\" was sent but the authorization code was not issued with a \"code_challenge\"")
+		}
+		return autherrors.InvalidGrantError().WithDescription("authorization code is invalid: \"code_challenge_method\" is missing")
 	}
 
 	if valid := f.validateCodeVerifier(method, r.CodeVerifier, challenge); !valid {
@@ -98,13 +116,25 @@ func (f *ProofKeyForCodeExchangeFlow) ValidateTokenRequest(r *requests.TokenRequ
 
 // ProcessAuthorizationCode stores the PKCE parameters from the authorization
 // request into the authorization code before it is persisted.
+//
+// When code_challenge is present but code_challenge_method is absent, the
+// method is stored explicitly as "plain" per RFC 7636 §4.3. Storing an
+// explicit value prevents a silent downgrade at token validation time if the
+// stored method were ever missing.
 func (f *ProofKeyForCodeExchangeFlow) ProcessAuthorizationCode(r *requests.AuthorizationRequest, authCode models.AuthorizationCode, params map[string]any) error {
 	if utils.IsNil(authCode) {
 		return autherrors.InvalidRequestError().WithDescription("missing authorization code")
 	}
 
 	authCode.SetCodeChallenge(r.CodeChallenge)
-	authCode.SetCodeChallengeMethod(r.CodeChallengeMethod)
+
+	method := r.CodeChallengeMethod
+	if method.IsEmpty() && r.CodeChallenge != "" {
+		// RFC 7636 §4.3: default to plain when omitted by the client.
+		// Store explicitly so token validation never needs to guess.
+		method = types.CodeChallengeMethodPlain
+	}
+	authCode.SetCodeChallengeMethod(method)
 	return nil
 }
 

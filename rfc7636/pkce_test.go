@@ -22,7 +22,7 @@ func TestNew(t *testing.T) {
 		f := New()
 		assert.NotNil(t, f)
 		assert.True(t, f.required)
-		assert.Equal(t, types.CodeChallengeMethodS256, f.defaultCodeChallengeMethod)
+		assert.True(t, f.allowPlain)
 	})
 
 	t.Run("with_opts", func(t *testing.T) {
@@ -38,40 +38,29 @@ func TestNew(t *testing.T) {
 	})
 }
 
-func TestMust(t *testing.T) {
-	t.Run("no_opts_uses_defaults", func(t *testing.T) {
-		f, err := Must()
-		require.NoError(t, err)
-		assert.NotNil(t, f)
-		assert.True(t, f.required)
-	})
-
-	t.Run("with_valid_opts", func(t *testing.T) {
-		opts := NewOptions().SetRequired(false)
-		f, err := Must(opts)
-		require.NoError(t, err)
-		assert.False(t, f.required)
-	})
-
-	t.Run("nil_opts_uses_defaults", func(t *testing.T) {
-		f, err := Must(nil)
-		require.NoError(t, err)
-		assert.NotNil(t, f)
-	})
-
-	t.Run("error_when_method_empty", func(t *testing.T) {
-		opts := NewOptions().SetDefaultCodeChallengeMethod("")
-		f, err := Must(opts)
-		assert.ErrorIs(t, err, ErrMissingDefaultCodeChallengeMethod)
-		assert.Nil(t, f)
-	})
-}
-
 func TestProofKeyForCodeExchangeFlow_ValidateAuthorizationRequest(t *testing.T) {
 	f := New()
 
 	t.Run("no_pkce_params_skips", func(t *testing.T) {
 		r := &requests.AuthorizationRequest{}
+		assert.NoError(t, f.ValidateAuthorizationRequest(r))
+	})
+
+	t.Run("required_public_client_missing_challenge", func(t *testing.T) {
+		// RFC 7636 §4.4.1: public client MUST send code_challenge when required=true.
+		r := &requests.AuthorizationRequest{
+			Client: &sql.Client{TokenEndpointAuthMethod: string(types.ClientNoneAuthentication)},
+		}
+		err := f.ValidateAuthorizationRequest(r)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "this server requires public clients to use PKCE")
+	})
+
+	t.Run("required_confidential_client_no_challenge_skips", func(t *testing.T) {
+		// Non-public clients are not forced to use PKCE.
+		r := &requests.AuthorizationRequest{
+			Client: &sql.Client{TokenEndpointAuthMethod: string(types.ClientBasicAuthentication)},
+		}
 		assert.NoError(t, f.ValidateAuthorizationRequest(r))
 	})
 
@@ -111,10 +100,53 @@ func TestProofKeyForCodeExchangeFlow_ValidateAuthorizationRequest(t *testing.T) 
 	})
 
 	t.Run("valid_challenge_without_method", func(t *testing.T) {
+		// No method → defaults to plain; testChallenge passes plain pattern.
 		r := &requests.AuthorizationRequest{
-			CodeChallenge: testChallenge,
+			CodeChallenge: testVerifier,
 		}
 		assert.NoError(t, f.ValidateAuthorizationRequest(r))
+	})
+
+	t.Run("invalid_s256_challenge_format", func(t *testing.T) {
+		r := &requests.AuthorizationRequest{
+			CodeChallenge:       "not-a-valid-s256-challenge",
+			CodeChallengeMethod: types.CodeChallengeMethodS256,
+		}
+		err := f.ValidateAuthorizationRequest(r)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "code_challenge")
+	})
+
+	t.Run("invalid_plain_challenge_format", func(t *testing.T) {
+		r := &requests.AuthorizationRequest{
+			CodeChallenge:       "too-short",
+			CodeChallengeMethod: types.CodeChallengeMethodPlain,
+		}
+		err := f.ValidateAuthorizationRequest(r)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "code_challenge")
+	})
+
+	t.Run("plain_rejected_when_not_allowed", func(t *testing.T) {
+		fS256Only := New(NewOptions().SetAllowPlain(false))
+		r := &requests.AuthorizationRequest{
+			CodeChallenge:       testVerifier,
+			CodeChallengeMethod: types.CodeChallengeMethodPlain,
+		}
+		err := fS256Only.ValidateAuthorizationRequest(r)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "plain")
+	})
+
+	t.Run("plain_rejected_when_not_allowed_and_method_omitted", func(t *testing.T) {
+		// Omitting method defaults to plain — also rejected when allowPlain=false.
+		fS256Only := New(NewOptions().SetAllowPlain(false))
+		r := &requests.AuthorizationRequest{
+			CodeChallenge: testVerifier,
+		}
+		err := fS256Only.ValidateAuthorizationRequest(r)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "plain")
 	})
 }
 
@@ -123,7 +155,7 @@ func TestProofKeyForCodeExchangeFlow_ValidateTokenRequest(t *testing.T) {
 
 	t.Run("required_public_client_no_verifier", func(t *testing.T) {
 		r := &requests.TokenRequest{
-			ClientAuthMethod: types.ClientNoneAuthentication,
+			Client: &sql.Client{TokenEndpointAuthMethod: string(types.ClientNoneAuthentication)},
 		}
 		err := f.ValidateTokenRequest(r)
 		require.Error(t, err)
@@ -220,16 +252,32 @@ func TestProofKeyForCodeExchangeFlow_ValidateTokenRequest(t *testing.T) {
 		assert.Contains(t, err.Error(), "code verifier")
 	})
 
-	t.Run("empty_method_falls_back_to_default_s256", func(t *testing.T) {
+	t.Run("verifier_sent_but_no_challenge_in_auth_code", func(t *testing.T) {
+		// Auth code was issued without PKCE but client sends code_verifier — reject.
+		r := &requests.TokenRequest{
+			ClientAuthMethod: types.ClientBasicAuthentication,
+			AuthCode:         &sql.AuthorizationCode{},
+			CodeVerifier:     testVerifier,
+		}
+		err := f.ValidateTokenRequest(r)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "authorization code was not issued with a \"code_challenge\"")
+	})
+
+	t.Run("empty_stored_method_with_challenge_is_rejected", func(t *testing.T) {
+		// ProcessAuthorizationCode always stores method explicitly, so an empty
+		// stored method with a non-empty challenge indicates tampering — reject.
 		r := &requests.TokenRequest{
 			ClientAuthMethod: types.ClientBasicAuthentication,
 			AuthCode: &sql.AuthorizationCode{
-				CodeChallenge: testChallenge,
-				// CodeChallengeMethod intentionally empty — should fall back to S256
+				CodeChallenge: testVerifier,
+				// CodeChallengeMethod intentionally empty (simulates tampering)
 			},
 			CodeVerifier: testVerifier,
 		}
-		assert.NoError(t, f.ValidateTokenRequest(r))
+		err := f.ValidateTokenRequest(r)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "\"code_challenge_method\" is missing")
 	})
 }
 
@@ -256,5 +304,18 @@ func TestProofKeyForCodeExchangeFlow_ProcessAuthorizationCode(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, testChallenge, authCode.GetCodeChallenge())
 		assert.Equal(t, types.CodeChallengeMethodS256, authCode.GetCodeChallengeMethod())
+	})
+
+	t.Run("stores_plain_when_method_omitted", func(t *testing.T) {
+		// RFC 7636 §4.3: default is plain when code_challenge_method is absent.
+		// ProcessAuthorizationCode must store it explicitly to prevent downgrade.
+		r := &requests.AuthorizationRequest{
+			CodeChallenge: testVerifier,
+			// CodeChallengeMethod intentionally empty
+		}
+		authCode := &sql.AuthorizationCode{}
+		err := f.ProcessAuthorizationCode(r, authCode, nil)
+		require.NoError(t, err)
+		assert.Equal(t, types.CodeChallengeMethodPlain, authCode.GetCodeChallengeMethod())
 	})
 }

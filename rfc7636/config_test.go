@@ -4,13 +4,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tniah/authlib/types"
 )
 
 func TestNewOptions(t *testing.T) {
 	opts := NewOptions()
 	assert.True(t, opts.required)
-	assert.Equal(t, types.CodeChallengeMethodS256, opts.defaultCodeChallengeMethod)
+	assert.True(t, opts.allowPlain)
 }
 
 func TestOptions_SetRequired(t *testing.T) {
@@ -29,29 +28,18 @@ func TestOptions_SetRequired(t *testing.T) {
 	})
 }
 
-func TestOptions_SetDefaultCodeChallengeMethod(t *testing.T) {
-	t.Run("sets_s256", func(t *testing.T) {
+func TestOptions_SetAllowPlain(t *testing.T) {
+	t.Run("sets_true", func(t *testing.T) {
 		opts := NewOptions()
-		result := opts.SetDefaultCodeChallengeMethod(types.CodeChallengeMethodS256)
+		result := opts.SetAllowPlain(true)
 		assert.Equal(t, opts, result)
-		assert.Equal(t, types.CodeChallengeMethodS256, opts.defaultCodeChallengeMethod)
+		assert.True(t, opts.allowPlain)
 	})
 
-	t.Run("sets_plain", func(t *testing.T) {
+	t.Run("sets_false", func(t *testing.T) {
 		opts := NewOptions()
-		result := opts.SetDefaultCodeChallengeMethod(types.CodeChallengeMethodPlain)
+		result := opts.SetAllowPlain(false)
 		assert.Equal(t, opts, result)
-		assert.Equal(t, types.CodeChallengeMethodPlain, opts.defaultCodeChallengeMethod)
-	})
-}
-
-func TestOptions_Validate(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
-		assert.NoError(t, NewOptions().Validate())
-	})
-
-	t.Run("error_when_method_empty", func(t *testing.T) {
-		opts := NewOptions().SetDefaultCodeChallengeMethod("")
-		assert.ErrorIs(t, opts.Validate(), ErrMissingDefaultCodeChallengeMethod)
+		assert.False(t, opts.allowPlain)
 	})
 }

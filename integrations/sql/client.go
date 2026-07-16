@@ -149,3 +149,7 @@ func (c *Client) CheckTokenEndpointAuthMethod(method types.ClientAuthMethod, end
 func (c *Client) CheckClientSecret(secret string) bool {
 	return subtle.ConstantTimeCompare([]byte(c.ClientSecret), []byte(secret)) == 1
 }
+
+func (c *Client) IsPublic() bool {
+	return c.TokenEndpointAuthMethod == string(types.ClientNoneAuthentication)
+}
