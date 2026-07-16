@@ -30,7 +30,7 @@ func New(cfg *Config) *Flow {
 	return &Flow{Config: cfg}
 }
 
-// Must create a Flow and returns an error if the config is incomplete.
+// Must returns a validated Flow or an error if the config is incomplete.
 func Must(cfg *Config) (*Flow, error) {
 	if err := cfg.ValidateConfig(); err != nil {
 		return nil, err
@@ -152,7 +152,7 @@ func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 	}
 
 	if utils.IsNil(client) {
-		return autherrors.InvalidClientError().WithCause(err)
+		return autherrors.InvalidClientError()
 	}
 
 	// Verify the client is explicitly permitted to use the password grant.
@@ -181,9 +181,11 @@ func (f *Flow) validateScope(r *requests.TokenRequest) error {
 	return nil
 }
 
-// authenticateUser delegates to UserManager.Authenticate. Both a nil user and
-// an error from the manager are reported as invalid_grant with a generic
-// message to avoid leaking whether the username exists (RFC 6749 §4.3.2).
+// authenticateUser delegates to UserManager.Authenticate. When the manager
+// returns a nil user (credentials invalid), the flow responds with a generic
+// invalid_grant message to avoid leaking whether the username exists
+// (RFC 6749 §4.3.2). Errors from the manager are returned as-is; the
+// UserManager implementation is responsible for not leaking internal details.
 func (f *Flow) authenticateUser(r *requests.TokenRequest) error {
 	user, err := f.userMgr.Authenticate(r.Username, r.Password, r.Client, r.Request)
 	if err != nil {
@@ -192,7 +194,7 @@ func (f *Flow) authenticateUser(r *requests.TokenRequest) error {
 
 	if utils.IsNil(user) {
 		// Return a generic message to avoid leaking whether the username exists.
-		return autherrors.InvalidGrantError().WithDescription("Username or password is incorrect").WithCause(err)
+		return autherrors.InvalidGrantError().WithDescription("Username or password is incorrect")
 	}
 
 	r.User = user
