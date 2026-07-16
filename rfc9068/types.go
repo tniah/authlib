@@ -13,6 +13,12 @@ import (
 // Use this for multi-tenant setups where the issuer varies per client.
 type IssuerGenerator func(ctx context.Context, client models.Client) string
 
+// AudienceGenerator returns the audience (aud) claim value for the given client.
+// The audience identifies the resource server(s) that will accept the token
+// (RFC 9068 §2.2). Use this when the target resource server varies per client
+// or per request.
+type AudienceGenerator func(ctx context.Context, client models.Client) string
+
 // ExpiresInGenerator returns the token lifetime for the given grant type and
 // client. Use this to apply per-client or per-grant expiry policies.
 type ExpiresInGenerator func(ctx context.Context, grantType string, client models.Client) time.Duration

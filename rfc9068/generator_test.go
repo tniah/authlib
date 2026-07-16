@@ -16,6 +16,7 @@ import (
 func TestJWTAccessTokenGenerator(t *testing.T) {
 	cfg := NewGeneratorConfig().
 		SetIssuer("https://example.com").
+		SetAudience("https://api.example.com").
 		SetSigningKey([]byte("my-secret-key"), jwt.SigningMethodHS256, "my-kid-id").
 		SetExpiresIn(time.Hour * 24)
 

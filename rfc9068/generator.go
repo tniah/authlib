@@ -8,10 +8,19 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	autherrors "github.com/tniah/authlib/errors"
 	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/requests"
 	"github.com/tniah/authlib/utils"
 )
+
+// protectedClaims is the set of standard RFC 9068 claim names that
+// ExtraClaimGenerator is not allowed to override.
+var protectedClaims = map[string]bool{
+	"iss": true, "sub": true, "aud": true,
+	"exp": true, "iat": true, "jti": true,
+	"client_id": true, "scope": true,
+}
 
 // ErrNilClient is returned by Generate when the token request carries no client.
 var ErrNilClient = errors.New("client is nil")
@@ -84,7 +93,7 @@ func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.Token
 	claims := utils.JWTClaim{
 		"iss":       g.issuerHandler(ctx, client),
 		"exp":       jwt.NewNumericDate(issuedAt.Add(expiresIn)),
-		"aud":       clientID,
+		"aud":       g.audienceHandler(ctx, client),
 		"client_id": clientID,
 		"iat":       jwt.NewNumericDate(issuedAt),
 		"jti":       jwtID,
@@ -96,20 +105,32 @@ func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.Token
 		claims["sub"] = clientID
 	}
 
+	if len(allowedScopes) > 0 {
+		claims["scope"] = strings.Join(allowedScopes.String(), " ")
+	}
+
 	if fn := g.extraClaimGenerator; fn != nil {
 		extraClaims, err := fn(ctx, r.GrantType.String(), client, r.User, allowedScopes)
 		if err != nil {
 			return err
 		}
 
+		// Skip protected standard claims to prevent accidental or malicious override.
 		for k, v := range extraClaims {
-			claims[k] = v
+			if !protectedClaims[k] {
+				claims[k] = v
+			}
 		}
 	}
 
 	signingKey, signingMethod, signingKeyID, err := g.signingKeyHandler(ctx, client)
 	if err != nil {
 		return err
+	}
+
+	// RFC 9068 §2.1: MUST NOT use "none" — guard against signingKeyGenerator returning it.
+	if signingMethod == jwt.SigningMethodNone {
+		return autherrors.ErrInsecureSigningMethod
 	}
 
 	t, err := utils.NewJWTToken(signingKey, signingMethod, signingKeyID)
@@ -134,6 +155,16 @@ func (g *JWTAccessTokenGenerator) issuerHandler(ctx context.Context, client mode
 	}
 
 	return g.issuer
+}
+
+// audienceHandler returns the audience claim. Delegates to AudienceGenerator
+// if set, otherwise returns the static audience from config.
+func (g *JWTAccessTokenGenerator) audienceHandler(ctx context.Context, client models.Client) string {
+	if fn := g.audienceGenerator; fn != nil {
+		return fn(ctx, client)
+	}
+
+	return g.audience
 }
 
 // expiresInHandler returns the token lifetime. Delegates to ExpiresInGenerator

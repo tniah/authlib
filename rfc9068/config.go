@@ -17,6 +17,8 @@ const DefaultExpiresIn = time.Minute * 60
 type GeneratorConfig struct {
 	issuer              string
 	issuerGenerator     IssuerGenerator
+	audience            string
+	audienceGenerator   AudienceGenerator
 	expiresIn           time.Duration
 	expiresInGenerator  ExpiresInGenerator
 	signingKey          []byte
@@ -43,6 +45,21 @@ func (cfg *GeneratorConfig) SetIssuer(iss string) *GeneratorConfig {
 // SetIssuer when set.
 func (cfg *GeneratorConfig) SetIssuerGenerator(fn IssuerGenerator) *GeneratorConfig {
 	cfg.issuerGenerator = fn
+	return cfg
+}
+
+// SetAudience sets the static audience claim (aud). The value should be the
+// resource server identifier (e.g. "https://api.example.com"), per RFC 9068 §2.2.
+// Ignored when SetAudienceGenerator is set.
+func (cfg *GeneratorConfig) SetAudience(aud string) *GeneratorConfig {
+	cfg.audience = aud
+	return cfg
+}
+
+// SetAudienceGenerator registers a per-request audience hook. Takes precedence
+// over SetAudience when set.
+func (cfg *GeneratorConfig) SetAudienceGenerator(fn AudienceGenerator) *GeneratorConfig {
+	cfg.audienceGenerator = fn
 	return cfg
 }
 
@@ -82,8 +99,8 @@ func (cfg *GeneratorConfig) SetSigningKeyGenerator(fn SigningKeyGenerator) *Gene
 
 // SetExtraClaimGenerator registers a hook for adding extra claims to the JWT
 // (e.g. roles, tenant ID). Claims returned by this hook are merged into the
-// standard claim set. Standard claims (iss, sub, aud, exp, iat, jti) cannot
-// be overridden.
+// standard claim set. Protected claims (iss, sub, aud, exp, iat, jti,
+// client_id, scope) are silently skipped and cannot be overridden.
 func (cfg *GeneratorConfig) SetExtraClaimGenerator(fn ExtraClaimGenerator) *GeneratorConfig {
 	cfg.extraClaimGenerator = fn
 	return cfg
@@ -103,6 +120,10 @@ func (cfg *GeneratorConfig) ValidateConfig() error {
 		return autherrors.ErrMissingIssuer
 	}
 
+	if cfg.audience == "" && cfg.audienceGenerator == nil {
+		return autherrors.ErrMissingAudience
+	}
+
 	if cfg.expiresIn == 0 && cfg.expiresInGenerator == nil {
 		return autherrors.ErrMissingExpiresIn
 	}
@@ -113,6 +134,11 @@ func (cfg *GeneratorConfig) ValidateConfig() error {
 
 	if cfg.signingKey != nil && cfg.signingKeyMethod == nil {
 		return autherrors.ErrMissingSigningKeyMethod
+	}
+
+	// RFC 9068 §2.1: JWT access tokens MUST NOT use "none" as the signing algorithm.
+	if cfg.signingKey != nil && cfg.signingKeyMethod == jwt.SigningMethodNone {
+		return autherrors.ErrInsecureSigningMethod
 	}
 
 	return nil
