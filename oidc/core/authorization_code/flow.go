@@ -106,7 +106,7 @@ func (f *Flow) ProcessAuthorizationCode(r *requests.AuthorizationRequest, authCo
 
 // ProcessToken generates an ID Token and adds it to the token response data
 // under the "id_token" key. It is a no-op when the openid scope is absent.
-func (f *Flow) ProcessToken(r *requests.TokenRequest, token models.Token, data map[string]interface{}) error {
+func (f *Flow) ProcessToken(r *requests.TokenRequest, _ models.Token, data map[string]interface{}) error {
 	if isOIDCReq := r.Scopes.ContainOpenID(); !isOIDCReq {
 		return nil
 	}
