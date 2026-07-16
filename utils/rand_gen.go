@@ -5,19 +5,18 @@ import (
 	"math/big"
 )
 
+// Character set variables used as the charset argument to GenerateRandString
+// and GenerateRandRune.
 var (
-	AlphaNum           = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-	Alpha              = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	AlphaLowerNum      = []rune("abcdefghijklmnopqrstuvwxyz0123456789")
-	AlphaUpperNum      = []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-	AlphaLower         = []rune("abcdefghijklmnopqrstuvwxyz")
-	AlphaUpperVowels   = []rune("AEIOUY")
-	AlphaUpperNoVowels = []rune("BCDFGHJKLMNPQRSTVWXZ")
-	AlphaUpper         = []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	Numeric            = []rune("0123456789")
-	SecretCharset      = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_-.~")
+	// AlphaNum contains all ASCII letters and digits.
+	AlphaNum = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+	// SecretCharset contains ASCII letters, digits, and URL-safe special characters
+	// suitable for generating client secrets and opaque tokens.
+	SecretCharset = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_-.~")
 )
 
+// GenerateRandRune returns a cryptographically secure random rune slice of
+// length l drawn from charset.
 func GenerateRandRune(l int, charset []rune) (seq []rune, err error) {
 	c := big.NewInt(int64(len(charset)))
 	seq = make([]rune, l)
@@ -35,6 +34,8 @@ func GenerateRandRune(l int, charset []rune) (seq []rune, err error) {
 	return seq, nil
 }
 
+// GenerateRandString returns a cryptographically secure random string of
+// length l drawn from charset.
 func GenerateRandString(l int, charset []rune) (string, error) {
 	seq, err := GenerateRandRune(l, charset)
 	if err != nil {
