@@ -153,10 +153,7 @@ func (srv *Server) TokenGrant(r *requests.TokenRequest) (TokenGrant, error) {
 // so the caller can proceed to issue the token response. Errors are returned
 // unwrapped; use HandleError to convert them into HTTP responses.
 func (srv *Server) ValidateTokenRequest(hr *http.Request) (TokenGrant, *requests.TokenRequest, error) {
-	r, err := requests.NewTokenRequestFromHttp(hr)
-	if err != nil {
-		return nil, nil, err
-	}
+	r := requests.NewTokenRequestFromHttp(hr)
 
 	grant, err := srv.TokenGrant(r)
 	if err != nil {
