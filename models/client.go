@@ -37,4 +37,10 @@ type Client interface {
 	// stored credential. Implementations must use a constant-time comparison
 	// to prevent timing attacks.
 	CheckClientSecret(secret string) bool
+
+	// IsPublic reports whether this is a public client as defined in
+	// RFC 6749 §2.1. Public clients are applications that cannot securely
+	// store a client secret (e.g. native apps, single-page applications).
+	// They authenticate at the token endpoint using auth method "none".
+	IsPublic() bool
 }
