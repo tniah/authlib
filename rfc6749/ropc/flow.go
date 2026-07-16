@@ -27,7 +27,7 @@ type Flow struct {
 
 // New creates a Flow without validating config. Use Must for production use.
 func New(cfg *Config) *Flow {
-	return &Flow{Config: cfg}
+	return &Flow{Config: cfg, TokenFlowMixin: &rfc6749.TokenFlowMixin{}}
 }
 
 // Must returns a validated Flow or an error if the config is incomplete.

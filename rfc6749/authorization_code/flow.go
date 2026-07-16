@@ -34,10 +34,10 @@ type Flow struct {
 // New creates a Flow from cfg without validating dependencies. Prefer Must for
 // production use to catch missing managers at startup.
 func New(cfg *Config) *Flow {
-	return &Flow{Config: cfg}
+	return &Flow{Config: cfg, TokenFlowMixin: &rfc6749.TokenFlowMixin{}}
 }
 
-// Must create a Flow and returns an error if any required Config dependency
+// Must returns a validated Flow or an error if any required Config dependency
 // is missing. Use this in application startup to fail fast.
 func Must(cfg *Config) (*Flow, error) {
 	if err := cfg.ValidateConfig(); err != nil {
@@ -344,7 +344,7 @@ func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 	}
 
 	if utils.IsNil(cl) {
-		return autherrors.InvalidClientError().WithCause(err)
+		return autherrors.InvalidClientError()
 	}
 
 	r.Client = cl
