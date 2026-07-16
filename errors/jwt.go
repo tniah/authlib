@@ -2,8 +2,7 @@ package errors
 
 import "errors"
 
-// JWT signing config errors shared by rfc9068 (JWT access tokens) and
-// oidc/core/authorization_code (ID tokens).
+// JWT signing configuration errors.
 var (
 	ErrMissingIssuer           = errors.New("\"issuer\" or \"issuerGenerator\" is required")
 	ErrMissingAudience         = errors.New("\"audience\" or \"audienceGenerator\" is required")
