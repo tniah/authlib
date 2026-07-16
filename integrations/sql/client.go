@@ -1,11 +1,18 @@
+// Package sql provides reference implementations of the authlib model
+// interfaces backed by a SQL-friendly struct layout. These types are intended
+// as a starting point; copy and adapt them to match your own database schema.
 package sql
 
 import (
 	"crypto/subtle"
 	"time"
 
+	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/types"
 )
+
+// Compile-time check that *Client implements models.Client.
+var _ models.Client = (*Client)(nil)
 
 type Client struct {
 	ClientName              string    `json:"client_name"`

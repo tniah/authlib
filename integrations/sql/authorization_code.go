@@ -3,8 +3,12 @@ package sql
 import (
 	"time"
 
+	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/types"
 )
+
+// Compile-time check that *AuthorizationCode implements models.ExtendableAuthorizationCode.
+var _ models.ExtendableAuthorizationCode = (*AuthorizationCode)(nil)
 
 type AuthorizationCode struct {
 	Code                string                 `json:"code"`

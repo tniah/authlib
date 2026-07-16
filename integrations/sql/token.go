@@ -3,8 +3,12 @@ package sql
 import (
 	"time"
 
+	"github.com/tniah/authlib/models"
 	"github.com/tniah/authlib/types"
 )
+
+// Compile-time check that *Token implements models.ExtendableToken.
+var _ models.ExtendableToken = (*Token)(nil)
 
 type Token struct {
 	TokenType             string                 `json:"token_type"`
