@@ -194,5 +194,5 @@ func (g *JWTAccessTokenGenerator) jwtIDHandler(ctx context.Context, grantType st
 		return fn(ctx, grantType, client)
 	}
 
-	return strings.Replace(uuid.NewString(), "-", "", -1)
+	return strings.ReplaceAll(uuid.NewString(), "-", "")
 }
