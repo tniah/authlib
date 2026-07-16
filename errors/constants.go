@@ -8,7 +8,7 @@ import (
 const (
 	ErrCode        = "error"
 	ErrDescription = "error_description"
-	ErrUri         = "error_uri"
+	ErrURI         = "error_uri"
 	ErrState       = "state"
 )
 
@@ -29,7 +29,8 @@ var (
 	ErrAccountSelectionRequired = errors.New("account_selection_required")
 )
 
-// Descriptions error description
+// Descriptions maps each OAuth 2.0 error code to its default human-readable
+// description. Used by NewOAuth2Error when no explicit description is provided.
 var Descriptions = map[error]string{
 	ErrInvalidRequest:           "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed",
 	ErrUnauthorizedClient:       "The client is not authorized to request an authorization code using this method",
@@ -47,16 +48,17 @@ var Descriptions = map[error]string{
 	ErrAccountSelectionRequired: "The end-user is required to select a session at the Authorization Server.",
 }
 
-// HttpCodes Http status code
+// HttpCodes maps each OAuth 2.0 error code to its HTTP status code.
+// Looked up by NewOAuth2Error; unknown codes default to 400 Bad Request.
 var HttpCodes = map[error]int{
 	ErrInvalidRequest:           http.StatusBadRequest,
-	ErrUnauthorizedClient:       http.StatusUnauthorized,
+	ErrUnauthorizedClient:       http.StatusBadRequest,
 	ErrAccessDenied:             http.StatusForbidden,
-	ErrUnsupportedResponseType:  http.StatusUnauthorized,
+	ErrUnsupportedResponseType:  http.StatusBadRequest,
 	ErrInvalidScope:             http.StatusBadRequest,
 	ErrInvalidClient:            http.StatusUnauthorized,
-	ErrInvalidGrant:             http.StatusUnauthorized,
-	ErrUnsupportedGrantType:     http.StatusUnauthorized,
+	ErrInvalidGrant:             http.StatusBadRequest,
+	ErrUnsupportedGrantType:     http.StatusBadRequest,
 	ErrUnsupportedTokenType:     http.StatusForbidden,
 	ErrServerError:              http.StatusInternalServerError,
 	ErrTemporarilyUnavailable:   http.StatusServiceUnavailable,

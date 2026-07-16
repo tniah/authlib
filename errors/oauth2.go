@@ -96,7 +96,7 @@ func (e *OAuth2Error) Data() map[string]interface{} {
 	}
 
 	if v := e.URI; v != "" {
-		data[ErrUri] = v
+		data[ErrURI] = v
 	}
 
 	return data

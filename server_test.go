@@ -315,7 +315,7 @@ func TestServer_CreateAuthorizationResponse(t *testing.T) {
 
 		err := srv.CreateAuthorizationResponse(hr, rw, nil)
 		assert.NoError(t, err)
-		assert.Equal(t, http.StatusInternalServerError, rw.Code)
+		assert.Equal(t, http.StatusBadRequest, rw.Code)
 	})
 
 	t.Run("error_when_no_matching_grant", func(t *testing.T) {
@@ -324,7 +324,7 @@ func TestServer_CreateAuthorizationResponse(t *testing.T) {
 
 		err := srv.CreateAuthorizationResponse(newAuthorizeRequest("code"), rw, nil)
 		assert.NoError(t, err)
-		assert.Equal(t, http.StatusUnauthorized, rw.Code)
+		assert.Equal(t, http.StatusBadRequest, rw.Code)
 	})
 
 	t.Run("error_when_validate_fails", func(t *testing.T) {
@@ -371,7 +371,7 @@ func TestServer_CreateConsentResponse(t *testing.T) {
 
 		err := srv.CreateConsentResponse(newAuthorizeRequest("code"), rw, nil)
 		assert.NoError(t, err)
-		assert.Equal(t, http.StatusUnauthorized, rw.Code)
+		assert.Equal(t, http.StatusBadRequest, rw.Code)
 	})
 
 	t.Run("error_when_validate_fails", func(t *testing.T) {
@@ -456,7 +456,7 @@ func TestServer_CreateTokenResponse(t *testing.T) {
 
 		err := srv.CreateTokenResponse(newTokenFormRequest("authorization_code"), rw)
 		assert.NoError(t, err)
-		assert.Equal(t, http.StatusUnauthorized, rw.Code)
+		assert.Equal(t, http.StatusBadRequest, rw.Code)
 	})
 
 	t.Run("error_when_validate_fails", func(t *testing.T) {
