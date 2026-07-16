@@ -45,5 +45,10 @@ func TestConfig(t *testing.T) {
 		cfg.SetTokenManager(nil)
 		err = cfg.ValidateConfig()
 		assert.ErrorIs(t, err, ErrNilTokenManager)
+
+		cfg.SetTokenManager(mock.NewMockTokenManager(t))
+		cfg.SetSupportedClientAuthMethods(map[types.ClientAuthMethod]bool{})
+		err = cfg.ValidateConfig()
+		assert.ErrorIs(t, err, ErrEmptyClientAuthMethods)
 	})
 }

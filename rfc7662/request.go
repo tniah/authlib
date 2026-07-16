@@ -9,6 +9,7 @@ import (
 	"github.com/tniah/authlib/utils"
 )
 
+// Request holds the parsed parameters of an RFC 7662 introspection request.
 type Request struct {
 	Token         string
 	TokenTypeHint types.TokenTypeHint
@@ -18,6 +19,8 @@ type Request struct {
 	Request *http.Request
 }
 
+// NewRequestFromHTTP parses an introspection request from an HTTP request,
+// extracting the token and optional token_type_hint form values.
 func NewRequestFromHTTP(r *http.Request) *Request {
 	return &Request{
 		Token:         r.FormValue("token"),
@@ -26,6 +29,8 @@ func NewRequestFromHTTP(r *http.Request) *Request {
 	}
 }
 
+// ValidateHTTPMethod returns an error if the request method is not POST,
+// as required by RFC 7662 §2.1.
 func (r *Request) ValidateHTTPMethod() error {
 	if r.Request.Method != http.MethodPost {
 		return autherrors.InvalidRequestError().WithDescription("request must be \"POST\"")
@@ -34,6 +39,8 @@ func (r *Request) ValidateHTTPMethod() error {
 	return nil
 }
 
+// ValidateContentType returns an error if the Content-Type is not
+// application/x-www-form-urlencoded, as required by RFC 7662 §2.1.
 func (r *Request) ValidateContentType() error {
 	ct, err := utils.ContentType(r.Request)
 	if err != nil {
@@ -47,18 +54,10 @@ func (r *Request) ValidateContentType() error {
 	return nil
 }
 
+// ValidateToken returns an error if the token parameter is missing or empty.
 func (r *Request) ValidateToken() error {
 	if r.Token == "" {
 		return autherrors.InvalidRequestError().WithDescription("\"token\" is empty or missing")
-	}
-
-	return nil
-}
-
-func (r *Request) ValidateTokenTypeHint() error {
-	if !r.TokenTypeHint.IsEmpty() && !r.TokenTypeHint.IsValid() {
-		return autherrors.UnsupportedTokenType().
-			WithDescription("token type hint must be set to \"access_token\" or \"refresh_token\"")
 	}
 
 	return nil

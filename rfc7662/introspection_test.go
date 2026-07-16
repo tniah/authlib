@@ -160,13 +160,12 @@ func TestTokenIntrospectionFlow_checkParams(t *testing.T) {
 		assert.Equal(t, "content type must be \"application/x-www-form-urlencoded\"", authErr.Description)
 	})
 
-	t.Run("error_when_token_hint_is_invalid", func(t *testing.T) {
+	t.Run("unknown_token_hint_is_ignored", func(t *testing.T) {
 		hr := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("token=my-token&token_type_hint=my-hint"))
 		hr.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		r := NewRequestFromHTTP(hr)
 		err := h.checkParams(r)
-		authErr := autherrors.ToAuthLibError(err)
-		assert.Equal(t, "token type hint must be set to \"access_token\" or \"refresh_token\"", authErr.Description)
+		assert.NoError(t, err)
 	})
 }
 
