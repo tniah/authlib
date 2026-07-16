@@ -1,5 +1,6 @@
 package types
 
+// ContentType represents an HTTP Content-Type header value.
 type ContentType string
 
 func NewContentType(s string) ContentType {

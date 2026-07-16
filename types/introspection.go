@@ -1,5 +1,8 @@
 package types
 
+// TokenTypeHint is an optional hint about the type of token submitted to the
+// introspection endpoint (RFC 7662 §2.1). Unknown hint values must be silently
+// ignored by the server.
 type TokenTypeHint string
 
 func NewTokenTypeHint(s string) TokenTypeHint {

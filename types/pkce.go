@@ -1,5 +1,9 @@
 package types
 
+// CodeChallengeMethod is the PKCE challenge method used to protect the
+// authorization code (RFC 7636 §4.3). Supported values are "plain" and "S256".
+// "S256" is strongly preferred; "plain" should only be used when the client
+// cannot support S256.
 type CodeChallengeMethod string
 
 func NewCodeChallengeMethod(s string) CodeChallengeMethod {

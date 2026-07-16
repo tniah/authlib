@@ -1,5 +1,8 @@
 package types
 
+// ClientAuthMethod is the authentication method a client uses at the token
+// endpoint (RFC 6749 §2.3). Common values are "client_secret_basic",
+// "client_secret_post", and "none" (public clients).
 type ClientAuthMethod string
 
 func NewClientAuthMethod(method string) ClientAuthMethod {

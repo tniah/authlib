@@ -2,6 +2,7 @@ package types
 
 import "golang.org/x/text/language"
 
+// Scope is a single OAuth 2.0 / OpenID Connect scope value (RFC 6749 §3.3).
 type Scope string
 
 func NewScope(s string) Scope {
@@ -24,6 +25,7 @@ func (s Scope) String() string {
 	return string(s)
 }
 
+// Scopes is a slice of Scope.
 type Scopes []Scope
 
 func NewScopes(ar []string) Scopes {
@@ -56,6 +58,8 @@ func (s Scopes) String() []string {
 	return ret
 }
 
+// Display controls how the authorization server presents the authentication UI
+// to the end-user (OpenID Connect Core §3.1.2.1).
 type Display string
 
 func NewDisplay(s string) Display {
@@ -90,6 +94,8 @@ func (d Display) String() string {
 	return string(d)
 }
 
+// Prompt specifies whether the authorization server should prompt the
+// end-user for re-authentication or consent (OpenID Connect Core §3.1.2.1).
 type Prompt string
 
 func NewPrompt(s string) Prompt {
@@ -120,6 +126,7 @@ func (p Prompt) String() string {
 	return string(p)
 }
 
+// Prompts is a slice of Prompt parsed from the space-delimited prompt parameter.
 type Prompts []Prompt
 
 func NewPrompts(ar []string) Prompts {
@@ -164,12 +171,18 @@ func (p Prompts) String() []string {
 	return ret
 }
 
+// MaxAge is the maximum elapsed time in seconds since the last active
+// authentication (OpenID Connect Core §3.1.2.1). A nil value means no
+// max_age constraint was specified.
 type MaxAge *uint
 
 func NewMaxAge(i uint) MaxAge {
 	return &i
 }
 
+// Locales is an ordered list of BCP 47 language tags representing the
+// end-user's preferred UI locales (OpenID Connect Core §3.1.2.1).
+// Invalid or root tags are silently dropped during parsing.
 type Locales []language.Tag
 
 func NewLocales(locales []string) Locales {
@@ -183,6 +196,8 @@ func NewLocales(locales []string) Locales {
 	return out
 }
 
+// ResponseMode specifies how the authorization server returns the authorization
+// response to the client (RFC 9207).
 type ResponseMode string
 
 func NewResponseMode(s string) ResponseMode {

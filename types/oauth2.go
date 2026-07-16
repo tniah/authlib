@@ -1,5 +1,7 @@
 package types
 
+// GrantType identifies the OAuth 2.0 grant being used at the token endpoint
+// (RFC 6749 §1.3).
 type GrantType string
 
 func NewGrantType(s string) GrantType {
@@ -34,6 +36,7 @@ func (g GrantType) String() string {
 	return string(g)
 }
 
+// GrantTypes is a slice of GrantType.
 type GrantTypes []GrantType
 
 func NewGrantTypes(gts []string) GrantTypes {
@@ -61,6 +64,8 @@ func (g GrantTypes) String() []string {
 	return ret
 }
 
+// ResponseType is the OAuth 2.0 response type requested at the authorization
+// endpoint (RFC 6749 §3.1.1). The standard values are "code" and "token".
 type ResponseType string
 
 func NewResponseType(s string) ResponseType {
@@ -75,8 +80,8 @@ func (t ResponseType) IsToken() bool {
 	return t == ResponseTypeToken
 }
 
-func (t ResponseType) Equal(other string) bool {
-	return t == ResponseType(other)
+func (t ResponseType) Equal(other ResponseType) bool {
+	return t == other
 }
 
 func (t ResponseType) IsEmpty() bool {
@@ -91,6 +96,7 @@ func (t ResponseType) String() string {
 	return string(t)
 }
 
+// ResponseTypes is a slice of ResponseType.
 type ResponseTypes []ResponseType
 
 func NewResponseTypes(typ []string) ResponseTypes {
