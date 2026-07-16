@@ -142,6 +142,9 @@ func (c *Client) CheckResponseType(rt types.ResponseType) bool {
 	return false
 }
 
+// CheckTokenEndpointAuthMethod reports whether method matches the client's
+// configured auth method. The endpoint parameter is intentionally ignored:
+// this implementation uses a single auth method for all endpoints.
 func (c *Client) CheckTokenEndpointAuthMethod(method types.ClientAuthMethod, endpoint string) bool {
 	return c.TokenEndpointAuthMethod == method.String()
 }

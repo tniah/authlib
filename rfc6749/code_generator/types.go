@@ -19,5 +19,5 @@ type RandStringGenerator func(gt types.GrantType, client models.Client) (string,
 
 // ExtraDataGenerator attaches arbitrary metadata to the authorization code
 // (e.g. PKCE code_challenge, session identifiers). The returned map is stored
-// via AuthorizationCode.SetExtraData.
+// via ExtendableAuthorizationCode.SetExtraData.
 type ExtraDataGenerator func(r *requests.AuthorizationRequest) (map[string]interface{}, error)

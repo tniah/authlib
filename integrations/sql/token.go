@@ -101,3 +101,11 @@ func (t *Token) GetJwtID() string {
 func (t *Token) SetJwtID(id string) {
 	t.JwtID = id
 }
+
+func (t *Token) GetExtraData() map[string]interface{} {
+	return t.Data
+}
+
+func (t *Token) SetExtraData(data map[string]interface{}) {
+	t.Data = data
+}

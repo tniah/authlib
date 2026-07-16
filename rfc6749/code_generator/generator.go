@@ -37,8 +37,9 @@ func New(opts ...*Options) *Generator {
 
 // Generate populates authCode with all fields required by RFC 6749 §4.1.2:
 // code, client_id, user_id, redirect_uri, response_type, scope, state,
-// auth_time, and expires_in. If an ExtraDataGenerator is configured, its
-// output is stored via SetExtraData.
+// auth_time, and expires_in. If an ExtraDataGenerator is configured and
+// authCode implements models.ExtendableAuthorizationCode, its output is stored
+// via SetExtraData.
 func (g *Generator) Generate(authCode models.AuthorizationCode, r *requests.AuthorizationRequest) error {
 	client := r.Client
 	if utils.IsNil(client) {
@@ -67,11 +68,13 @@ func (g *Generator) Generate(authCode models.AuthorizationCode, r *requests.Auth
 	authCode.SetExpiresIn(exp)
 
 	if fn := g.extraDataGenerator; fn != nil {
-		data, err := fn(r)
-		if err != nil {
-			return err
+		if extAuthCode, ok := authCode.(models.ExtendableAuthorizationCode); ok {
+			data, err := fn(r)
+			if err != nil {
+				return err
+			}
+			extAuthCode.SetExtraData(data)
 		}
-		authCode.SetExtraData(data)
 	}
 
 	return nil

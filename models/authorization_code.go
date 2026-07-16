@@ -65,9 +65,15 @@ type AuthorizationCode interface {
 	// challenge method ("plain" or "S256").
 	GetCodeChallengeMethod() types.CodeChallengeMethod
 	SetCodeChallengeMethod(method types.CodeChallengeMethod)
+}
 
-	// GetExtraData / SetExtraData get and set an arbitrary key-value map for
-	// storing application-specific data alongside the standard code fields.
+// ExtendableAuthorizationCode extends AuthorizationCode with an arbitrary
+// key-value map for storing application-specific data alongside the standard
+// code fields.
+type ExtendableAuthorizationCode interface {
+	AuthorizationCode
+
+	// GetExtraData / SetExtraData get and set the additional data map.
 	GetExtraData() map[string]interface{}
 	SetExtraData(data map[string]interface{})
 }
