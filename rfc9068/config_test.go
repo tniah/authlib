@@ -22,6 +22,13 @@ func TestConfig(t *testing.T) {
 		cfg.SetIssuerGenerator(issGen)
 		assert.NotNil(t, cfg.issuerGenerator)
 
+		cfg.SetAudience("https://api.example.com")
+		assert.Equal(t, "https://api.example.com", cfg.audience)
+
+		audGen := rfc9068.NewMockAudienceGenerator(t).Execute
+		cfg.SetAudienceGenerator(audGen)
+		assert.NotNil(t, cfg.audienceGenerator)
+
 		cfg.SetExpiresIn(time.Second * 60)
 		assert.Equal(t, time.Second*60, cfg.expiresIn)
 
@@ -50,6 +57,10 @@ func TestConfig(t *testing.T) {
 
 		issGen := rfc9068.NewMockIssuerGenerator(t).Execute
 		cfg.SetIssuerGenerator(issGen)
+		err = cfg.ValidateConfig()
+		assert.ErrorIs(t, err, autherrors.ErrMissingAudience)
+
+		cfg.SetAudience("https://api.example.com")
 		cfg.SetExpiresIn(0)
 		err = cfg.ValidateConfig()
 		assert.ErrorIs(t, err, autherrors.ErrMissingExpiresIn)
