@@ -69,6 +69,53 @@ server.RegisterGrant(flow)
 | `AuthCodeManager` | `AuthCodeManager`   | Generate, store, look up, and delete authorization codes.          |
 | `TokenManager`    | `TokenManager`      | Generate and persist access and refresh tokens.                    |
 
+### `ClientManager` interface
+
+```go
+type ClientManager interface {
+    QueryByClientID(ctx context.Context, clientID string) (models.Client, error)
+    Authenticate(r *http.Request, authMethods map[types.ClientAuthMethod]bool, endpointName string) (models.Client, error)
+}
+```
+
+Typically backed by `clientauth.Manager` from `rfc6749/client_authentication`. `QueryByClientID` is used at the `/authorize` endpoint; `Authenticate` is used at the `/token` endpoint.
+
+### `UserManager` interface
+
+```go
+type UserManager interface {
+    QueryUserByCode(ctx context.Context, code models.AuthorizationCode, r *requests.TokenRequest) (models.User, error)
+}
+```
+
+Resolves the resource owner from the authorization code during token exchange. Return `(nil, nil)` when no user is found; the flow maps this to `invalid_grant`.
+
+### `AuthCodeManager` interface
+
+```go
+type AuthCodeManager interface {
+    New() models.AuthorizationCode
+    Generate(authCode models.AuthorizationCode, r *requests.AuthorizationRequest) error
+    Save(ctx context.Context, code models.AuthorizationCode) error
+    QueryByCode(ctx context.Context, code string) (models.AuthorizationCode, error)
+    DeleteByCode(ctx context.Context, code string) error
+}
+```
+
+Typically composed with `codegen.Generator` from `rfc6749/code_generator` to implement `Generate`.
+
+### `TokenManager` interface
+
+```go
+type TokenManager interface {
+    New() models.Token
+    Generate(token models.Token, r *requests.TokenRequest, includeRefreshToken bool) error
+    Save(ctx context.Context, token models.Token) error
+}
+```
+
+Typically backed by `rfc6750.BearerTokenGenerator`. A refresh token is only generated when `includeRefreshToken` is `true` (i.e. the client has the `refresh_token` grant type registered).
+
 ## Extension System
 
 Extensions are registered via `cfg.RegisterExtension(ext)`. A single object may implement multiple extension interfaces and will be registered for all applicable hooks automatically.
