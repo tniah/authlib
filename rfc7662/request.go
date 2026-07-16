@@ -62,14 +62,3 @@ func (r *Request) ValidateToken() error {
 
 	return nil
 }
-
-// ValidateTokenTypeHint returns an error if token_type_hint is present but
-// not one of the recognised values (access_token, refresh_token).
-func (r *Request) ValidateTokenTypeHint() error {
-	if !r.TokenTypeHint.IsEmpty() && !r.TokenTypeHint.IsValid() {
-		return autherrors.UnsupportedTokenType().
-			WithDescription("token type hint must be set to \"access_token\" or \"refresh_token\"")
-	}
-
-	return nil
-}

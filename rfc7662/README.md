@@ -120,7 +120,7 @@ When the token is not found or has expired, the response is always:
 - HTTP method must be `POST`.
 - Content-Type must be `application/x-www-form-urlencoded`.
 - `token` parameter must be present and non-empty.
-- `token_type_hint`, if provided, must be `access_token` or `refresh_token`. Any other value is rejected with `unsupported_token_type`.
+- `token_type_hint` is optional and passed through as-is to `TokenManager.QueryByToken`. Unknown values are silently ignored per RFC 7662 §2.1.
 - Calling client must authenticate successfully.
 - If `CheckPermission` returns `false`, the request is rejected with `access_denied`.
 

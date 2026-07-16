@@ -85,8 +85,9 @@ func (f *TokenIntrospectionFlow) authenticateToken(r *Request) error {
 	return nil
 }
 
-// checkParams validates HTTP method, content type, token presence, and
-// token_type_hint value per RFC 7662 §2.1.
+// checkParams validates HTTP method, content type, and token presence per
+// RFC 7662 §2.1. The token_type_hint is passed through as-is — unknown values
+// are silently ignored per RFC 7662 §2.1 ("MAY ignore the hint").
 func (f *TokenIntrospectionFlow) checkParams(r *Request) error {
 	if err := r.ValidateHTTPMethod(); err != nil {
 		return err
@@ -97,10 +98,6 @@ func (f *TokenIntrospectionFlow) checkParams(r *Request) error {
 	}
 
 	if err := r.ValidateToken(); err != nil {
-		return err
-	}
-
-	if err := r.ValidateTokenTypeHint(); err != nil {
 		return err
 	}
 
