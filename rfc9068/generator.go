@@ -70,8 +70,8 @@ func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.Token
 	token.SetClientID(clientID)
 
 	sub := ""
-	if user := r.User; user != nil {
-		sub = user.GetUserID()
+	if !utils.IsNil(r.User) {
+		sub = r.User.GetUserID()
 	}
 	token.SetUserID(sub)
 
