@@ -13,16 +13,25 @@ import (
 	"github.com/tniah/authlib/utils"
 )
 
+// ErrNilClient is returned by Generate when the token request carries no client.
 var ErrNilClient = errors.New("client is nil")
 
+// JWTAccessTokenGenerator issues RFC 9068 JWT Access Tokens. It is the JWT
+// counterpart to rfc6750.OpaqueAccessTokenGenerator and satisfies the same
+// rfc6750.TokenGenerator interface, so it can be used as a drop-in replacement
+// in BearerTokenGeneratorOptions.SetAccessTokenGenerator.
 type JWTAccessTokenGenerator struct {
 	*GeneratorConfig
 }
 
+// NewJWTAccessTokenGenerator creates a JWTAccessTokenGenerator from cfg without
+// validating it. Prefer MustJWTAccessTokenGenerator for production use.
 func NewJWTAccessTokenGenerator(cfg *GeneratorConfig) *JWTAccessTokenGenerator {
 	return &JWTAccessTokenGenerator{cfg}
 }
 
+// MustJWTAccessTokenGenerator creates a JWTAccessTokenGenerator after validating
+// cfg. Returns an error if issuer, signing key, or expiry configuration is missing.
 func MustJWTAccessTokenGenerator(cfg *GeneratorConfig) (*JWTAccessTokenGenerator, error) {
 	if err := cfg.ValidateConfig(); err != nil {
 		return nil, err
@@ -31,10 +40,21 @@ func MustJWTAccessTokenGenerator(cfg *GeneratorConfig) (*JWTAccessTokenGenerator
 	return NewJWTAccessTokenGenerator(cfg), nil
 }
 
+// Generate populates token with a signed JWT access token derived from r.
+// The JWT carries the standard RFC 9068 claims (iss, sub, aud, exp, iat, jti,
+// client_id, scope). Extra claims can be added via GeneratorConfig.SetExtraClaimGenerator.
+// User may be nil (e.g. client credentials); in that case sub is set to client_id.
 func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.TokenRequest) error {
 	client := r.Client
 	if utils.IsNil(client) {
 		return ErrNilClient
+	}
+
+	// Prefer request context for custom generators; fall back to Background when
+	// called outside an HTTP request (e.g. unit tests).
+	ctx := context.Background()
+	if r.Request != nil {
+		ctx = r.Request.Context()
 	}
 
 	clientID := client.GetClientID()
@@ -52,17 +72,17 @@ func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.Token
 	issuedAt := time.Now().UTC().Round(time.Second)
 	token.SetIssuedAt(issuedAt)
 
-	expiresIn := g.expiresInHandler(r.Request.Context(), r.GrantType.String(), client)
+	expiresIn := g.expiresInHandler(ctx, r.GrantType.String(), client)
 	token.SetAccessTokenExpiresIn(expiresIn)
 
 	jwtID := token.GetJwtID()
 	if jwtID == "" {
-		jwtID = g.jwtIDHandler(r.Request.Context(), r.GrantType.String(), client)
+		jwtID = g.jwtIDHandler(ctx, r.GrantType.String(), client)
 		token.SetJwtID(jwtID)
 	}
 
 	claims := utils.JWTClaim{
-		"iss":       g.issuerHandler(r.Request.Context(), client),
+		"iss":       g.issuerHandler(ctx, client),
 		"exp":       jwt.NewNumericDate(issuedAt.Add(expiresIn)),
 		"aud":       clientID,
 		"client_id": clientID,
@@ -77,7 +97,7 @@ func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.Token
 	}
 
 	if fn := g.extraClaimGenerator; fn != nil {
-		extraClaims, err := fn(r.Request.Context(), r.GrantType.String(), client, r.User, allowedScopes)
+		extraClaims, err := fn(ctx, r.GrantType.String(), client, r.User, allowedScopes)
 		if err != nil {
 			return err
 		}
@@ -87,7 +107,7 @@ func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.Token
 		}
 	}
 
-	signingKey, signingMethod, signingKeyID, err := g.signingKeyHandler(r.Request.Context(), client)
+	signingKey, signingMethod, signingKeyID, err := g.signingKeyHandler(ctx, client)
 	if err != nil {
 		return err
 	}
@@ -106,6 +126,8 @@ func (g *JWTAccessTokenGenerator) Generate(token models.Token, r *requests.Token
 	return nil
 }
 
+// issuerHandler returns the issuer claim. Delegates to IssuerGenerator if set,
+// otherwise returns the static issuer from config.
 func (g *JWTAccessTokenGenerator) issuerHandler(ctx context.Context, client models.Client) string {
 	if fn := g.issuerGenerator; fn != nil {
 		return fn(ctx, client)
@@ -114,6 +136,8 @@ func (g *JWTAccessTokenGenerator) issuerHandler(ctx context.Context, client mode
 	return g.issuer
 }
 
+// expiresInHandler returns the token lifetime. Delegates to ExpiresInGenerator
+// if set, otherwise returns the static expiresIn value from config.
 func (g *JWTAccessTokenGenerator) expiresInHandler(ctx context.Context, grantType string, client models.Client) time.Duration {
 	if fn := g.expiresInGenerator; fn != nil {
 		return fn(ctx, grantType, client)
@@ -122,6 +146,8 @@ func (g *JWTAccessTokenGenerator) expiresInHandler(ctx context.Context, grantTyp
 	return g.expiresIn
 }
 
+// signingKeyHandler returns the signing key, method, and key ID. Delegates to
+// SigningKeyGenerator if set, otherwise returns the static values from config.
 func (g *JWTAccessTokenGenerator) signingKeyHandler(ctx context.Context, client models.Client) ([]byte, jwt.SigningMethod, string, error) {
 	if fn := g.signingKeyGenerator; fn != nil {
 		return fn(ctx, client)
@@ -130,6 +156,8 @@ func (g *JWTAccessTokenGenerator) signingKeyHandler(ctx context.Context, client 
 	return g.signingKey, g.signingKeyMethod, g.signingKeyID, nil
 }
 
+// jwtIDHandler returns the JWT ID. Delegates to JWTIDGenerator if set,
+// otherwise generates a random UUID without hyphens.
 func (g *JWTAccessTokenGenerator) jwtIDHandler(ctx context.Context, grantType string, client models.Client) string {
 	if fn := g.jwtIDGenerator; fn != nil {
 		return fn(ctx, grantType, client)

@@ -7,8 +7,13 @@ import (
 	autherrors "github.com/tniah/authlib/errors"
 )
 
+// DefaultExpiresIn is the JWT access token lifetime used when no
+// ExpiresInGenerator is configured.
 const DefaultExpiresIn = time.Minute * 60
 
+// GeneratorConfig holds all settings for JWTAccessTokenGenerator. Use
+// NewGeneratorConfig to obtain a value with a secure default expiry, then
+// chain Set* calls to configure the issuer, signing key, and optional hooks.
 type GeneratorConfig struct {
 	issuer              string
 	issuerGenerator     IssuerGenerator
@@ -22,30 +27,41 @@ type GeneratorConfig struct {
 	jwtIDGenerator      JWTIDGenerator
 }
 
+// NewGeneratorConfig returns a GeneratorConfig with DefaultExpiresIn.
+// All generator hooks are nil, meaning static config values are used.
 func NewGeneratorConfig() *GeneratorConfig {
 	return &GeneratorConfig{expiresIn: DefaultExpiresIn}
 }
 
+// SetIssuer sets the static issuer claim (iss). Ignored when SetIssuerGenerator is set.
 func (cfg *GeneratorConfig) SetIssuer(iss string) *GeneratorConfig {
 	cfg.issuer = iss
 	return cfg
 }
 
+// SetIssuerGenerator registers a per-request issuer hook. Takes precedence over
+// SetIssuer when set.
 func (cfg *GeneratorConfig) SetIssuerGenerator(fn IssuerGenerator) *GeneratorConfig {
 	cfg.issuerGenerator = fn
 	return cfg
 }
 
+// SetExpiresIn overrides the static token lifetime. Ignored when
+// SetExpiresInGenerator is set.
 func (cfg *GeneratorConfig) SetExpiresIn(exp time.Duration) *GeneratorConfig {
 	cfg.expiresIn = exp
 	return cfg
 }
 
+// SetExpiresInGenerator registers a per-request expiry hook. Takes precedence
+// over SetExpiresIn when set.
 func (cfg *GeneratorConfig) SetExpiresInGenerator(fn ExpiresInGenerator) *GeneratorConfig {
 	cfg.expiresInGenerator = fn
 	return cfg
 }
 
+// SetSigningKey sets the static signing key, algorithm, and optional key ID (kid).
+// Required unless SetSigningKeyGenerator is used.
 func (cfg *GeneratorConfig) SetSigningKey(key []byte, method jwt.SigningMethod, keyID ...string) *GeneratorConfig {
 	cfg.signingKey = key
 	cfg.signingKeyMethod = method
@@ -57,21 +73,31 @@ func (cfg *GeneratorConfig) SetSigningKey(key []byte, method jwt.SigningMethod, 
 	return cfg
 }
 
+// SetSigningKeyGenerator registers a per-request signing key hook. Takes
+// precedence over SetSigningKey when set.
 func (cfg *GeneratorConfig) SetSigningKeyGenerator(fn SigningKeyGenerator) *GeneratorConfig {
 	cfg.signingKeyGenerator = fn
 	return cfg
 }
 
+// SetExtraClaimGenerator registers a hook for adding extra claims to the JWT
+// (e.g. roles, tenant ID). Claims returned by this hook are merged into the
+// standard claim set. Standard claims (iss, sub, aud, exp, iat, jti) cannot
+// be overridden.
 func (cfg *GeneratorConfig) SetExtraClaimGenerator(fn ExtraClaimGenerator) *GeneratorConfig {
 	cfg.extraClaimGenerator = fn
 	return cfg
 }
 
+// SetJWTIDGenerator registers a custom jti generator. When set, it replaces
+// the default UUID-based implementation.
 func (cfg *GeneratorConfig) SetJWTIDGenerator(fn JWTIDGenerator) *GeneratorConfig {
 	cfg.jwtIDGenerator = fn
 	return cfg
 }
 
+// ValidateConfig returns an error if any required configuration is missing.
+// Call this via MustJWTAccessTokenGenerator rather than directly.
 func (cfg *GeneratorConfig) ValidateConfig() error {
 	if cfg.issuer == "" && cfg.issuerGenerator == nil {
 		return autherrors.ErrMissingIssuer
