@@ -19,6 +19,7 @@ go get github.com/tniah/authlib
 | RFC 6749 §4.1  | `rfc6749/authorization_code`     | Authorization Code Grant                 |
 | RFC 6749 §4.3  | `rfc6749/ropc`                   | Resource Owner Password Credentials      |
 | RFC 6749 §2.3  | `rfc6749/client_authentication`  | Client authentication (`client_secret_basic`, `client_secret_post`, `none`)|
+| RFC 6749       | `rfc6749/code_generator`         | Authorization code generation            |
 | RFC 6750       | `rfc6750`                        | Bearer Token (opaque access + refresh)   |
 | RFC 7636       | `rfc7636`                        | PKCE (Proof Key for Code Exchange)       |
 | RFC 7662       | `rfc7662`                        | Token Introspection                      |
@@ -42,6 +43,15 @@ srv.CreateAuthorizationResponse(r, w, user)  // GET  /authorize
 srv.CreateConsentResponse(r, w, user)         // POST /authorize (consent step)
 srv.CreateTokenResponse(r, w)                 // POST /token
 srv.EndpointResponse(r, w, "introspection")  // POST /introspect
+```
+
+For finer control, use the split validate/respond methods:
+
+```go
+// Validate first — inspect the request before committing a response
+grant, req, err := srv.ValidateAuthorizationRequest(r, user)
+grant, req, err := srv.ValidateConsentRequest(r, user)
+grant, req, err := srv.ValidateTokenRequest(r)
 ```
 
 ### Grant Flow Pattern
@@ -92,8 +102,14 @@ import (
     oidcflow "github.com/tniah/authlib/oidc/core/authorization_code"
 )
 
-// PKCE — S256 enforced by default (RFC 9700)
+// PKCE — plain and S256 both accepted by default (RFC 7636).
+// To enforce S256-only per RFC 9700 §2.1, set AllowPlain to false.
 pkce := rfc7636.New()
+
+// PKCE with S256 enforced
+pkce := rfc7636.New(
+    rfc7636.NewOptions().SetAllowPlain(false),
+)
 
 // OIDC ID Token
 oidc, _ := oidcflow.Must(
@@ -110,6 +126,25 @@ flow, _ := authorizationcode.Must(
         SetTokenManager(tokenMgr).
         RegisterExtension(pkce).
         RegisterExtension(oidc),
+)
+
+srv := authlib.NewServer()
+srv.RegisterGrant(flow)
+```
+
+### Resource Owner Password Credentials (RFC 6749 §4.3)
+
+```go
+import (
+    "github.com/tniah/authlib"
+    "github.com/tniah/authlib/rfc6749/ropc"
+)
+
+flow, _ := ropc.Must(
+    ropc.NewConfig().
+        SetClientManager(clientMgr).
+        SetUserManager(userMgr).
+        SetTokenManager(tokenMgr),
 )
 
 srv := authlib.NewServer()
