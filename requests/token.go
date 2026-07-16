@@ -9,6 +9,9 @@ import (
 	"github.com/tniah/authlib/types"
 )
 
+// TokenRequest holds the parsed parameters of an OAuth 2.0 token endpoint
+// request (RFC 6749 §3.2). It is populated by NewTokenRequestFromHttp and
+// then enriched by the grant flow (Client, User, AuthCode fields).
 type TokenRequest struct {
 	GrantType   types.GrantType
 	Code        string
@@ -29,8 +32,10 @@ type TokenRequest struct {
 	Request *http.Request
 }
 
-func NewTokenRequestFromHttp(r *http.Request) (*TokenRequest, error) {
-	tokenReq := &TokenRequest{
+// NewTokenRequestFromHttp parses a token request from an HTTP request body,
+// reading all standard OAuth 2.0 token endpoint parameters from the POST form values.
+func NewTokenRequestFromHttp(r *http.Request) *TokenRequest {
+	return &TokenRequest{
 		GrantType:    types.NewGrantType(r.PostFormValue("grant_type")),
 		Code:         r.PostFormValue("code"),
 		RedirectURI:  r.PostFormValue("redirect_uri"),
@@ -41,10 +46,9 @@ func NewTokenRequestFromHttp(r *http.Request) (*TokenRequest, error) {
 		CodeVerifier: r.PostFormValue("code_verifier"),
 		Request:      r,
 	}
-
-	return tokenReq, nil
 }
 
+// ValidateGrantType returns an error if grant_type is missing or empty.
 func (r *TokenRequest) ValidateGrantType() error {
 	if r.GrantType.IsEmpty() {
 		return autherrors.InvalidRequestError().WithDescription("missing \"grant_type\" in request")
@@ -53,6 +57,8 @@ func (r *TokenRequest) ValidateGrantType() error {
 	return nil
 }
 
+// ValidateCode returns an error if code is missing. Required by default;
+// pass false to treat it as optional.
 func (r *TokenRequest) ValidateCode(required ...bool) error {
 	if isRequired(true, required...) && r.Code == "" {
 		return autherrors.InvalidRequestError().WithDescription("missing \"code\" in request")
@@ -61,6 +67,8 @@ func (r *TokenRequest) ValidateCode(required ...bool) error {
 	return nil
 }
 
+// ValidateRedirectURI returns an error if redirect_uri is missing. Required
+// by default; pass false to treat it as optional.
 func (r *TokenRequest) ValidateRedirectURI(required ...bool) error {
 	if isRequired(true, required...) && r.RedirectURI == "" {
 		return autherrors.InvalidRequestError().WithDescription("missing \"redirect_uri\" in request")
@@ -69,6 +77,7 @@ func (r *TokenRequest) ValidateRedirectURI(required ...bool) error {
 	return nil
 }
 
+// ValidateUsername returns an error if username is missing or empty.
 func (r *TokenRequest) ValidateUsername() error {
 	if r.Username == "" {
 		return autherrors.InvalidRequestError().WithDescription("missing \"username\" in request")
@@ -77,6 +86,7 @@ func (r *TokenRequest) ValidateUsername() error {
 	return nil
 }
 
+// ValidatePassword returns an error if password is missing or empty.
 func (r *TokenRequest) ValidatePassword() error {
 	if r.Password == "" {
 		return autherrors.InvalidRequestError().WithDescription("missing \"password\" in request")
@@ -85,6 +95,7 @@ func (r *TokenRequest) ValidatePassword() error {
 	return nil
 }
 
+// Method returns the HTTP method of the underlying request.
 func (r *TokenRequest) Method() string {
 	return r.Request.Method
 }
