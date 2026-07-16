@@ -23,7 +23,7 @@ Package `ropc` implements the [RFC 6749 §4.3 Resource Owner Password Credential
   |                        |  username=alice                 |                        |
   |                        |  password=s3cr3t                |                        |
   |                        |  scope=read                     |                        |
-  |                        |<-(7)-----------------------------|                        |
+  |                        |<-(7)----------------------------|                        |
   |                        |  access_token                   |                        |
   |                        |  + refresh_token (opt.)         |                        |
   +------------------------+                                 +------------------------+
