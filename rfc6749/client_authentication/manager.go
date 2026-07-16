@@ -3,6 +3,7 @@ package clientauth
 import (
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 
 	autherrors "github.com/tniah/authlib/errors"
@@ -57,6 +58,7 @@ func (m *Manager) Authenticate(r *http.Request, supportedMethods map[types.Clien
 			methods = append(methods, fmt.Sprintf("%q", string(method)))
 		}
 	}
+	sort.Strings(methods)
 
 	authErr := autherrors.InvalidClientError().WithDescription(
 		fmt.Sprintf("The client failed to authenticate using any of the following methods: [%s]", strings.Join(methods, ", ")),

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/tniah/authlib/types"
+	"github.com/tniah/authlib/utils"
 )
 
 // Sentinel errors returned by ValidateConfig when a required dependency is missing.
@@ -98,15 +99,15 @@ func (cfg *Config) RegisterExtension(ext interface{}) *Config {
 // ValidateConfig checks that all required dependencies are set and returns the
 // first sentinel error encountered. Call this via Must() rather than directly.
 func (cfg *Config) ValidateConfig() error {
-	if cfg.clientMgr == nil {
+	if utils.IsNil(cfg.clientMgr) {
 		return ErrNilClientManager
 	}
 
-	if cfg.userMgr == nil {
+	if utils.IsNil(cfg.userMgr) {
 		return ErrNilUserManager
 	}
 
-	if cfg.tokenMgr == nil {
+	if utils.IsNil(cfg.tokenMgr) {
 		return ErrNilTokenManager
 	}
 

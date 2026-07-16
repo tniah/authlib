@@ -128,26 +128,26 @@ func InvalidClientError() *AuthLibError {
 	return NewAuthLibError(ErrInvalidClient)
 }
 
-// UnauthorizedClientError returns a 401 error when the authenticated client is
+// UnauthorizedClientError returns a 400 error when the authenticated client is
 // not permitted to use the requested grant type (RFC 6749 §5.2 "unauthorized_client").
 func UnauthorizedClientError() *AuthLibError {
 	return NewAuthLibError(ErrUnauthorizedClient)
 }
 
-// InvalidGrantError returns a 401 error when the provided authorization grant
+// InvalidGrantError returns a 400 error when the provided authorization grant
 // (code, refresh token, credentials) is invalid, expired, or revoked
 // (RFC 6749 §5.2 "invalid_grant").
 func InvalidGrantError() *AuthLibError {
 	return NewAuthLibError(ErrInvalidGrant)
 }
 
-// UnsupportedGrantTypeError returns a 401 error when the requested grant type
+// UnsupportedGrantTypeError returns a 400 error when the requested grant type
 // is not supported by the authorization server (RFC 6749 §5.2 "unsupported_grant_type").
 func UnsupportedGrantTypeError() *AuthLibError {
 	return NewAuthLibError(ErrUnsupportedGrantType)
 }
 
-// UnsupportedResponseTypeError returns a 401 error when the requested
+// UnsupportedResponseTypeError returns a 400 error when the requested
 // response_type is not supported (RFC 6749 §4.1.2.1 "unsupported_response_type").
 func UnsupportedResponseTypeError() *AuthLibError {
 	return NewAuthLibError(ErrUnsupportedResponseType)

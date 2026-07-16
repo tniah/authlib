@@ -12,20 +12,50 @@ const (
 	ErrState       = "state"
 )
 
+// OAuth 2.0 and OpenID Connect error code sentinels. Each value's Error()
+// string is the wire-format error code sent in the JSON response body.
 var (
-	ErrInvalidRequest           = errors.New("invalid_request")
-	ErrUnauthorizedClient       = errors.New("unauthorized_client")
-	ErrAccessDenied             = errors.New("access_denied")
-	ErrUnsupportedResponseType  = errors.New("unsupported_response_type")
-	ErrInvalidScope             = errors.New("invalid_scope")
-	ErrInvalidClient            = errors.New("invalid_client")
-	ErrInvalidGrant             = errors.New("invalid_grant")
-	ErrUnsupportedGrantType     = errors.New("unsupported_grant_type")
-	ErrUnsupportedTokenType     = errors.New("unsupported_token_type")
-	ErrServerError              = errors.New("server_error")
-	ErrTemporarilyUnavailable   = errors.New("temporarily_unavailable")
-	ErrLoginRequired            = errors.New("login_required")
-	ErrConsentRequired          = errors.New("consent_required")
+	// ErrInvalidRequest is returned when the request is missing a required
+	// parameter or is otherwise malformed (RFC 6749 §5.2).
+	ErrInvalidRequest = errors.New("invalid_request")
+	// ErrUnauthorizedClient is returned when the client is not authorised to
+	// use the requested grant type (RFC 6749 §5.2).
+	ErrUnauthorizedClient = errors.New("unauthorized_client")
+	// ErrAccessDenied is returned when the resource owner or authorization
+	// server denies the request (RFC 6749 §4.1.2.1).
+	ErrAccessDenied = errors.New("access_denied")
+	// ErrUnsupportedResponseType is returned when the requested response_type
+	// is not supported (RFC 6749 §4.1.2.1).
+	ErrUnsupportedResponseType = errors.New("unsupported_response_type")
+	// ErrInvalidScope is returned when the requested scope is invalid, unknown,
+	// or exceeds what the client may request (RFC 6749 §5.2).
+	ErrInvalidScope = errors.New("invalid_scope")
+	// ErrInvalidClient is returned when client authentication fails (RFC 6749 §5.2).
+	// The response carries a 401 status and a WWW-Authenticate header.
+	ErrInvalidClient = errors.New("invalid_client")
+	// ErrInvalidGrant is returned when the authorization grant is invalid,
+	// expired, revoked, or does not match the redirect URI (RFC 6749 §5.2).
+	ErrInvalidGrant = errors.New("invalid_grant")
+	// ErrUnsupportedGrantType is returned when the grant type is not supported
+	// by the authorization server (RFC 6749 §5.2).
+	ErrUnsupportedGrantType = errors.New("unsupported_grant_type")
+	// ErrUnsupportedTokenType is returned when the server does not support
+	// revocation or introspection of the submitted token type (RFC 7662).
+	ErrUnsupportedTokenType = errors.New("unsupported_token_type")
+	// ErrServerError is returned when the server encounters an unexpected
+	// condition that prevents it from fulfilling the request (RFC 6749 §5.2).
+	ErrServerError = errors.New("server_error")
+	// ErrTemporarilyUnavailable is returned when the server is temporarily
+	// unable to handle the request (RFC 6749 §5.2).
+	ErrTemporarilyUnavailable = errors.New("temporarily_unavailable")
+	// ErrLoginRequired is returned when the authorization server requires
+	// end-user authentication but prompt=none was requested (OpenID Connect Core).
+	ErrLoginRequired = errors.New("login_required")
+	// ErrConsentRequired is returned when the authorization server requires
+	// end-user consent but prompt=none was requested (OpenID Connect Core).
+	ErrConsentRequired = errors.New("consent_required")
+	// ErrAccountSelectionRequired is returned when the end-user must select a
+	// session but prompt=none was requested (OpenID Connect Core).
 	ErrAccountSelectionRequired = errors.New("account_selection_required")
 )
 
