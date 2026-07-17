@@ -13,9 +13,11 @@ import (
 	"github.com/tniah/authlib/utils"
 )
 
-// ErrNilAuthorizationCode is returned when the authorization code is nil.
 var (
+	// ErrNilAuthorizationCode is returned when the authorization code is nil.
 	ErrNilAuthorizationCode = errors.New("authorization code is nil")
+	// ErrMissingUserID is returned when the user ID is empty.
+	ErrMissingUserID = errors.New("user ID is empty")
 )
 
 // Flow implements the OIDC ID Token extension for the Authorization Code grant.
@@ -164,46 +166,53 @@ func (f *Flow) validatePrompt(r *requests.AuthorizationRequest) error {
 }
 
 // genIDToken builds and signs an ID Token for the given token request.
-// Standard claims (iss, sub, aud, exp, iat, auth_time, nonce) are populated
-// first; extra claims from ExtraClaimGenerator are merged in afterward.
+// Extra claims from ExtraClaimGenerator are merged first; standard claims
+// (iss, sub, aud, exp, iat, auth_time, nonce) are set afterward and always
+// take precedence over any extra claim with the same key.
 func (f *Flow) genIDToken(r *requests.TokenRequest) (string, error) {
 	client := r.Client
 	user := r.User
 	authCode := r.AuthCode
 
+	sub := ""
+	if !utils.IsNil(user) {
+		sub = user.GetUserID()
+	}
+	if sub == "" {
+		return "", ErrMissingUserID
+	}
+
 	now := time.Now().UTC().Round(time.Second)
-	claims := utils.JWTClaim{
-		"iss": f.issuerHandler(r.Request.Context(), client),
-		"aud": []string{client.GetClientID()},
-		"exp": jwt.NewNumericDate(now.Add(f.expiresInHandler(r.Request.Context(), r.GrantType.String(), client))),
-		"iat": jwt.NewNumericDate(now),
+	claims := utils.JWTClaim{}
+
+	// Merge extra claims first so standard claims set below take precedence.
+	if fn := f.extraClaimGenerator; fn != nil {
+		extraClaims, err := fn(r.Request.Context(), r.GrantType.String(), client, user)
+		if err != nil {
+			return "", err
+		}
+		for k, v := range extraClaims {
+			claims[k] = v
+		}
 	}
 
 	authTime := authCode.GetAuthTime()
 	if authTime.IsZero() {
 		authTime = now
 	}
+
+	// Standard claims always override any extra claim with the same key.
+	claims["iss"] = f.issuerHandler(r.Request.Context(), client)
+	claims["sub"] = sub
+	claims["aud"] = []string{client.GetClientID()}
+	claims["exp"] = jwt.NewNumericDate(now.Add(f.expiresInHandler(r.Request.Context(), r.GrantType.String(), client)))
+	claims["iat"] = jwt.NewNumericDate(now)
 	claims["auth_time"] = jwt.NewNumericDate(authTime)
 
+	// nonce comes from the authorization code; override any extra claim value.
+	delete(claims, "nonce")
 	if nonce := authCode.GetNonce(); nonce != "" {
 		claims["nonce"] = nonce
-	}
-
-	if !utils.IsNil(user) {
-		if userID := user.GetUserID(); userID != "" {
-			claims["sub"] = userID
-		}
-	}
-
-	if fn := f.extraClaimGenerator; fn != nil {
-		extraClaims, err := fn(r.Request.Context(), r.GrantType.String(), client, user)
-		if err != nil {
-			return "", err
-		}
-
-		for k, v := range extraClaims {
-			claims[k] = v
-		}
 	}
 
 	key, method, keyID, err := f.signingKeyHandler(r.Request.Context(), client)
