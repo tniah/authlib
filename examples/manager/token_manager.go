@@ -30,6 +30,16 @@ func NewTokenManager() *TokenManager {
 	}
 }
 
+// NewTokenManagerWithGenerator creates a TokenManager using the provided BearerTokenGenerator.
+// Use this to supply a custom access token generator such as a JWTAccessTokenGenerator.
+func NewTokenManagerWithGenerator(gen *rfc6750.BearerTokenGenerator) *TokenManager {
+	return &TokenManager{
+		byAccessToken:  make(map[string]*sql.Token),
+		byRefreshToken: make(map[string]*sql.Token),
+		gen:            gen,
+	}
+}
+
 // New returns a new empty Token instance satisfying the authlib model interface.
 func (m *TokenManager) New() authlibmodels.Token {
 	return &sql.Token{}
