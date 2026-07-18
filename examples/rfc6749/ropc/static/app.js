@@ -41,8 +41,10 @@
             grant_type: 'password',
             username: username(),
             password: password(),
-            scope: state.selectedScopes.join(' '),
         });
+        if (state.selectedScopes.length > 0) {
+            body.set('scope', state.selectedScopes.join(' '));
+        }
         const headers = {'Content-Type': 'application/x-www-form-urlencoded'};
 
         if (state.authMethod === 'client_secret_basic') {

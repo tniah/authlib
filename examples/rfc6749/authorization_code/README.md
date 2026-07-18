@@ -14,10 +14,10 @@ Then open [http://localhost:9090](http://localhost:9090) in your browser.
 
 ### Environment variables
 
-| Variable         | Default     | Description                  |
-|------------------|-------------|------------------------------|
-| `SERVER_PORT`    | `9090`      | TCP port the server listens on |
-| `SERVER_ADDRESS` | `0.0.0.0`   | IP address to bind to        |
+| Variable         | Default   | Description                    |
+|------------------|-----------|--------------------------------|
+| `SERVER_PORT`    | `9090`    | TCP port the server listens on |
+| `SERVER_ADDRESS` | `0.0.0.0` | IP address to bind to          |
 
 ```bash
 SERVER_PORT=8080 go run ./examples/rfc6749/authorization_code
@@ -25,38 +25,36 @@ SERVER_PORT=8080 go run ./examples/rfc6749/authorization_code
 
 ## Endpoints
 
-| Method | Path         | Description              |
-|--------|--------------|--------------------------|
-| `GET`  | `/`          | Playground UI            |
-| `GET`  | `/authorize` | Authorization endpoint   |
-| `POST` | `/token`     | Token endpoint           |
+| Method | Path         | Description            |
+|--------|--------------|------------------------|
+| `GET`  | `/`          | Playground UI          |
+| `GET`  | `/authorize` | Authorization endpoint |
+| `POST` | `/token`     | Token endpoint         |
 
 ## Pre-seeded data
 
 ### Client
 
-| Field                       | Value                      |
-|-----------------------------|----------------------------|
-| `client_id`                 | `demo-client-id`           |
-| `token_endpoint_auth_method`| `none` (public client)     |
-| `grant_types`               | `authorization_code`       |
-| `response_types`            | `code`                     |
-| `scopes`                    | `profile`, `email`         |
-| `redirect_uris`             | `http://localhost:9090/callback` |
+| Field                        | Value                                         |
+|------------------------------|-----------------------------------------------|
+| `client_id`                  | `demo-client-id`                              |
+| `client_name`                | `Authorization Code Grant Demo`               |
+| `token_endpoint_auth_method` | `none` (public client)                        |
+| `grant_types`                | `authorization_code`                          |
+| `response_types`             | `code`                                        |
+| `scopes`                     | `profile`, `email`                            |
+| `redirect_uris`              | `http://<SERVER_ADDRESS>:<SERVER_PORT>/callback` |
 
 ### User
 
-| Field      | Value    |
-|------------|----------|
-| `username` | `alice`  |
-| `password` | `secret` |
+| Username | Password |
+|----------|----------|
+| `alice`  | `secret` |
 
 > The `/authorize` endpoint skips the login screen and authenticates as alice
 > automatically, simulating an already logged-in session.
 
 ## Flow
-
-The playground steps through the four stages of the Authorization Code flow:
 
 ```
 1. GET /authorize  →  Authorization request
@@ -71,12 +69,11 @@ Each stage displays the real HTTP request and response, including headers and bo
 
 ```
 authorization_code/
-├── main.go          # Entry point: reads config, starts HTTP server
-├── server.go        # SetupServer: wires grant, registers routes
-├── index.html       # Playground UI shell
+├── main.go        # Entry point: reads config, starts HTTP server
+├── server.go      # SetupServer: wires grant, registers routes
+├── index.html     # Playground UI shell
 └── static/
-    ├── app.js       # Flow logic and rendering
-    ├── style.css    # Styles
-    ├── fonts.css    # Local font declarations (Manrope, IBM Plex Mono)
-    └── fonts/       # WOFF2 font files
+    └── app.js     # Flow logic and rendering
 ```
+
+Shared static assets (fonts, CSS) are served from `examples/assets/`.

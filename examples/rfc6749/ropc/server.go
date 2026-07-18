@@ -28,7 +28,7 @@ var localAssets embed.FS
 //   - GET /        — playground UI
 //   - GET /static/ — static assets (CSS, JS)
 //   - POST /token  — token endpoint
-func SetupServer(cfg *config.Config, lg *slog.Logger) (http.Handler, error) {
+func SetupServer(_ *config.Config, lg *slog.Logger) (http.Handler, error) {
 	clientMgr := manager.NewClientManager()
 	demoClient := &integsql.Client{
 		ClientID:                "ropc-demo-client",
