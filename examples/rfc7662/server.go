@@ -16,6 +16,7 @@ import (
 	"github.com/tniah/authlib/examples/middleware"
 	integsql "github.com/tniah/authlib/integrations/sql"
 	"github.com/tniah/authlib/rfc6749/ropc"
+	"github.com/tniah/authlib/rfc7662"
 	authlibtypes "github.com/tniah/authlib/types"
 )
 
@@ -23,17 +24,19 @@ import (
 var localAssets embed.FS
 
 // SetupServer configures a Resource Owner Password Credentials grant server
-// and returns an http.Handler with the following routes:
+// with a Token Introspection endpoint (RFC 7662) and returns an http.Handler
+// with the following routes:
 //
-//   - GET /        — playground UI
-//   - GET /static/ — static assets (CSS, JS)
-//   - POST /token  — token endpoint
+//   - GET /          — playground UI
+//   - GET /static/   — static assets (CSS, JS)
+//   - POST /token    — token endpoint
+//   - POST /introspect — introspection endpoint
 func SetupServer(_ *config.Config, lg *slog.Logger) (http.Handler, error) {
 	clientMgr := manager.NewClientManager()
 	demoClient := &integsql.Client{
-		ClientID:                "ropc-demo-client",
-		ClientName:              "Resource Owner Password Credentials Demo",
-		ClientSecret:            "ropc-demo-secret",
+		ClientID:                "introspect-demo-client",
+		ClientName:              "Token Introspection Demo",
+		ClientSecret:            "introspect-demo-secret",
 		GrantTypes:              []string{"password"},
 		Scopes:                  []string{"profile", "email"},
 		TokenEndpointAuthMethod: "client_secret_basic",
@@ -48,19 +51,15 @@ func SetupServer(_ *config.Config, lg *slog.Logger) (http.Handler, error) {
 	}
 	userMgr.Register(demoUser)
 
-	// gt is the Resource Owner Password Credentials grant (RFC 6749 §4.3).
-	// The client sends the resource owner's username and password directly to
-	// the token endpoint; the server authenticates both the client and the user,
-	// then issues an access token without a redirect or authorization code step.
-	//
-	// SetSupportedClientAuthMethods controls how the client proves its identity:
-	//   ClientBasicAuthentication — credentials in the Authorization header (RFC 6749 §2.3.1)
-	//   ClientPostAuthentication  — client_id + client_secret as POST body parameters
+	// tokenMgr is shared between the ROPC grant and the introspection endpoint
+	// so that tokens issued at /token are visible to /introspect.
+	tokenMgr := manager.NewTokenManager()
+
 	gt, err := ropc.Must(
 		ropc.NewConfig().
 			SetClientManager(clientMgr).
 			SetUserManager(userMgr).
-			SetTokenManager(manager.NewTokenManager()).
+			SetTokenManager(tokenMgr).
 			SetSupportedClientAuthMethods(map[authlibtypes.ClientAuthMethod]bool{
 				authlibtypes.ClientBasicAuthentication: true,
 				authlibtypes.ClientPostAuthentication:  true,
@@ -70,10 +69,36 @@ func SetupServer(_ *config.Config, lg *slog.Logger) (http.Handler, error) {
 		return nil, err
 	}
 
-	// RegisterGrant makes the ROPC flow available to the server. srv dispatches
-	// incoming POST /token requests to gt when grant_type=password is detected.
+	// Configure the token introspection endpoint (RFC 7662).
+	//
+	// clientMgr handles two responsibilities here:
+	//   - Authenticate: verifies the caller's credentials before processing the
+	//     request (the caller acts as a resource server, not the token owner).
+	//   - CheckPermission: decides whether the authenticated client may inspect
+	//     a given token. The demo manager allows all clients unconditionally.
+	//
+	// tokenMgr.QueryByToken looks up the token from the in-memory store.
+	// tokenMgr.Inspect builds the claim set returned in the JSON response
+	// (scope, client_id, token_type, iat, exp, sub, jti).
+	//
+	// The default endpoint name is rfc7662.EndpointNameTokenIntrospection
+	// ("introspection"), which is used by srv.EndpointResponse to route the
+	// request to this flow.
+	introspect, err := rfc7662.MustTokenIntrospectionFlow(
+		rfc7662.NewConfig().
+			SetClientManager(clientMgr).
+			SetTokenManager(tokenMgr).
+			SetEndpointName(rfc7662.EndpointNameTokenIntrospection),
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	srv := authlib.NewServer()
 	srv.RegisterGrant(gt)
+	// RegisterEndpoint makes the introspection flow available under its
+	// configured endpoint name. srv.EndpointResponse dispatches to it by name.
+	srv.RegisterEndpoint(introspect)
 
 	clientJSON, _ := json.Marshal(map[string]interface{}{
 		"client_id":                  demoClient.ClientID,
@@ -99,7 +124,7 @@ func SetupServer(_ *config.Config, lg *slog.Logger) (http.Handler, error) {
 
 	mux := http.NewServeMux()
 
-	// GET / — serve the playground UI with client config pre-injected.
+	// GET / — serve the playground UI with config pre-injected.
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Write([]byte(injected))
@@ -117,6 +142,13 @@ func SetupServer(_ *config.Config, lg *slog.Logger) (http.Handler, error) {
 	mux.HandleFunc("POST /token", func(w http.ResponseWriter, r *http.Request) {
 		if err := srv.CreateTokenResponse(r, w); err != nil {
 			lg.Error("token request failed", "error", err)
+		}
+	})
+
+	// POST /introspect — token introspection endpoint (RFC 7662).
+	mux.HandleFunc("POST /introspect", func(w http.ResponseWriter, r *http.Request) {
+		if err := srv.EndpointResponse(r, w, rfc7662.EndpointNameTokenIntrospection); err != nil {
+			lg.Error("introspect request failed", "error", err)
 		}
 	})
 

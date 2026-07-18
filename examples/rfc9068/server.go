@@ -53,9 +53,14 @@ func SetupServer(cfg *config.Config, lg *slog.Logger) (http.Handler, error) {
 	}
 	userMgr.Register(demoUser)
 
+	// issuer identifies this authorization server in the JWT "iss" claim.
+	// audience identifies the resource server(s) that will accept the token.
 	issuer := fmt.Sprintf("http://%s:%s", publicHost(cfg.Address), cfg.Port)
 	audience := "https://github.com/tniah/authlib"
 
+	// Load the RSA key pair from the embedded files under keys/.
+	// private.pem signs the JWT; public.pem is exposed to the playground UI
+	// so users can verify the signature without running a separate JWKS endpoint.
 	privPEM, err := localAssets.ReadFile("keys/private.pem")
 	if err != nil {
 		return nil, fmt.Errorf("read private key: %w", err)
@@ -66,6 +71,20 @@ func SetupServer(cfg *config.Config, lg *slog.Logger) (http.Handler, error) {
 		return nil, fmt.Errorf("read public key: %w", err)
 	}
 
+	// jwtGen is a JWTAccessTokenGenerator (RFC 9068) that produces signed JWTs
+	// instead of opaque random strings. Each token carries standard claims:
+	//   iss       — issuer (this server's base URL)
+	//   aud       — audience (the intended resource server)
+	//   sub       — subject (the authenticated user's ID)
+	//   iat       — issued-at timestamp
+	//   exp       — expiry timestamp (iat + ExpiresIn)
+	//   jti       — unique token ID (random, for revocation)
+	//   client_id — the OAuth client that requested the token
+	//   scope     — the granted scope string
+	//
+	// SetSigningKey accepts a PEM-encoded private key, the signing algorithm,
+	// and a key ID written into the JWT header ("kid"). RS256 uses the RSA
+	// private key to sign; recipients verify with the corresponding public key.
 	jwtGen, err := rfc9068.MustJWTAccessTokenGenerator(
 		rfc9068.NewGeneratorConfig().
 			SetIssuer(issuer).
@@ -77,10 +96,17 @@ func SetupServer(cfg *config.Config, lg *slog.Logger) (http.Handler, error) {
 		return nil, fmt.Errorf("jwt generator: %w", err)
 	}
 
+	// bearerGen wraps jwtGen inside a BearerTokenGenerator (RFC 6750).
+	// SetAccessTokenGenerator replaces the default opaque random token
+	// generator with the JWT generator above, so every call to
+	// BearerTokenGenerator.Generate produces a signed JWT access token.
 	bearerGen := rfc6750.NewBearerTokenGenerator(
 		rfc6750.NewBearerTokenGeneratorOptions().SetAccessTokenGenerator(jwtGen),
 	)
 
+	// Wire the ROPC grant with the JWT-backed token manager.
+	// NewTokenManagerWithGenerator injects bearerGen so that token issuance
+	// calls through to jwtGen rather than the default random-string generator.
 	gt, err := ropc.Must(
 		ropc.NewConfig().
 			SetClientManager(clientMgr).
