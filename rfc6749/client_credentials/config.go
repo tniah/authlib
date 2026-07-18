@@ -29,6 +29,9 @@ const (
 	OmittedScopePolicyUseClientDefault
 )
 
+// Config holds all settings for the Client Credentials grant flow.
+// Use NewConfig to get a value with secure defaults, then chain Set* calls
+// to configure managers and behaviour.
 type Config struct {
 	clientMgr ClientManager
 	tokenMgr  TokenManager
@@ -48,6 +51,10 @@ type Config struct {
 	omittedScopePolicy OmittedScopePolicy
 }
 
+// NewConfig returns a Config with secure defaults:
+//   - token endpoint accepts POST only
+//   - client authentication: client_secret_basic
+//   - omitted scope: reject with invalid_scope (OmittedScopePolicyReject)
 func NewConfig() *Config {
 	return &Config{
 		tokenEndpointHttpMethods: []string{http.MethodPost},
@@ -87,7 +94,9 @@ func (cfg *Config) SetTokenEndpointHttpMethods(methods []string) *Config {
 }
 
 // SetOmittedScopePolicy sets the behavior when the client omits the scope
-// parameter. Default: OmittedScopePolicyReject.
+// parameter (RFC 6749 §3.3). Available values:
+//   - OmittedScopePolicyReject (default): reject with invalid_scope.
+//   - OmittedScopePolicyUseClientDefault: grant the client's full registered scope list.
 func (cfg *Config) SetOmittedScopePolicy(p OmittedScopePolicy) *Config {
 	cfg.omittedScopePolicy = p
 	return cfg

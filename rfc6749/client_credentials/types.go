@@ -22,8 +22,9 @@ type TokenManager interface {
 	// New allocates a blank Token ready to be populated by Generate.
 	New() models.Token
 
-	// Generate populates token with a value, expiry, scopes, and client/user
-	// binding. Set includeRefreshToken to true to also generate a refresh token.
+	// Generate populates token with a value, expiry, scopes, and client binding.
+	// includeRefreshToken is always false for this grant — RFC 6749 §4.4.3
+	// states that a refresh token SHOULD NOT be issued in the client credentials flow.
 	Generate(token models.Token, r *requests.TokenRequest, includeRefreshToken bool) error
 
 	// Save persists the token to the backing store.

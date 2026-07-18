@@ -17,13 +17,17 @@ import (
 // that the client store can apply per-endpoint auth method policies.
 const EndpointToken = "token"
 
+// ErrNilToken is returned by genToken when TokenManager.New returns nil.
 var ErrNilToken = errors.New("token is nil")
 
+// Flow implements the Client Credentials grant (RFC 6749 §4.4).
+// Use Must or New to construct an instance from a Config.
 type Flow struct {
 	*Config
 	*rfc6749.TokenFlowMixin
 }
 
+// New returns a Flow without validating the config. Prefer Must for production use.
 func New(config *Config) *Flow {
 	return &Flow{
 		Config:         config,
@@ -45,6 +49,9 @@ func (f *Flow) CheckGrantType(gt types.GrantType) bool {
 	return gt.IsClientCredentials()
 }
 
+// ValidateTokenRequest runs the full validation pipeline for an incoming token
+// request: HTTP method → grant_type → client authentication → scope →
+// registered extension validators. Returns the first error encountered.
 func (f *Flow) ValidateTokenRequest(r *requests.TokenRequest) error {
 	if err := f.checkTokenEndpointHttpMethod(r); err != nil {
 		return err
@@ -71,6 +78,9 @@ func (f *Flow) ValidateTokenRequest(r *requests.TokenRequest) error {
 	return nil
 }
 
+// TokenResponse generates an access token, runs registered token processors,
+// persists the token, and writes the JSON response (RFC 6749 §5.1).
+// No refresh token is ever included (RFC 6749 §4.4.3).
 func (f *Flow) TokenResponse(r *requests.TokenRequest, rw http.ResponseWriter) error {
 	token, err := f.genToken(r)
 	if err != nil {
