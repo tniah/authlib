@@ -7,26 +7,23 @@ Package `ropc` implements the [RFC 6749 §4.3 Resource Owner Password Credential
 ## How It Works
 
 ```
-  +------------------------+                                 +------------------------+
-  | Client                 |                                 | Authorization Server   |
-  |                        |                                 | Token Endpoint         |
-  | (1) Collect username   |                                 |                        |
-  |     and password from  |                                 |                        |
-  |     resource owner     |                                 |                        |
-  |                        |--(2)--------------------------->|                        |
-  |                        |  POST /token                    | (3) Authenticate       |
-  |                        |  [Header]                       |     client             |
-  |                        |  Auth: Basic                    | (4) Authenticate user  |
-  |                        |  base64(client_id:client_secret)| (5) Validate scope     |
-  |                        |  [Body]                         | (6) Issue tokens       |
-  |                        |  grant_type=password            |                        |
-  |                        |  username=alice                 |                        |
-  |                        |  password=s3cr3t                |                        |
-  |                        |  scope=read                     |                        |
-  |                        |<-(7)----------------------------|                        |
-  |                        |  access_token                   |                        |
-  |                        |  + refresh_token (opt.)         |                        |
-  +------------------------+                                 +------------------------+
+  +------------------------+                                              +------------------------+
+  | Client                 |                                              | Authorization Server   |
+  |                        |                                              | Token Endpoint         |
+  | (1) Collect username   |                                              |                        |
+  |     and password from  |                                              |                        |
+  |     resource owner     |                                              |                        |
+  |                        |--(2)---------------------------------------->|                        |
+  |                        |  POST /token                                 | (3) Authenticate       |
+  |                        |  Auth: Basic base64(client_id:client_secret) |     client             |
+  |                        |  grant_type=password                         | (4) Authenticate user  |
+  |                        |  username=alice                              | (5) Validate scope     |
+  |                        |  password=s3cr3t                             | (6) Issue tokens       |
+  |                        |  scope=read                                  |                        |
+  |                        |<-(7)-----------------------------------------|                        |
+  |                        |  access_token                                |                        |
+  |                        |  + refresh_token (opt.)                      |                        |
+  +------------------------+                                              +------------------------+
 ```
 
 **Steps:**
