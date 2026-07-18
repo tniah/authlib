@@ -128,10 +128,10 @@
         let authHeader = '';
         switch (state.authMethod) {
             case 'client_secret_basic':
-                authHeader = '\nAuthorization: Basic ' + btoa(cid + ':' + (window.__CLIENT_SECRET__ || '')).slice(0, 24) + '…';
+                authHeader = '\nAuthorization: Basic <base64(' + cid + ':client_secret)>';
                 break;
             case 'client_secret_post':
-                tokenBody.client_secret = '••••••••••••';
+                tokenBody.client_secret = window.__CLIENT_SECRET__;
                 break;
         }
 
@@ -145,7 +145,7 @@
             title: 'Authorization request',
             path: '/authorize',
             desc: 'Browser redirects to the authorization endpoint. The server authenticates the user and asks for consent.',
-            http: 'GET /authorize HTTP/1.1\n' + 'Host: localhost:9090\n\n' + authParams.map(([k, v], i) => (i === 0 ? '  ' : '  &') + k + '=' + encodeURIComponent(v)).join('\n'),
+            http: 'GET /authorize HTTP/1.1\n' + 'Host: ' + window.location.host + '\n\n' + authParams.map(([k, v], i) => (i === 0 ? '  ' : '  &') + k + '=' + v).join('\n'),
         }, {
             badge: '302',
             badgeClass: 'badge-local',
@@ -159,7 +159,7 @@
             title: 'Token request',
             path: '/token',
             desc: 'A back-channel request trades the code for tokens. ' + AUTH_METHOD_HINTS[state.authMethod],
-            http: 'POST /token HTTP/1.1\n' + 'Host: localhost:9090\n' + 'Content-Type: application/x-www-form-urlencoded' + authHeader + '\n\n' + Object.entries(tokenBody).map(([k, v], i) => (i === 0 ? '  ' : '  &') + k + '=' + encodeURIComponent(v)).join('\n'),
+            http: 'POST /token HTTP/1.1\n' + 'Host: ' + window.location.host + '\n' +'Content-Type: application/x-www-form-urlencoded' + authHeader + '\n\n' + Object.entries(tokenBody).map(([k, v], i) => (i === 0 ? '  ' : '  &') + k + '=' + v).join('\n'),
         }, {
             badge: tokenStatus,
             badgeClass: tokenBadgeClass,
