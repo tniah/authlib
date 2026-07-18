@@ -37,6 +37,13 @@
         return out;
     }
 
+    let tokenState = null;
+
+    function getTokenState() {
+        if (!tokenState) tokenState = {state: randToken(16)};
+        return tokenState;
+    }
+
     async function doAuthRequest() {
         const gen = ++fetchGen;
         state.loading = true;

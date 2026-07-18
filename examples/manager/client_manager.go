@@ -26,10 +26,10 @@ func NewClientManager() *ClientManager {
 			"public_client": {
 				ClientName:              "Public client",
 				ClientID:                "public_client",
-				RedirectURIs:            []string{},
+				RedirectURIs:            []string{"http://localhost:9090/callback"},
 				ResponseTypes:           []string{authlibtypes.ResponseTypeCode.String()},
 				GrantTypes:              []string{authlibtypes.GrantTypeAuthorizationCode.String()},
-				Scopes:                  []string{"openid", "offline_access", "profile"},
+				Scopes:                  []string{"offline_access", "profile"},
 				TokenEndpointAuthMethod: authlibtypes.ClientNoneAuthentication.String(),
 			},
 			"confidential_client": {
@@ -46,10 +46,17 @@ func NewClientManager() *ClientManager {
 	}
 
 	m.mgr.Register(clientauth.NewNoneAuthHandler(m))
-	m.mgr.Register(clientauth.NewNoneAuthHandler(m))
+	m.mgr.Register(clientauth.NewBasicAuthHandler(m))
 	m.mgr.Register(clientauth.NewPostAuthHandler(m))
 
 	return m
+}
+
+// GetClient returns the raw *sql.Client for the given client ID, or nil if not found.
+func (m *ClientManager) GetClient(id string) *sql.Client {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	return m.clients[id]
 }
 
 // QueryByClientID retrieves an OAuth2 client by its client ID.
