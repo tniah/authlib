@@ -13,10 +13,9 @@ import (
 	authlibtypes "github.com/tniah/authlib/types"
 )
 
-// TokenManager manages the lifecycle of OAuth2 tokens,
-// delegating persistence to a repository and token generation to a BearerTokenGenerator.
+// TokenManager is an in-memory OAuth2 token store for example purposes.
 type TokenManager struct {
-	lock           sync.Mutex
+	lock           sync.RWMutex
 	byAccessToken  map[string]*sql.Token
 	byRefreshToken map[string]*sql.Token
 	gen            *rfc6750.BearerTokenGenerator
@@ -44,7 +43,7 @@ func (m *TokenManager) Generate(token authlibmodels.Token, r *authlibrequests.To
 // Save persists a new token.
 // If the provided model is not a *sql.Token, all fields are copied via setters
 // into a new instance before storing.
-func (m *TokenManager) Save(ctx context.Context, token authlibmodels.Token) error {
+func (m *TokenManager) Save(_ context.Context, token authlibmodels.Token) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
@@ -81,9 +80,9 @@ func (m *TokenManager) Save(ctx context.Context, token authlibmodels.Token) erro
 // QueryByToken retrieves a token by its value and optional type hint.
 // When hint is refresh_token, the refresh token index is searched first.
 // Returns (nil, nil) when the token does not exist.
-func (m *TokenManager) QueryByToken(ctx context.Context, token string, hint authlibtypes.TokenTypeHint) (authlibmodels.Token, error) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
+func (m *TokenManager) QueryByToken(_ context.Context, token string, hint authlibtypes.TokenTypeHint) (authlibmodels.Token, error) {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
 
 	if hint.IsRefreshToken() {
 		if t, ok := m.byRefreshToken[token]; ok {
@@ -106,7 +105,7 @@ func (m *TokenManager) QueryByToken(ctx context.Context, token string, hint auth
 
 // Inspect returns the RFC 7662 §2.2 introspection claims for an active token.
 // The caller (introspection endpoint) merges these with {"active": true}; do not include it here.
-func (m *TokenManager) Inspect(client authlibmodels.Client, token authlibmodels.Token) map[string]interface{} {
+func (m *TokenManager) Inspect(_ authlibmodels.Client, token authlibmodels.Token) map[string]interface{} {
 	data := make(map[string]interface{})
 
 	if scopes := token.GetScopes(); len(scopes) > 0 {

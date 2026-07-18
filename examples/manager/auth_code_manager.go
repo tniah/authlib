@@ -10,10 +10,9 @@ import (
 	authlibcodegen "github.com/tniah/authlib/rfc6749/code_generator"
 )
 
-// AuthorizationCodeManager manages the lifecycle of OAuth2 authorization codes,
-// delegating persistence to a repository and code generation to the embedded Generator.
+// AuthorizationCodeManager is an in-memory OAuth2 authorization code store for example purposes.
 type AuthorizationCodeManager struct {
-	lock  sync.Mutex
+	lock  sync.RWMutex
 	codes map[string]*sql.AuthorizationCode
 	*authlibcodegen.Generator
 }
@@ -36,9 +35,9 @@ func (m *AuthorizationCodeManager) New() authlibmodels.AuthorizationCode {
 
 // QueryByCode retrieves an authorization code by its code value.
 // Returns (nil, nil) when the code does not exist or has expired.
-func (m *AuthorizationCodeManager) QueryByCode(ctx context.Context, code string) (authlibmodels.AuthorizationCode, error) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
+func (m *AuthorizationCodeManager) QueryByCode(_ context.Context, code string) (authlibmodels.AuthorizationCode, error) {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
 
 	c, ok := m.codes[code]
 	if !ok {
@@ -51,7 +50,7 @@ func (m *AuthorizationCodeManager) QueryByCode(ctx context.Context, code string)
 // Save persists a new authorization code.
 // If the provided model is not a *sql.AuthorizationCode, all fields are
 // copied via setters into a new instance before storing.
-func (m *AuthorizationCodeManager) Save(ctx context.Context, c authlibmodels.AuthorizationCode) error {
+func (m *AuthorizationCodeManager) Save(_ context.Context, c authlibmodels.AuthorizationCode) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
@@ -82,7 +81,7 @@ func (m *AuthorizationCodeManager) Save(ctx context.Context, c authlibmodels.Aut
 
 // DeleteByCode removes an authorization code from the store.
 // It is a no-op when the code does not exist.
-func (m *AuthorizationCodeManager) DeleteByCode(ctx context.Context, code string) error {
+func (m *AuthorizationCodeManager) DeleteByCode(_ context.Context, code string) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 

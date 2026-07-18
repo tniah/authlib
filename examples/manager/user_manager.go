@@ -37,72 +37,38 @@ func (u *User) GetUserID() string {
 	return u.UserID
 }
 
-// UserManager handles user lookup and authentication for OAuth2 flows.
+// UserManager is an in-memory user store for example purposes.
 type UserManager struct {
-	lock       sync.Mutex
+	lock       sync.RWMutex
 	byID       map[string]*User
 	byUsername map[string]*User
 }
 
-// NewUserManager creates a new UserManager with pre-seeded test users.
+// NewUserManager creates a new empty UserManager.
 func NewUserManager() *UserManager {
-	now := time.Now().UTC().Round(time.Second)
-	users := []*User{
-		{
-			UserID:        "usr_alice001",
-			Username:      "alice",
-			Password:      "secret",
-			Email:         "alice@example.com",
-			EmailVerified: true,
-			Name:          "Alice Smith",
-			GivenName:     "Alice",
-			FamilyName:    "Smith",
-			MiddleName:    "Marie",
-			Nickname:      "ally",
-			Picture:       "https://i.pravatar.cc/150?u=alice",
-			Website:       "https://alice.example.com",
-			PhoneNumber:   "+1-202-555-0101",
-			Locale:        "en-US",
-			ZoneInfo:      "America/New_York",
-			CreatedAt:     now,
-			UpdatedAt:     now,
-		},
-		{
-			UserID:        "usr_bob002",
-			Username:      "bob",
-			Password:      "password",
-			Email:         "bob@example.com",
-			EmailVerified: false,
-			Name:          "Bob Nguyen",
-			GivenName:     "Bob",
-			FamilyName:    "Nguyen",
-			Nickname:      "bobby",
-			Picture:       "https://i.pravatar.cc/150?u=bob",
-			Website:       "https://bob.example.com",
-			PhoneNumber:   "+84-90-555-0202",
-			Locale:        "vi-VN",
-			ZoneInfo:      "Asia/Ho_Chi_Minh",
-			CreatedAt:     now,
-			UpdatedAt:     now,
-		},
+	return &UserManager{
+		byID:       make(map[string]*User),
+		byUsername: make(map[string]*User),
 	}
+}
 
-	m := &UserManager{
-		byID:       make(map[string]*User, len(users)),
-		byUsername: make(map[string]*User, len(users)),
+// Register adds a new user to the manager. If a user with the same UserID or
+// Username already exists, it is overwritten.
+func (m *UserManager) Register(u *User) {
+	if u == nil || u.UserID == "" {
+		return
 	}
-	for _, u := range users {
-		m.byID[u.UserID] = u
-		m.byUsername[u.Username] = u
-	}
-	return m
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	m.byID[u.UserID] = u
+	m.byUsername[u.Username] = u
 }
 
 // QueryUserByCode retrieves the user associated with the given authorization code.
 // Returns (nil, nil) when no user is found for the code's user ID.
-func (m *UserManager) QueryUserByCode(ctx context.Context, code authlibmodels.AuthorizationCode, r *authlibrequests.TokenRequest) (authlibmodels.User, error) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
+func (m *UserManager) QueryUserByCode(_ context.Context, code authlibmodels.AuthorizationCode, _ *authlibrequests.TokenRequest) (authlibmodels.User, error) {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
 
 	u, ok := m.byID[code.GetUserID()]
 	if !ok {
@@ -114,9 +80,9 @@ func (m *UserManager) QueryUserByCode(ctx context.Context, code authlibmodels.Au
 
 // Authenticate verifies the user's credentials and returns the authenticated user.
 // Returns (nil, nil) when the credentials are invalid.
-func (m *UserManager) Authenticate(username, password string, client authlibmodels.Client, r *http.Request) (authlibmodels.User, error) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
+func (m *UserManager) Authenticate(username, password string, _ authlibmodels.Client, _ *http.Request) (authlibmodels.User, error) {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
 
 	u, ok := m.byUsername[username]
 	if !ok || u.Password != password {

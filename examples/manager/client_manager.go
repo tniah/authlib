@@ -3,46 +3,27 @@ package manager
 import (
 	"context"
 	"net/http"
-	"strings"
 	"sync"
 
-	"github.com/google/uuid"
 	"github.com/tniah/authlib/integrations/sql"
 	authlibmodels "github.com/tniah/authlib/models"
 	clientauth "github.com/tniah/authlib/rfc6749/client_authentication"
 	authlibtypes "github.com/tniah/authlib/types"
 )
 
+// ClientManager is an in-memory OAuth2 client store for example purposes.
 type ClientManager struct {
-	lock    sync.Mutex
+	lock    sync.RWMutex
 	mgr     *clientauth.Manager
 	clients map[string]*sql.Client
 }
 
+// NewClientManager returns a ClientManager pre-configured with the none, basic,
+// and post client authentication handlers.
 func NewClientManager() *ClientManager {
 	m := &ClientManager{
-		mgr: clientauth.NewManager(),
-		clients: map[string]*sql.Client{
-			"public_client": {
-				ClientName:              "Public client",
-				ClientID:                "public_client",
-				RedirectURIs:            []string{"http://localhost:9090/callback"},
-				ResponseTypes:           []string{authlibtypes.ResponseTypeCode.String()},
-				GrantTypes:              []string{authlibtypes.GrantTypeAuthorizationCode.String()},
-				Scopes:                  []string{"offline_access", "profile"},
-				TokenEndpointAuthMethod: authlibtypes.ClientNoneAuthentication.String(),
-			},
-			"confidential_client": {
-				ClientName:              "Confidential client",
-				ClientID:                "confidential_client",
-				ClientSecret:            strings.ReplaceAll(uuid.New().String(), "-", ""),
-				RedirectURIs:            []string{},
-				ResponseTypes:           []string{authlibtypes.ResponseTypeCode.String()},
-				GrantTypes:              []string{authlibtypes.GrantTypeAuthorizationCode.String()},
-				Scopes:                  []string{"openid", "offline_access", "profile"},
-				TokenEndpointAuthMethod: authlibtypes.ClientBasicAuthentication.String(),
-			},
-		},
+		mgr:     clientauth.NewManager(),
+		clients: make(map[string]*sql.Client),
 	}
 
 	m.mgr.Register(clientauth.NewNoneAuthHandler(m))
@@ -52,17 +33,21 @@ func NewClientManager() *ClientManager {
 	return m
 }
 
-// GetClient returns the raw *sql.Client for the given client ID, or nil if not found.
-func (m *ClientManager) GetClient(id string) *sql.Client {
+// Register adds a new client to the manager. If a client with the same
+// ClientID already exists, it is overwritten.
+func (m *ClientManager) Register(cl *sql.Client) {
+	if cl == nil || cl.ClientID == "" {
+		return
+	}
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	return m.clients[id]
+	m.clients[cl.ClientID] = cl
 }
 
 // QueryByClientID retrieves an OAuth2 client by its client ID.
-func (m *ClientManager) QueryByClientID(ctx context.Context, id string) (authlibmodels.Client, error) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
+func (m *ClientManager) QueryByClientID(_ context.Context, id string) (authlibmodels.Client, error) {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
 
 	cl, ok := m.clients[id]
 	if !ok {
@@ -74,12 +59,12 @@ func (m *ClientManager) QueryByClientID(ctx context.Context, id string) (authlib
 	return cl, nil
 }
 
-// Authenticate authenticates the client from the HTTP request using the registered auth methods.
+// Authenticate validates the client credentials in the request using the registered auth handlers.
 func (m *ClientManager) Authenticate(r *http.Request, authMethods map[authlibtypes.ClientAuthMethod]bool, endpointName string) (authlibmodels.Client, error) {
 	return m.mgr.Authenticate(r, authMethods, endpointName)
 }
 
-// CheckPermission reports whether the client is permitted to use the given token on the request.
+// CheckPermission reports whether the client is permitted to introspect the given token.
 func (m *ClientManager) CheckPermission(client authlibmodels.Client, token authlibmodels.Token, r *http.Request) bool {
 	return true
 }
