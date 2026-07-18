@@ -9,6 +9,7 @@ Runnable examples demonstrating OAuth 2.0 and related specifications built with
 |---------|-----|------|-------------|
 | [`rfc6749/authorization_code`](rfc6749/authorization_code/) | [RFC 6749 §4.1](https://www.rfc-editor.org/rfc/rfc6749#section-4.1) | Playground | Authorization Code Grant |
 | [`rfc6749/ropc`](rfc6749/ropc/) | [RFC 6749 §4.3](https://www.rfc-editor.org/rfc/rfc6749#section-4.3) | Playground | Resource Owner Password Credentials |
+| [`rfc6749/client_credentials`](rfc6749/client_credentials/) | [RFC 6749 §4.4](https://www.rfc-editor.org/rfc/rfc6749#section-4.4) | Playground | Client Credentials Grant |
 | [`rfc7636`](rfc7636/) | [RFC 7636](https://www.rfc-editor.org/rfc/rfc7636) | Playground | Authorization Code + PKCE |
 | [`rfc7662`](rfc7662/) | [RFC 7662](https://www.rfc-editor.org/rfc/rfc7662) | Playground | Token Introspection |
 | [`rfc9068`](rfc9068/) | [RFC 9068](https://www.rfc-editor.org/rfc/rfc9068) | Playground | JWT Access Tokens |
@@ -23,6 +24,9 @@ go run ./examples/rfc6749/authorization_code
 
 # Resource Owner Password Credentials
 go run ./examples/rfc6749/ropc
+
+# Client Credentials Grant
+go run ./examples/rfc6749/client_credentials
 
 # Authorization Code + PKCE
 go run ./examples/rfc7636

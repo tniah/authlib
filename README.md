@@ -42,6 +42,7 @@ go get github.com/tniah/authlib
 | -------------- | -------------------------------- | ----------------------------------------------------------------------------|
 | RFC 6749 §4.1  | `rfc6749/authorization_code`     | Authorization Code Grant                                                    |
 | RFC 6749 §4.3  | `rfc6749/ropc`                   | Resource Owner Password Credentials                                         |
+| RFC 6749 §4.4  | `rfc6749/client_credentials`     | Client Credentials Grant                                                    |
 | RFC 6749 §2.3  | `rfc6749/client_authentication`  | Client authentication (`client_secret_basic`, `client_secret_post`, `none`) |
 | RFC 6749       | `rfc6749/code_generator`         | Authorization code generation                                               |
 | RFC 6750       | `rfc6750`                        | Bearer Token (opaque access + refresh)                                      |
@@ -171,6 +172,24 @@ srv := authlib.NewServer()
 srv.RegisterGrant(flow)
 ```
 
+### Client Credentials (RFC 6749 §4.4)
+
+```go
+import (
+    "github.com/tniah/authlib"
+    clientcredentials "github.com/tniah/authlib/rfc6749/client_credentials"
+)
+
+flow, _ := clientcredentials.Must(
+    clientcredentials.NewConfig().
+        SetClientManager(clientMgr).
+        SetTokenManager(tokenMgr),
+)
+
+srv := authlib.NewServer()
+srv.RegisterGrant(flow)
+```
+
 ### JWT Access Tokens (RFC 9068)
 
 ```go
@@ -220,6 +239,7 @@ Implement the interfaces in the `models` package with your own data layer. See [
 | ---------------------------------- | -------------------------------------------------------------------- |
 | `rfc6749/authorization_code`     | [README](rfc6749/authorization_code/README.md)                     |
 | `rfc6749/ropc`                   | [README](rfc6749/ropc/README.md)                                   |
+| `rfc6749/client_credentials`     | [README](rfc6749/client_credentials/README.md)                     |
 | `rfc6749/client_authentication`  | [README](rfc6749/client_authentication/README.md)                  |
 | `rfc6749/code_generator`         | [README](rfc6749/code_generator/README.md)                         |
 | `rfc6750`                        | [README](rfc6750/README.md)                                        |
