@@ -289,18 +289,31 @@ func (f *Flow) validateResponseType(r *requests.AuthorizationRequest) error {
 	return nil
 }
 
-// validateScope filters the requested scopes through the client's allowed list
-// and returns invalid_scope if the client explicitly requested scopes that are
-// all disallowed (RFC 6749 §3.3). If no scope is requested the check is skipped;
-// the caller or a downstream handler is responsible for applying any defaults.
+// validateScope filters the requested scopes through the client's allowed list.
+// When the scope parameter is absent, the behavior is governed by
+// Config.omittedScopePolicy (RFC 6749 §3.3):
+//   - OmittedScopePolicyReject (default): reject with invalid_scope.
+//   - OmittedScopePolicyUseClientDefault: grant the client's full registered scope list.
 func (f *Flow) validateScope(r *requests.AuthorizationRequest) error {
 	if len(r.Scopes) == 0 {
-		return nil
+		switch f.omittedScopePolicy {
+		case OmittedScopePolicyUseClientDefault:
+			r.Scopes = r.Client.GetScopes()
+			return nil
+		default:
+			return autherrors.InvalidScopeError().
+				WithDescription("scope is required").
+				WithState(r.State).
+				WithRedirectURI(r.RedirectURI)
+		}
 	}
 
 	allowed := r.Client.GetAllowedScopes(r.Scopes)
 	if len(allowed) == 0 {
-		return autherrors.InvalidScopeError().WithState(r.State).WithRedirectURI(r.RedirectURI)
+		return autherrors.InvalidScopeError().
+			WithDescription("none of the requested scopes are permitted for this client").
+			WithState(r.State).
+			WithRedirectURI(r.RedirectURI)
 	}
 
 	r.Scopes = allowed

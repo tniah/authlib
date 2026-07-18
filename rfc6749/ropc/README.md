@@ -108,14 +108,28 @@ Extensions are registered via `cfg.RegisterExtension(ext)` and executed in regis
 
 ## Config Options
 
-| Method                             | Default               | Description                                               |
-|------------------------------------|-----------------------|-----------------------------------------------------------|
-| `SetClientManager(mgr)`            | —                     | Required. Client authentication.                          |
-| `SetUserManager(mgr)`              | —                     | Required. Resource owner credential verification.         |
-| `SetTokenManager(mgr)`             | —                     | Required. Token generation and persistence.               |
-| `SetTokenEndpointHttpMethods(m)`   | `[POST]`              | HTTP methods accepted at `/token`.                        |
-| `SetSupportedClientAuthMethods(m)` | `client_secret_basic` | Client authentication methods accepted at `/token`.       |
-| `RegisterExtension(ext)`           | —                     | Register one or more extension hooks.                     |
+| Method                             | Default                    | Description                                               |
+|------------------------------------|----------------------------|-----------------------------------------------------------|
+| `SetClientManager(mgr)`            | —                          | Required. Client authentication.                          |
+| `SetUserManager(mgr)`              | —                          | Required. Resource owner credential verification.         |
+| `SetTokenManager(mgr)`             | —                          | Required. Token generation and persistence.               |
+| `SetTokenEndpointHttpMethods(m)`   | `[POST]`                   | HTTP methods accepted at `/token`.                        |
+| `SetSupportedClientAuthMethods(m)` | `client_secret_basic`      | Client authentication methods accepted at `/token`.       |
+| `SetOmittedScopePolicy(p)`         | `OmittedScopePolicyReject` | Behavior when the client omits the `scope` parameter.     |
+| `RegisterExtension(ext)`           | —                          | Register one or more extension hooks.                     |
+
+### Omitted Scope Policy
+
+Controls what happens when the client does not include a `scope` parameter (RFC 6749 §3.3):
+
+| Policy                               | Behavior                                                    |
+|--------------------------------------|-------------------------------------------------------------|
+| `OmittedScopePolicyReject`           | Reject with `invalid_scope`. This is the default.           |
+| `OmittedScopePolicyUseClientDefault` | Grant the client's full registered scope list.              |
+
+```go
+cfg.SetOmittedScopePolicy(ropc.OmittedScopePolicyUseClientDefault)
+```
 
 ## Validation Rules
 
@@ -124,7 +138,8 @@ Extensions are registered via `cfg.RegisterExtension(ext)` and executed in regis
 - `username` and `password` must be present in the request.
 - Client must authenticate successfully using a supported method.
 - Client must have `grant_type=password` explicitly registered; otherwise `unauthorized_client` is returned.
-- Requested scopes are intersected with the client's allowed scopes. If the intersection is empty, `invalid_scope` is returned.
+- When `scope` is present, it is intersected with the client's allowed scopes. If the intersection is empty, `invalid_scope` is returned.
+- When `scope` is absent, behavior is determined by `OmittedScopePolicy` (default: reject with `invalid_scope`).
 - If `UserManager.Authenticate` returns `nil`, `invalid_grant` is returned with a generic message.
 - A refresh token is included only if the client has the `refresh_token` grant type registered.
 

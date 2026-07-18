@@ -17,6 +17,20 @@ var (
 	ErrEmptyClientAuthMethods = errors.New("client auth methods are empty")
 )
 
+// OmittedScopePolicy controls how the authorization endpoint behaves when the
+// client does not include a scope parameter in the request (RFC 6749 §3.3).
+type OmittedScopePolicy int
+
+const (
+	// OmittedScopePolicyReject rejects the request with invalid_scope when
+	// the scope parameter is absent. This is the default.
+	OmittedScopePolicyReject OmittedScopePolicy = iota
+
+	// OmittedScopePolicyUseClientDefault grants the client's full registered
+	// scope list when the scope parameter is absent.
+	OmittedScopePolicyUseClientDefault
+)
+
 // Config holds all dependencies and extension hooks for the Authorization Code flow.
 // Use NewConfig() to get a config with sensible defaults, then chain Set*/RegisterExtension
 // calls before passing to Must() or New().
@@ -42,11 +56,16 @@ type Config struct {
 	// supportedClientAuthMethods controls which authentication methods are
 	// accepted at the token endpoint (basic, post, none).
 	supportedClientAuthMethods map[types.ClientAuthMethod]bool
+
+	// omittedScopePolicy controls the behavior when the client omits the scope
+	// parameter at /authorize (RFC 6749 §3.3). Default: OmittedScopePolicyReject.
+	omittedScopePolicy OmittedScopePolicy
 }
 
 // NewConfig returns a Config with secure defaults:
 //   - Accepts GET on /authorize, POST on /token.
 //   - Supports basic and none client authentication methods.
+//   - Omitted scope: reject with invalid_scope (OmittedScopePolicyReject).
 func NewConfig() *Config {
 	return &Config{
 		supportedClientAuthMethods: map[types.ClientAuthMethod]bool{
@@ -60,6 +79,7 @@ func NewConfig() *Config {
 		authCodeProcessors:       []AuthCodeProcessor{},
 		tokenReqValidators:       []TokenRequestValidator{},
 		tokenProcessors:          []TokenProcessor{},
+		omittedScopePolicy:       OmittedScopePolicyReject,
 	}
 }
 
@@ -127,6 +147,15 @@ func (cfg *Config) RegisterExtension(ext interface{}) *Config {
 		cfg.tokenProcessors = append(cfg.tokenProcessors, h)
 	}
 
+	return cfg
+}
+
+// SetOmittedScopePolicy sets the behavior when the client omits the scope
+// parameter at /authorize (RFC 6749 §3.3). Available values:
+//   - OmittedScopePolicyReject (default): reject with invalid_scope.
+//   - OmittedScopePolicyUseClientDefault: grant the client's full registered scope list.
+func (cfg *Config) SetOmittedScopePolicy(p OmittedScopePolicy) *Config {
+	cfg.omittedScopePolicy = p
 	return cfg
 }
 

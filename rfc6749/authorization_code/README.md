@@ -147,16 +147,30 @@ cfg := authorizationcode.NewConfig().
 
 ## Config Options
 
-| Method                            | Default            | Description                                               |
-|-----------------------------------|--------------------|-----------------------------------------------------------|
-| `SetClientManager(mgr)`           | —                  | Required. Client lookup and authentication.               |
-| `SetAuthCodeManager(mgr)`         | —                  | Required. Authorization code lifecycle.                   |
-| `SetTokenManager(mgr)`            | —                  | Required. Token generation and persistence.               |
-| `SetUserManager(mgr)`             | —                  | Required. User resolution from auth code.                 |
-| `SetAuthEndpointHttpMethods(m)`   | `[GET]`            | HTTP methods accepted at `/authorize`.                    |
-| `SetTokenEndpointHttpMethods(m)`  | `[POST]`           | HTTP methods accepted at `/token`.                        |
-| `SetSupportedClientAuthMethods(m)`| `client_secret_basic`, `none` | Client authentication methods accepted at `/token`. |
-| `RegisterExtension(ext)`          | —                  | Register one or more extension hooks.                     |
+| Method                            | Default                    | Description                                               |
+|-----------------------------------|----------------------------|-----------------------------------------------------------|
+| `SetClientManager(mgr)`           | —                          | Required. Client lookup and authentication.               |
+| `SetAuthCodeManager(mgr)`         | —                          | Required. Authorization code lifecycle.                   |
+| `SetTokenManager(mgr)`            | —                          | Required. Token generation and persistence.               |
+| `SetUserManager(mgr)`             | —                          | Required. User resolution from auth code.                 |
+| `SetAuthEndpointHttpMethods(m)`   | `[GET]`                    | HTTP methods accepted at `/authorize`.                    |
+| `SetTokenEndpointHttpMethods(m)`  | `[POST]`                   | HTTP methods accepted at `/token`.                        |
+| `SetSupportedClientAuthMethods(m)`| `client_secret_basic`, `none` | Client authentication methods accepted at `/token`.    |
+| `SetOmittedScopePolicy(p)`        | `OmittedScopePolicyReject` | Behavior when the client omits `scope` at `/authorize`.   |
+| `RegisterExtension(ext)`          | —                          | Register one or more extension hooks.                     |
+
+### Omitted Scope Policy
+
+Controls what happens when the client does not include a `scope` parameter in the `/authorize` request (RFC 6749 §3.3):
+
+| Policy                               | Behavior                                                    |
+|--------------------------------------|-------------------------------------------------------------|
+| `OmittedScopePolicyReject`           | Reject with `invalid_scope`. This is the default.           |
+| `OmittedScopePolicyUseClientDefault` | Grant the client's full registered scope list.              |
+
+```go
+cfg.SetOmittedScopePolicy(authorizationcode.OmittedScopePolicyUseClientDefault)
+```
 
 ## Validation Rules
 
@@ -166,7 +180,8 @@ cfg := authorizationcode.NewConfig().
 - `client_id` must be present and match a known client.
 - `redirect_uri` must be registered for the client; falls back to the client's default if omitted.
 - `response_type` must be `code` and permitted for the client.
-- Requested scopes are intersected with the client's allowed scopes. If the intersection is empty, `invalid_scope` is returned.
+- When `scope` is present, it is intersected with the client's allowed scopes. If the intersection is empty, `invalid_scope` is returned.
+- When `scope` is absent, behavior is determined by `OmittedScopePolicy` (default: reject with `invalid_scope`).
 - All registered `AuthorizationRequestValidator` extensions run after the built-in checks.
 
 ### Token endpoint (`/token`)

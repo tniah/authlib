@@ -17,6 +17,7 @@ func TestNewConfig(t *testing.T) {
 		types.ClientBasicAuthentication: true,
 		types.ClientNoneAuthentication:  true,
 	}, cfg.supportedClientAuthMethods)
+	assert.Equal(t, OmittedScopePolicyReject, cfg.omittedScopePolicy)
 	assert.Empty(t, cfg.authReqValidators)
 	assert.Empty(t, cfg.consentReqValidators)
 	assert.Empty(t, cfg.authCodeProcessors)
@@ -56,6 +57,9 @@ func TestConfig_Setters(t *testing.T) {
 	methods := map[types.ClientAuthMethod]bool{types.ClientPostAuthentication: true}
 	cfg.SetSupportedClientAuthMethods(methods)
 	assert.Equal(t, methods, cfg.supportedClientAuthMethods)
+
+	cfg.SetOmittedScopePolicy(OmittedScopePolicyUseClientDefault)
+	assert.Equal(t, OmittedScopePolicyUseClientDefault, cfg.omittedScopePolicy)
 }
 
 func TestConfig_RegisterExtension(t *testing.T) {

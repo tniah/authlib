@@ -15,6 +15,7 @@ func TestNewConfig(t *testing.T) {
 	assert.Equal(t, map[types.ClientAuthMethod]bool{
 		types.ClientBasicAuthentication: true,
 	}, cfg.supportedClientAuthMethods)
+	assert.Equal(t, OmittedScopePolicyReject, cfg.omittedScopePolicy)
 	assert.Empty(t, cfg.tokenReqValidators)
 	assert.Empty(t, cfg.tokenProcessors)
 	assert.Nil(t, cfg.clientMgr)
@@ -43,6 +44,9 @@ func TestConfig_Setters(t *testing.T) {
 
 	cfg.SetTokenEndpointHttpMethods([]string{http.MethodPut})
 	assert.Equal(t, []string{http.MethodPut}, cfg.tokenEndpointHttpMethods)
+
+	cfg.SetOmittedScopePolicy(OmittedScopePolicyUseClientDefault)
+	assert.Equal(t, OmittedScopePolicyUseClientDefault, cfg.omittedScopePolicy)
 }
 
 func TestConfig_RegisterExtension(t *testing.T) {

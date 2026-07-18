@@ -357,17 +357,30 @@ func TestFlow_authenticateUser(t *testing.T) {
 }
 
 func TestFlow_validateScope(t *testing.T) {
-	f := New(NewConfig())
-
-	t.Run("success_when_no_scope_requested", func(t *testing.T) {
+	t.Run("policy_reject/error_when_scope_omitted", func(t *testing.T) {
+		f := New(NewConfig().SetOmittedScopePolicy(OmittedScopePolicyReject))
 		r := &requests.TokenRequest{
-			Client: &sql.Client{Scopes: []string{"read"}},
+			Client: &sql.Client{Scopes: []string{"read", "write"}},
 			Scopes: types.Scopes{},
 		}
-		assert.NoError(t, f.validateScope(r))
+		err := f.validateScope(r)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid_scope")
+	})
+
+	t.Run("policy_use_client_default/uses_client_scopes_when_omitted", func(t *testing.T) {
+		f := New(NewConfig().SetOmittedScopePolicy(OmittedScopePolicyUseClientDefault))
+		r := &requests.TokenRequest{
+			Client: &sql.Client{Scopes: []string{"read", "write"}},
+			Scopes: types.Scopes{},
+		}
+		err := f.validateScope(r)
+		assert.NoError(t, err)
+		assert.ElementsMatch(t, []string{"read", "write"}, r.Scopes.String())
 	})
 
 	t.Run("success_filters_allowed_scopes", func(t *testing.T) {
+		f := New(NewConfig())
 		r := &requests.TokenRequest{
 			Client: &sql.Client{Scopes: []string{"read", "write"}},
 			Scopes: types.NewScopes([]string{"read", "write"}),
@@ -378,6 +391,7 @@ func TestFlow_validateScope(t *testing.T) {
 	})
 
 	t.Run("success_filters_to_allowed_subset", func(t *testing.T) {
+		f := New(NewConfig())
 		r := &requests.TokenRequest{
 			Client: &sql.Client{Scopes: []string{"read"}},
 			Scopes: types.NewScopes([]string{"read", "admin"}),
@@ -388,6 +402,7 @@ func TestFlow_validateScope(t *testing.T) {
 	})
 
 	t.Run("error_when_all_scopes_denied", func(t *testing.T) {
+		f := New(NewConfig())
 		r := &requests.TokenRequest{
 			Client: &sql.Client{Scopes: []string{"read"}},
 			Scopes: types.NewScopes([]string{"admin", "superuser"}),
@@ -417,6 +432,7 @@ func TestFlow_ValidateTokenRequest(t *testing.T) {
 			GrantType: types.GrantTypeROPC,
 			Username:  "makai",
 			Password:  "123456",
+			Scopes:    types.NewScopes([]string{"read"}),
 		}
 		err := f.ValidateTokenRequest(r)
 		assert.NoError(t, err)
@@ -479,6 +495,7 @@ func TestFlow_ValidateTokenRequest(t *testing.T) {
 			GrantType: types.GrantTypeROPC,
 			Username:  "makai",
 			Password:  "wrongpassword",
+			Scopes:    types.NewScopes([]string{"read"}),
 		}
 		err := f.ValidateTokenRequest(r)
 		assert.Error(t, err)
@@ -495,7 +512,7 @@ func TestFlow_ValidateTokenRequest_WithExtension(t *testing.T) {
 	mockValidator := ropc.NewMockTokenRequestValidator(t)
 	f := New(NewConfig().SetClientManager(mockClientMgr).SetUserManager(mockUserMgr).RegisterExtension(mockValidator))
 
-	validClient := &sql.Client{GrantTypes: []string{types.GrantTypeROPC.String()}}
+	validClient := &sql.Client{GrantTypes: []string{types.GrantTypeROPC.String()}, Scopes: []string{"read"}}
 
 	t.Run("success_validator_called", func(t *testing.T) {
 		mockClientMgr.On("Authenticate", mock.Anything, mock.Anything, mock.AnythingOfType("string")).Return(validClient, nil).Once()
@@ -507,6 +524,7 @@ func TestFlow_ValidateTokenRequest_WithExtension(t *testing.T) {
 			GrantType: types.GrantTypeROPC,
 			Username:  "makai",
 			Password:  "123456",
+			Scopes:    types.NewScopes([]string{"read"}),
 		}
 		err := f.ValidateTokenRequest(r)
 		assert.NoError(t, err)
@@ -526,6 +544,7 @@ func TestFlow_ValidateTokenRequest_WithExtension(t *testing.T) {
 			GrantType: types.GrantTypeROPC,
 			Username:  "makai",
 			Password:  "123456",
+			Scopes:    types.NewScopes([]string{"read"}),
 		}
 		err := f.ValidateTokenRequest(r)
 		assert.Error(t, err)

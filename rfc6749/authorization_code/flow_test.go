@@ -249,16 +249,28 @@ func TestFlow_validateResponseType(t *testing.T) {
 }
 
 func TestFlow_validateScope(t *testing.T) {
-	f := New(NewConfig())
-
-	t.Run("success_when_no_scope_requested", func(t *testing.T) {
+	t.Run("policy_reject/error_when_scope_omitted", func(t *testing.T) {
+		f := New(NewConfig().SetOmittedScopePolicy(OmittedScopePolicyReject))
 		r := newAuthReq(http.MethodGet)
 		r.Client = validClient()
 		r.Scopes = types.Scopes{}
-		assert.NoError(t, f.validateScope(r))
+		err := f.validateScope(r)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid_scope")
+	})
+
+	t.Run("policy_use_client_default/uses_client_scopes_when_omitted", func(t *testing.T) {
+		f := New(NewConfig().SetOmittedScopePolicy(OmittedScopePolicyUseClientDefault))
+		r := newAuthReq(http.MethodGet)
+		r.Client = validClient() // allows: read, write
+		r.Scopes = types.Scopes{}
+		err := f.validateScope(r)
+		assert.NoError(t, err)
+		assert.ElementsMatch(t, []string{"read", "write"}, r.Scopes.String())
 	})
 
 	t.Run("success_filters_allowed_scopes", func(t *testing.T) {
+		f := New(NewConfig())
 		r := newAuthReq(http.MethodGet)
 		r.Client = validClient() // allows: read, write
 		r.Scopes = types.NewScopes([]string{"read", "write"})
@@ -268,6 +280,7 @@ func TestFlow_validateScope(t *testing.T) {
 	})
 
 	t.Run("success_filters_to_allowed_subset", func(t *testing.T) {
+		f := New(NewConfig())
 		r := newAuthReq(http.MethodGet)
 		r.Client = validClient() // allows: read, write
 		r.Scopes = types.NewScopes([]string{"read", "admin"})
@@ -277,6 +290,7 @@ func TestFlow_validateScope(t *testing.T) {
 	})
 
 	t.Run("error_when_all_scopes_denied", func(t *testing.T) {
+		f := New(NewConfig())
 		r := newAuthReq(http.MethodGet)
 		r.Client = validClient() // allows: read, write
 		r.Scopes = types.NewScopes([]string{"admin", "superuser"})
@@ -755,6 +769,7 @@ func TestFlow_ValidateConsentRequest(t *testing.T) {
 		r.ClientID = "client-1"
 		r.RedirectURI = "https://example.com/cb"
 		r.ResponseType = types.ResponseTypeCode
+		r.Scopes = types.NewScopes([]string{"read"})
 
 		err := f.ValidateConsentRequest(r)
 		assert.NoError(t, err)
@@ -768,6 +783,7 @@ func TestFlow_ValidateConsentRequest(t *testing.T) {
 		r.ClientID = "client-1"
 		r.RedirectURI = "https://example.com/cb"
 		r.ResponseType = types.ResponseTypeCode
+		r.Scopes = types.NewScopes([]string{"read"})
 
 		err := f.ValidateConsentRequest(r)
 		assert.Error(t, err)
@@ -794,6 +810,7 @@ func TestFlow_ValidateAuthorizationRequest_WithExtension(t *testing.T) {
 		r.ClientID = "client-1"
 		r.RedirectURI = "https://example.com/cb"
 		r.ResponseType = types.ResponseTypeCode
+		r.Scopes = types.NewScopes([]string{"read"})
 
 		err := f.ValidateAuthorizationRequest(r)
 		assert.NoError(t, err)
@@ -808,6 +825,7 @@ func TestFlow_ValidateAuthorizationRequest_WithExtension(t *testing.T) {
 		r.ClientID = "client-1"
 		r.RedirectURI = "https://example.com/cb"
 		r.ResponseType = types.ResponseTypeCode
+		r.Scopes = types.NewScopes([]string{"read"})
 
 		err := f.ValidateAuthorizationRequest(r)
 		assert.Error(t, err)

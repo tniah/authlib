@@ -16,6 +16,20 @@ var (
 	ErrEmptyClientAuthMethods = errors.New("client auth methods are empty")
 )
 
+// OmittedScopePolicy controls how the token endpoint behaves when the client
+// does not include a scope parameter in the request (RFC 6749 §3.3).
+type OmittedScopePolicy int
+
+const (
+	// OmittedScopePolicyReject rejects the request with invalid_scope when
+	// the scope parameter is absent. This is the default.
+	OmittedScopePolicyReject OmittedScopePolicy = iota
+
+	// OmittedScopePolicyUseClientDefault grants the client's full registered
+	// scope list when the scope parameter is absent.
+	OmittedScopePolicyUseClientDefault
+)
+
 // Config holds all dependencies and extension hooks for the ROPC flow.
 // Use NewConfig() to get a config with sensible defaults, then chain Set*/RegisterExtension
 // calls before passing to Must() or New().
@@ -33,11 +47,16 @@ type Config struct {
 	// supportedClientAuthMethods controls which client authentication methods
 	// are accepted at the token endpoint. ROPC defaults to basic auth only.
 	supportedClientAuthMethods map[types.ClientAuthMethod]bool
+
+	// omittedScopePolicy controls the behavior when the client omits the scope
+	// parameter (RFC 6749 §3.3). Default: OmittedScopePolicyReject.
+	omittedScopePolicy OmittedScopePolicy
 }
 
 // NewConfig returns a Config with secure defaults:
 //   - Accepts POST on /token.
 //   - Supports basic client authentication only (client_secret_basic).
+//   - Omitted scope: reject with invalid_scope (OmittedScopePolicyReject).
 func NewConfig() *Config {
 	return &Config{
 		tokenEndpointHttpMethods: []string{http.MethodPost},
@@ -46,6 +65,7 @@ func NewConfig() *Config {
 		supportedClientAuthMethods: map[types.ClientAuthMethod]bool{
 			types.ClientBasicAuthentication: true,
 		},
+		omittedScopePolicy: OmittedScopePolicyReject,
 	}
 }
 
@@ -79,6 +99,15 @@ func (cfg *Config) SetSupportedClientAuthMethods(methods map[types.ClientAuthMet
 // Default: [POST].
 func (cfg *Config) SetTokenEndpointHttpMethods(methods []string) *Config {
 	cfg.tokenEndpointHttpMethods = methods
+	return cfg
+}
+
+// SetOmittedScopePolicy sets the behavior when the client omits the scope
+// parameter (RFC 6749 §3.3). Available values:
+//   - OmittedScopePolicyReject (default): reject with invalid_scope.
+//   - OmittedScopePolicyUseClientDefault: grant the client's full registered scope list.
+func (cfg *Config) SetOmittedScopePolicy(p OmittedScopePolicy) *Config {
+	cfg.omittedScopePolicy = p
 	return cfg
 }
 
