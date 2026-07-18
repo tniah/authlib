@@ -31,13 +31,16 @@ func (_m *MockRandStringGenerator) Execute(gt types.GrantType, client models.Cli
 	}
 
 	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(types.GrantType, models.Client) (string, error)); ok {
+		return rf(gt, client)
+	}
 	if rf, ok := ret.Get(0).(func(types.GrantType, models.Client) string); ok {
 		r0 = rf(gt, client)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	var r1 error
 	if rf, ok := ret.Get(1).(func(types.GrantType, models.Client) error); ok {
 		r1 = rf(gt, client)
 	} else {

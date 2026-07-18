@@ -26,6 +26,12 @@ packages:
       AuthCodeProcessor:
       TokenRequestValidator:
       TokenProcessor:
+  github.com/tniah/authlib/rfc6749/client_credentials:
+    interfaces:
+      ClientManager:
+      TokenManager:
+      TokenRequestValidator:
+      TokenProcessor:
   github.com/tniah/authlib/rfc6749/ropc:
     interfaces:
       ClientManager:
