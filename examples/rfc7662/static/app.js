@@ -73,7 +73,7 @@
         state.loading = true;
         render();
 
-        const body = new URLSearchParams({token: state.accessToken});
+        const body = new URLSearchParams({token: state.accessToken, token_type_hint: 'access_token'});
         const headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Authorization': 'Basic ' + btoa(clientId() + ':' + clientSecret()),
@@ -167,7 +167,8 @@
             desc: 'A protected client (resource server) sends the token to the introspection endpoint. The server authenticates the caller via HTTP Basic auth before processing the request (RFC 7662 §2.1).',
             http: 'POST /introspect HTTP/1.1\n' + 'Host: ' + window.location.host + '\n' +
                 'Content-Type: application/x-www-form-urlencoded' + introspectAuth + '\n\n' +
-                '  token=' + (token || '<access_token>'),
+                '  token=' + (token || '<access_token>') +
+                '\n  &token_type_hint=access_token',
         }, {
             badge: introspectStatus,
             badgeClass: introspectBadgeClass,
