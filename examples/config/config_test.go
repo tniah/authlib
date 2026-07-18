@@ -24,7 +24,7 @@ func TestFromEnvVars_NilDefaults_UsesBuiltinDefaults(t *testing.T) {
 
 	cfg := FromEnvVars(nil)
 
-	assert.Equal(t, DefaultIssuerPort, cfg.Port)
+	assert.Equal(t, DefaultPort, cfg.Port)
 	assert.Equal(t, DefaultAddress, cfg.Address)
 }
 
@@ -53,7 +53,7 @@ func TestFromEnvVars_EnvAddress_OverridesDefault(t *testing.T) {
 
 	cfg := FromEnvVars(nil)
 
-	assert.Equal(t, DefaultIssuerPort, cfg.Port)
+	assert.Equal(t, DefaultPort, cfg.Port)
 	assert.Equal(t, "192.168.1.1", cfg.Address)
 }
 

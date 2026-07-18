@@ -54,7 +54,7 @@
             client_id: clientId(),
             redirect_uri: redirectUri(),
             scope: allowedScopes().join(' '),
-            state: randToken(16),
+            state: getTokenState().state,
         });
 
         try {
@@ -88,7 +88,7 @@
         const headers = {'Content-Type': 'application/x-www-form-urlencoded'};
 
         if (state.authMethod === 'client_secret_basic') {
-            headers['Authorization'] = 'Basic ' + btoa(cid + ':' + (window.__CLIENT_SECRET__ || ''));
+            headers['Authorization'] = 'Basic ' + btoa(clientId() + ':' + (window.__CLIENT_SECRET__ || ''));
         } else if (state.authMethod === 'client_secret_post') {
             body.set('client_secret', window.__CLIENT_SECRET__ || '');
         }
@@ -118,9 +118,9 @@
 
         const authParams = Object.entries({
             response_type: 'code',
-            client_id: clientId(),
-            redirect_uri: redirectUri(),
-            scope: allowedScopes().join(' '),
+            client_id: cid,
+            redirect_uri: ruri,
+            scope: scopes,
             state: p.state,
         });
 

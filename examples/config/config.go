@@ -3,15 +3,12 @@
 // defaults or built-in constants when neither is present.
 package config
 
-import (
-	"os"
-	"strconv"
-)
+import "os"
 
 const (
-	// DefaultIssuerPort is the TCP port the example server listens on when
+	// DefaultPort is the TCP port the example server listens on when
 	// SERVER_PORT is not set.
-	DefaultIssuerPort = 9090
+	DefaultPort = "9091"
 
 	// DefaultAddress is the IP address the example server binds to when
 	// SERVER_ADDRESS is not set.
@@ -21,7 +18,7 @@ const (
 // Config holds the network settings for an example server.
 type Config struct {
 	// Port is the TCP port to listen on (e.g. "9090").
-	Port int
+	Port string
 
 	// Address is the IP address to bind to (e.g. "127.0.0.1").
 	Address string
@@ -33,7 +30,7 @@ type Config struct {
 func FromEnvVars(defaults *Config) *Config {
 	if defaults == nil {
 		defaults = &Config{
-			Port:    DefaultIssuerPort,
+			Port:    DefaultPort,
 			Address: DefaultAddress,
 		}
 	}
@@ -43,9 +40,7 @@ func FromEnvVars(defaults *Config) *Config {
 	}
 
 	if v, ok := os.LookupEnv("SERVER_PORT"); ok {
-		if p, err := strconv.Atoi(v); err != nil {
-			cfg.Port = p
-		}
+		cfg.Port = v
 	}
 
 	if v, ok := os.LookupEnv("SERVER_ADDRESS"); ok {
