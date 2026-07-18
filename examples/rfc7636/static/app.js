@@ -19,7 +19,6 @@
     };
 
     // ---- PKCE helpers ----
-
     function randVerifier() {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
         let out = '';
@@ -43,8 +42,6 @@
 
     function clientId() { return document.getElementById('clientId').value; }
     function redirectUri() { return document.getElementById('redirectUri').value; }
-
-    // ---- Network requests ----
 
     async function doAuthRequest() {
         const gen = ++fetchGen;
@@ -177,8 +174,6 @@
                 : null,
         }];
     }
-
-    // ---- Rendering ----
 
     function renderScopes() {
         const el = document.getElementById('scopeList');
