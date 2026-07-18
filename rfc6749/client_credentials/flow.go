@@ -117,8 +117,7 @@ func (f *Flow) validateGrantType(r *requests.TokenRequest) error {
 }
 
 // authenticateClient delegates to ClientManager.Authenticate, then verifies the
-// client is permitted to use the "client_credentials" grant. Returns unauthorized_client if
-// the grant type is not enabled.
+// client is confidential and permitted to use the "client_credentials" grant.
 func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 	client, err := f.clientMgr.Authenticate(r.Request, f.supportedClientAuthMethods, EndpointToken)
 	if err != nil {
@@ -129,41 +128,57 @@ func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 		return autherrors.InvalidClientError()
 	}
 
+	// RFC 6749 §4.4: the client credentials grant MUST only be used by
+	// confidential clients. Public clients cannot securely hold a secret and
+	// therefore cannot prove their identity at this endpoint.
+	if client.IsPublic() {
+		return autherrors.InvalidClientError().WithDescription("client credentials grant is not allowed for public clients")
+	}
+
 	// Verify the client is explicitly permitted to use the client_credentials grant.
 	if allowed := client.CheckGrantType(types.GrantTypeClientCredentials); !allowed {
-		return autherrors.UnauthorizedClientError().WithDescription("The client is not authorized to use grant type \"client_credentials\"")
+		return autherrors.UnauthorizedClientError().WithDescription("the client is not authorized to use grant type \"client_credentials\"")
 	}
 
 	r.Client = client
 	return nil
 }
 
-// validateScope filters the requested scopes through the client's allowed list
-// and returns invalid_scope if all requested scopes are denied (RFC 6749 §3.3).
-// If no scope is requested the check is skipped.
+// validateScope filters the requested scopes through the client's allowed list.
+// When the scope parameter is absent, the behavior is governed by
+// Config.omittedScopePolicy (RFC 6749 §3.3):
+//   - OmittedScopePolicyReject (default): reject with invalid_scope.
+//   - OmittedScopePolicyUseClientDefault: grant the client's full registered scope list.
 func (f *Flow) validateScope(r *requests.TokenRequest) error {
 	if len(r.Scopes) == 0 {
-		return nil
+		switch f.omittedScopePolicy {
+		case OmittedScopePolicyUseClientDefault:
+			r.Scopes = r.Client.GetScopes()
+			return nil
+		default:
+			return autherrors.InvalidScopeError().WithDescription("scope is required")
+		}
 	}
 
 	allowed := r.Client.GetAllowedScopes(r.Scopes)
 	if len(allowed) == 0 {
-		return autherrors.InvalidScopeError()
+		return autherrors.InvalidScopeError().WithDescription("none of the requested scopes are permitted for this client")
 	}
 
 	r.Scopes = allowed
 	return nil
 }
 
-// genToken allocates and populates a new token. A refresh token is included
-// when the client has the refresh_token grant type registered.
+// genToken allocates and populates a new token.
+// RFC 6749 §4.4.3: a refresh token SHOULD NOT be included in the client
+// credentials grant — the client can re-authenticate at any time using its
+// own credentials.
 func (f *Flow) genToken(r *requests.TokenRequest) (models.Token, error) {
 	token := f.tokenMgr.New()
 	if utils.IsNil(token) {
 		return nil, ErrNilToken
 	}
 
-	// Include a refresh token only if the client has the refresh_token grant enabled.
 	if err := f.tokenMgr.Generate(token, r, false); err != nil {
 		return nil, err
 	}

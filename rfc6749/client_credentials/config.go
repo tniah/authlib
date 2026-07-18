@@ -15,6 +15,20 @@ var (
 	ErrEmptyClientAuthMethods = errors.New("client auth methods are empty")
 )
 
+// OmittedScopePolicy controls how the token endpoint behaves when the client
+// does not include a scope parameter in the request (RFC 6749 §3.3).
+type OmittedScopePolicy int
+
+const (
+	// OmittedScopePolicyReject rejects the request with invalid_scope when
+	// the scope parameter is absent. This is the default.
+	OmittedScopePolicyReject OmittedScopePolicy = iota
+
+	// OmittedScopePolicyUseClientDefault grants the client's full registered
+	// scope list when the scope parameter is absent.
+	OmittedScopePolicyUseClientDefault
+)
+
 type Config struct {
 	clientMgr ClientManager
 	tokenMgr  TokenManager
@@ -28,6 +42,10 @@ type Config struct {
 	// supportedClientAuthMethods controls which client authentication methods
 	// are accepted at the token endpoint. Client Credentials defaults to basic auth only.
 	supportedClientAuthMethods map[types.ClientAuthMethod]bool
+
+	// omittedScopePolicy controls the behavior when the client omits the scope
+	// parameter (RFC 6749 §3.3). Default: OmittedScopePolicyReject.
+	omittedScopePolicy OmittedScopePolicy
 }
 
 func NewConfig() *Config {
@@ -38,6 +56,7 @@ func NewConfig() *Config {
 		supportedClientAuthMethods: map[types.ClientAuthMethod]bool{
 			types.ClientBasicAuthentication: true,
 		},
+		omittedScopePolicy: OmittedScopePolicyReject,
 	}
 }
 
@@ -64,6 +83,13 @@ func (cfg *Config) SetSupportedClientAuthMethods(methods map[types.ClientAuthMet
 // Default: [POST].
 func (cfg *Config) SetTokenEndpointHttpMethods(methods []string) *Config {
 	cfg.tokenEndpointHttpMethods = methods
+	return cfg
+}
+
+// SetOmittedScopePolicy sets the behavior when the client omits the scope
+// parameter. Default: OmittedScopePolicyReject.
+func (cfg *Config) SetOmittedScopePolicy(p OmittedScopePolicy) *Config {
+	cfg.omittedScopePolicy = p
 	return cfg
 }
 

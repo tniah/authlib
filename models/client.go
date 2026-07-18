@@ -9,6 +9,9 @@ type Client interface {
 	// GetClientID returns the unique public identifier of the client.
 	GetClientID() string
 
+	// GetScopes returns the full set of scopes registered for this client.
+	GetScopes() types.Scopes
+
 	// GetAllowedScopes returns the subset of the requested scopes that this
 	// client is permitted to use. Implementations should filter scopes against
 	// the client's registered scope list.
