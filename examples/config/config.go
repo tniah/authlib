@@ -8,7 +8,7 @@ import "os"
 const (
 	// DefaultPort is the TCP port the example server listens on when
 	// SERVER_PORT is not set.
-	DefaultPort = "9091"
+	DefaultPort = "9090"
 
 	// DefaultAddress is the IP address the example server binds to when
 	// SERVER_ADDRESS is not set.

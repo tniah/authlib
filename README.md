@@ -234,3 +234,4 @@ mockery
 ## License
 
 MIT
+http://localhost:9090/authorize?client_id=public_client&response_type=code&redirect_uri=http://localhost:9090/callback
