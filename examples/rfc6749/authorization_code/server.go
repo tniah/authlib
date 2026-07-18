@@ -49,6 +49,16 @@ func SetupServer(cfg *config.Config, lg *slog.Logger) (http.Handler, error) {
 	}
 	userMgr.Register(alice)
 
+	// gt is the Authorization Code grant (RFC 6749 §4.1).
+	// The flow has two legs:
+	//   1. GET /authorize — the server authenticates the user and issues a
+	//      short-lived authorization code, then redirects back to the client's
+	//      redirect_uri with that code.
+	//   2. POST /token — the client exchanges the code for an access token.
+	//      The code is looked up via AuthCodeManager and consumed on first use.
+	//
+	// SetAuthCodeManager stores and retrieves authorization codes between the
+	// two legs. SetTokenManager issues and persists the final access token.
 	gt, err := authcodegrant.Must(
 		authcodegrant.NewConfig().
 			SetClientManager(clientMgr).
@@ -60,6 +70,9 @@ func SetupServer(cfg *config.Config, lg *slog.Logger) (http.Handler, error) {
 		return nil, err
 	}
 
+	// RegisterGrant makes the Authorization Code flow available to the server.
+	// srv dispatches GET /authorize to gt when response_type=code is detected,
+	// and POST /token to gt when grant_type=authorization_code is detected.
 	srv := authlib.NewServer()
 	srv.RegisterGrant(gt)
 

@@ -48,6 +48,14 @@ func SetupServer(_ *config.Config, lg *slog.Logger) (http.Handler, error) {
 	}
 	userMgr.Register(demoUser)
 
+	// gt is the Resource Owner Password Credentials grant (RFC 6749 §4.3).
+	// The client sends the resource owner's username and password directly to
+	// the token endpoint; the server authenticates both the client and the user,
+	// then issues an access token without a redirect or authorization code step.
+	//
+	// SetSupportedClientAuthMethods controls how the client proves its identity:
+	//   ClientBasicAuthentication — credentials in the Authorization header (RFC 6749 §2.3.1)
+	//   ClientPostAuthentication  — client_id + client_secret as POST body parameters
 	gt, err := ropc.Must(
 		ropc.NewConfig().
 			SetClientManager(clientMgr).
@@ -62,6 +70,8 @@ func SetupServer(_ *config.Config, lg *slog.Logger) (http.Handler, error) {
 		return nil, err
 	}
 
+	// RegisterGrant makes the ROPC flow available to the server. srv dispatches
+	// incoming POST /token requests to gt when grant_type=password is detected.
 	srv := authlib.NewServer()
 	srv.RegisterGrant(gt)
 

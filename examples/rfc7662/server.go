@@ -51,6 +51,8 @@ func SetupServer(_ *config.Config, lg *slog.Logger) (http.Handler, error) {
 	}
 	userMgr.Register(demoUser)
 
+	// tokenMgr is shared between the ROPC grant and the introspection endpoint
+	// so that tokens issued at /token are visible to /introspect.
 	tokenMgr := manager.NewTokenManager()
 
 	gt, err := ropc.Must(
@@ -67,10 +69,26 @@ func SetupServer(_ *config.Config, lg *slog.Logger) (http.Handler, error) {
 		return nil, err
 	}
 
+	// Configure the token introspection endpoint (RFC 7662).
+	//
+	// clientMgr handles two responsibilities here:
+	//   - Authenticate: verifies the caller's credentials before processing the
+	//     request (the caller acts as a resource server, not the token owner).
+	//   - CheckPermission: decides whether the authenticated client may inspect
+	//     a given token. The demo manager allows all clients unconditionally.
+	//
+	// tokenMgr.QueryByToken looks up the token from the in-memory store.
+	// tokenMgr.Inspect builds the claim set returned in the JSON response
+	// (scope, client_id, token_type, iat, exp, sub, jti).
+	//
+	// The default endpoint name is rfc7662.EndpointNameTokenIntrospection
+	// ("introspection"), which is used by srv.EndpointResponse to route the
+	// request to this flow.
 	introspect, err := rfc7662.MustTokenIntrospectionFlow(
 		rfc7662.NewConfig().
 			SetClientManager(clientMgr).
-			SetTokenManager(tokenMgr),
+			SetTokenManager(tokenMgr).
+			SetEndpointName(rfc7662.EndpointNameTokenIntrospection),
 	)
 	if err != nil {
 		return nil, err
@@ -78,6 +96,8 @@ func SetupServer(_ *config.Config, lg *slog.Logger) (http.Handler, error) {
 
 	srv := authlib.NewServer()
 	srv.RegisterGrant(gt)
+	// RegisterEndpoint makes the introspection flow available under its
+	// configured endpoint name. srv.EndpointResponse dispatches to it by name.
 	srv.RegisterEndpoint(introspect)
 
 	clientJSON, _ := json.Marshal(map[string]interface{}{
