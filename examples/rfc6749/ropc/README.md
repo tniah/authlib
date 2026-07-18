@@ -7,6 +7,8 @@ An interactive playground demonstrating the OAuth 2.0 Resource Owner Password Cr
 > **Note:** ROPC is a legacy grant. For new integrations, prefer Authorization Code + PKCE.
 > Use ROPC only when migrating existing systems or when no redirect-based flow is possible.
 
+![ROPC Playground](docs/screenshot.png)
+
 ## Running
 
 ```bash

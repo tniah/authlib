@@ -4,6 +4,8 @@ An interactive playground demonstrating the OAuth 2.0 Authorization Code flow
 ([RFC 6749 §4.1](https://www.rfc-editor.org/rfc/rfc6749#section-4.1)) built with
 [authlib](https://github.com/tniah/authlib).
 
+![Authorization Code Playground](docs/screenshot.png)
+
 ## Running
 
 ```bash
