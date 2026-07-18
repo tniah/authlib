@@ -1,0 +1,172 @@
+package clientcredentials
+
+import (
+	"errors"
+	"fmt"
+	"net/http"
+
+	autherrors "github.com/tniah/authlib/errors"
+	"github.com/tniah/authlib/models"
+	"github.com/tniah/authlib/requests"
+	"github.com/tniah/authlib/rfc6749"
+	"github.com/tniah/authlib/types"
+	"github.com/tniah/authlib/utils"
+)
+
+// EndpointToken is the endpoint name passed to ClientManager.Authenticate so
+// that the client store can apply per-endpoint auth method policies.
+const EndpointToken = "token"
+
+var ErrNilToken = errors.New("token is nil")
+
+type Flow struct {
+	*Config
+	*rfc6749.TokenFlowMixin
+}
+
+func New(config *Config) *Flow {
+	return &Flow{
+		Config:         config,
+		TokenFlowMixin: &rfc6749.TokenFlowMixin{},
+	}
+}
+
+// Must returns a validated Flow or an error if the config is incomplete.
+func Must(cfg *Config) (*Flow, error) {
+	if err := cfg.ValidateConfig(); err != nil {
+		return nil, err
+	}
+
+	return New(cfg), nil
+}
+
+// CheckGrantType reports whether this flow handles the given grant_type.
+func (f *Flow) CheckGrantType(gt types.GrantType) bool {
+	return gt.IsClientCredentials()
+}
+
+func (f *Flow) ValidateTokenRequest(r *requests.TokenRequest) error {
+	if err := f.checkTokenEndpointHttpMethod(r); err != nil {
+		return err
+	}
+
+	if err := f.validateGrantType(r); err != nil {
+		return err
+	}
+
+	if err := f.authenticateClient(r); err != nil {
+		return err
+	}
+
+	if err := f.validateScope(r); err != nil {
+		return err
+	}
+
+	for _, h := range f.tokenReqValidators {
+		if err := h.ValidateTokenRequest(r); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (f *Flow) TokenResponse(r *requests.TokenRequest, rw http.ResponseWriter) error {
+	token, err := f.genToken(r)
+	if err != nil {
+		return err
+	}
+
+	data := f.StandardTokenData(token)
+	for _, h := range f.tokenProcessors {
+		if err = h.ProcessToken(r, token, data); err != nil {
+			return err
+		}
+	}
+
+	if err = f.tokenMgr.Save(r.Request.Context(), token); err != nil {
+		return err
+	}
+
+	return f.HandleTokenResponse(rw, data)
+}
+
+// checkTokenEndpointHttpMethod rejects requests whose HTTP method is not in
+// tokenEndpointHttpMethods (default: POST).
+func (f *Flow) checkTokenEndpointHttpMethod(r *requests.TokenRequest) error {
+	for _, method := range f.tokenEndpointHttpMethods {
+		if r.Method() == method {
+			return nil
+		}
+	}
+
+	return autherrors.InvalidRequestError().WithDescription(fmt.Sprintf("unsupported http method \"%s\"", r.Method()))
+}
+
+// validateGrantType checks that grant_type is present and equals "client_credentials".
+func (f *Flow) validateGrantType(r *requests.TokenRequest) error {
+	if err := r.ValidateGrantType(); err != nil {
+		return err
+	}
+
+	if valid := r.GrantType.IsClientCredentials(); !valid {
+		return autherrors.UnsupportedGrantTypeError()
+	}
+
+	return nil
+}
+
+// authenticateClient delegates to ClientManager.Authenticate, then verifies the
+// client is permitted to use the "client_credentials" grant. Returns unauthorized_client if
+// the grant type is not enabled.
+func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
+	client, err := f.clientMgr.Authenticate(r.Request, f.supportedClientAuthMethods, EndpointToken)
+	if err != nil {
+		return err
+	}
+
+	if utils.IsNil(client) {
+		return autherrors.InvalidClientError()
+	}
+
+	// Verify the client is explicitly permitted to use the client_credentials grant.
+	if allowed := client.CheckGrantType(types.GrantTypeClientCredentials); !allowed {
+		return autherrors.UnauthorizedClientError().WithDescription("The client is not authorized to use grant type \"client_credentials\"")
+	}
+
+	r.Client = client
+	return nil
+}
+
+// validateScope filters the requested scopes through the client's allowed list
+// and returns invalid_scope if all requested scopes are denied (RFC 6749 §3.3).
+// If no scope is requested the check is skipped.
+func (f *Flow) validateScope(r *requests.TokenRequest) error {
+	if len(r.Scopes) == 0 {
+		return nil
+	}
+
+	allowed := r.Client.GetAllowedScopes(r.Scopes)
+	if len(allowed) == 0 {
+		return autherrors.InvalidScopeError()
+	}
+
+	r.Scopes = allowed
+	return nil
+}
+
+// genToken allocates and populates a new token. A refresh token is included
+// when the client has the refresh_token grant type registered.
+func (f *Flow) genToken(r *requests.TokenRequest) (models.Token, error) {
+	token := f.tokenMgr.New()
+	if utils.IsNil(token) {
+		return nil, ErrNilToken
+	}
+
+	// Include a refresh token only if the client has the refresh_token grant enabled.
+	if err := f.tokenMgr.Generate(token, r, false); err != nil {
+		return nil, err
+	}
+
+	return token, nil
+}
