@@ -33,7 +33,6 @@
     }
 
     // ---- JWT helpers ----
-
     function decodeJWT(token) {
         const parts = token.split('.');
         if (parts.length !== 3) return null;
@@ -277,7 +276,7 @@
         renderSteps();
     }
 
-    function loadClient() {
+    function initForm() {
         const c = window.__CLIENT__ || {};
         document.getElementById('clientName').value = c.client_name || '';
         document.getElementById('clientId').value = c.client_id || '';
@@ -360,5 +359,5 @@
         tooltip.style.top = (e.clientY - 28) + 'px';
     });
 
-    loadClient();
+    initForm();
 })();

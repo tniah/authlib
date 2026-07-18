@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/static/style.css">
   <style>
     pre.http-raw { white-space: pre-wrap; word-break: break-all; }
+    .kv-block ::selection { background: rgba(45,212,191,0.35); color: inherit; }
     .ts-hint { cursor: default; border-bottom: 1px dashed var(--text-faint); }
     .kv-block { position: relative; }
     .copy-btn {
@@ -110,7 +111,7 @@
     <!-- CENTER: timeline -->
     <div class="panel" style="padding:20px;">
       <div class="timeline-head">
-        <h2 id="flowHeading">JWT Access Tokens (RFC 9068)</h2>
+        <h2>JWT Access Tokens (RFC 9068)</h2>
         <div class="run-controls">
           <button class="btn" id="resetBtn">↺ Reset</button>
           <button class="btn primary" id="nextBtn">Step →</button>
