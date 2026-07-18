@@ -205,6 +205,7 @@
     }
 
     let STEPS = [];
+    const rawTexts = {};
 
     function renderSteps() {
         STEPS = buildSteps();
@@ -219,7 +220,8 @@
 
             let detail = '';
             if (i <= state.maxStep && s.http) {
-                detail += `<div class="kv-block"><pre class="http-raw">${httpHtml(s.http)}</pre></div>`;
+                rawTexts[i] = s.http;
+                detail += `<div class="kv-block"><button class="copy-btn" data-step="${i}">Copy</button><pre class="http-raw">${httpHtml(s.http)}</pre></div>`;
             }
 
             wrap.innerHTML = `
@@ -234,6 +236,7 @@
           <div class="step-detail">${detail}</div>
         </div>`;
             wrap.onclick = () => {
+                if (window.getSelection && window.getSelection().toString()) return;
                 state.step = i;
                 render();
             };
@@ -300,6 +303,19 @@
         render();
     };
     document.getElementById('clientId').addEventListener('input', () => render());
+
+    // ---- Copy button ----
+    document.addEventListener('click', e => {
+        const btn = e.target.closest('.copy-btn');
+        if (!btn) return;
+        const text = rawTexts[btn.dataset.step];
+        if (!text) return;
+        navigator.clipboard.writeText(text).then(() => {
+            btn.textContent = 'Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+        });
+    });
 
     loadClient();
 })();
