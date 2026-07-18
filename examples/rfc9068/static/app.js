@@ -191,6 +191,12 @@
                 if (line === 'Header' || line === 'Payload' || line === 'Signature') {
                     return `<span class="http-line1">${esc(line)}</span>`;
                 }
+                // Detect Unix timestamp fields and add hover tooltip
+                const tsMatch = line.match(/^(\s*"(?:iat|exp|nbf)":\s*)(\d+)(,?)$/);
+                if (tsMatch) {
+                    const date = new Date(parseInt(tsMatch[2], 10) * 1000).toLocaleString();
+                    return `<span class="http-body">${esc(tsMatch[1])}<span class="ts-hint" data-tooltip="${date}">${tsMatch[2]}</span>${esc(tsMatch[3])}</span>`;
+                }
                 return `<span class="http-body">${esc(line)}</span>`;
             }).join('\n');
         }
@@ -213,6 +219,7 @@
     }
 
     let STEPS = [];
+    const rawTexts = {}; // keyed by step index, stores raw http text for copy
 
     function renderSteps() {
         STEPS = buildSteps();
@@ -227,7 +234,8 @@
 
             let detail = '';
             if (i <= state.maxStep && s.http) {
-                detail += `<div class="kv-block"><pre class="http-raw">${httpHtml(s.http)}</pre></div>`;
+                rawTexts[i] = s.http;
+                detail += `<div class="kv-block"><button class="copy-btn" data-step="${i}">Copy</button><pre class="http-raw">${httpHtml(s.http)}</pre></div>`;
             }
 
             wrap.innerHTML = `
@@ -242,6 +250,7 @@
           <div class="step-detail">${detail}</div>
         </div>`;
             wrap.onclick = () => {
+                if (window.getSelection && window.getSelection().toString()) return;
                 state.step = i;
                 render();
             };
@@ -319,6 +328,36 @@
         state.authMethod = document.getElementById('authMethod').value;
         document.getElementById('authMethodHint').textContent = AUTH_METHOD_HINTS[state.authMethod] || '';
         render();
+    });
+
+    // ---- Copy button ----
+    document.addEventListener('click', e => {
+        const btn = e.target.closest('.copy-btn');
+        if (!btn) return;
+        const text = rawTexts[btn.dataset.step];
+        if (!text) return;
+        navigator.clipboard.writeText(text).then(() => {
+            btn.textContent = 'Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+        });
+    });
+
+    // ---- Timestamp tooltip ----
+    const tooltip = document.getElementById('ts-tooltip');
+    document.addEventListener('mouseover', e => {
+        const el = e.target.closest('[data-tooltip]');
+        if (!el) return;
+        tooltip.textContent = el.dataset.tooltip;
+        tooltip.classList.add('show');
+    });
+    document.addEventListener('mouseout', e => {
+        if (!e.target.closest('[data-tooltip]')) return;
+        tooltip.classList.remove('show');
+    });
+    document.addEventListener('mousemove', e => {
+        tooltip.style.left = (e.clientX + 12) + 'px';
+        tooltip.style.top = (e.clientY - 28) + 'px';
     });
 
     loadClient();

@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/tniah/authlib"
@@ -53,7 +54,7 @@ func SetupServer(cfg *config.Config, lg *slog.Logger) (http.Handler, error) {
 	userMgr.Register(demoUser)
 
 	issuer := fmt.Sprintf("http://%s:%s", publicHost(cfg.Address), cfg.Port)
-	audience := "https://api.example.com"
+	audience := "https://github.com/tniah/authlib"
 
 	privPEM, err := localAssets.ReadFile("keys/private.pem")
 	if err != nil {
@@ -69,7 +70,8 @@ func SetupServer(cfg *config.Config, lg *slog.Logger) (http.Handler, error) {
 		rfc9068.NewGeneratorConfig().
 			SetIssuer(issuer).
 			SetAudience(audience).
-			SetSigningKey(privPEM, jwt.SigningMethodRS256),
+			SetExpiresIn(time.Minute*30).
+			SetSigningKey(privPEM, jwt.SigningMethodRS256, "demo-key-1"),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("jwt generator: %w", err)

@@ -8,6 +8,25 @@
   <link rel="stylesheet" href="/static/style.css">
   <style>
     pre.http-raw { white-space: pre-wrap; word-break: break-all; }
+    .ts-hint { cursor: default; border-bottom: 1px dashed var(--text-faint); }
+    .kv-block { position: relative; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      font-family: var(--mono); font-size: 10px; padding: 3px 8px; border-radius: 5px;
+      background: var(--panel-hair, #1D2A42); border: 1px solid var(--border);
+      color: var(--text-dim); cursor: pointer; transition: all .15s;
+    }
+    .copy-btn:hover { color: var(--text); border-color: var(--teal); }
+    .copy-btn.copied { color: var(--teal); border-color: var(--teal); }
+    #ts-tooltip {
+      position: fixed; z-index: 9999; pointer-events: none;
+      background: var(--panel-raised); border: 1px solid var(--border);
+      color: var(--text); font-family: var(--sans); font-size: 12px;
+      padding: 5px 9px; border-radius: 6px; white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      opacity: 0; transition: opacity .1s;
+    }
+    #ts-tooltip.show { opacity: 1; }
   </style>
 </head>
 <body>
@@ -106,6 +125,7 @@
 
   </div>
 </div>
+<div id="ts-tooltip"></div>
 <script src="/static/app.js"></script>
 </body>
 </html>
