@@ -35,7 +35,7 @@ func SetupServer(cfg *config.Config, lg *slog.Logger) (http.Handler, error) {
 		ClientName:              "Resource Owner Password Credentials Demo",
 		ClientSecret:            "ropc-demo-secret",
 		GrantTypes:              []string{"password"},
-		Scopes:                  []string{"profile", "email"},
+		Scopes:                  []string{"profile", "email", "address", "phone", "read", "write"},
 		TokenEndpointAuthMethod: "client_secret_basic",
 	}
 	clientMgr.Register(demoClient)

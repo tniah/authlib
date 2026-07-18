@@ -34,15 +34,19 @@
       </div>
       <div class="field">
         <label>Client ID</label>
-        <input type="text" id="clientId" readonly />
+        <input type="text" id="clientId" />
       </div>
       <div class="field">
         <label>Client Secret</label>
-        <input type="text" id="clientSecret" readonly />
+        <input type="text" id="clientSecret" />
       </div>
       <div class="field">
         <label>Token Endpoint Auth Method</label>
-        <input type="text" id="authMethod" readonly />
+        <select id="authMethod">
+          <option value="none">none</option>
+          <option value="client_secret_basic">client_secret_basic</option>
+          <option value="client_secret_post">client_secret_post</option>
+        </select>
         <div class="hint" id="authMethodHint"></div>
       </div>
       <div class="field">

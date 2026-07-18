@@ -4,12 +4,14 @@
         maxStep: -1, // highest step legitimately reached through the flow
         loading: false,
         authMethod: 'client_secret_basic',
-        scopes: [],
+        scopes: [],         // all available scopes from client config
+        selectedScopes: [], // scopes currently toggled on
         tokenResponse: null, // { status, data } populated after real /token call
     };
     let fetchGen = 0; // incremented on reset to discard in-flight results
 
     const AUTH_METHOD_HINTS = {
+        none: 'Public client — no client secret. The client_id is sent as a POST body parameter.',
         client_secret_basic: 'Confidential client. Credentials are sent as an HTTP Basic Authorization header on the token request (RFC 6749 §2.3.1).',
         client_secret_post: 'Confidential client. client_id and client_secret are sent as POST body parameters on the token request.',
     };
@@ -39,7 +41,7 @@
             grant_type: 'password',
             username: username(),
             password: password(),
-            scope: state.scopes.join(' '),
+            scope: state.selectedScopes.join(' '),
         });
         const headers = {'Content-Type': 'application/x-www-form-urlencoded'};
 
@@ -48,6 +50,8 @@
         } else if (state.authMethod === 'client_secret_post') {
             body.set('client_id', clientId());
             body.set('client_secret', clientSecret());
+        } else {
+            body.set('client_id', clientId());
         }
 
         try {
@@ -71,7 +75,7 @@
         const cid = clientId();
         const secret = clientSecret();
         const uname = username();
-        const scopes = state.scopes.join(' ');
+        const scopes = state.selectedScopes.join(' ');
 
         const tokenBody = {grant_type: 'password', username: uname, password: '***'};
         if (scopes) tokenBody.scope = scopes;
@@ -84,6 +88,9 @@
             case 'client_secret_post':
                 tokenBody.client_id = cid;
                 tokenBody.client_secret = secret;
+                break;
+            default:
+                tokenBody.client_id = cid;
                 break;
         }
 
@@ -115,9 +122,18 @@
         const el = document.getElementById('scopeList');
         el.innerHTML = '';
         state.scopes.forEach(s => {
+            const on = state.selectedScopes.includes(s);
             const row = document.createElement('div');
-            row.className = 'scope-item on';
+            row.className = 'scope-item' + (on ? ' on' : '');
             row.innerHTML = `<div class="box"></div><span>${s}</span>`;
+            row.onclick = () => {
+                if (state.selectedScopes.includes(s)) {
+                    state.selectedScopes = state.selectedScopes.filter(x => x !== s);
+                } else {
+                    state.selectedScopes = [...state.selectedScopes, s];
+                }
+                render();
+            };
             el.appendChild(row);
         });
     }
@@ -209,7 +225,9 @@
         document.getElementById('authMethod').value = method;
         document.getElementById('authMethodHint').textContent = AUTH_METHOD_HINTS[method] || '';
         state.authMethod = method;
+
         state.scopes = Array.isArray(c.scopes) ? c.scopes : [];
+        state.selectedScopes = [...state.scopes];
 
         const u = window.__USER__ || {};
         document.getElementById('username').value = u.username || '';
@@ -235,6 +253,15 @@
         state.tokenResponse = null;
         render();
     };
+
+    ['clientId', 'clientSecret', 'username', 'password'].forEach(id => {
+        document.getElementById(id).addEventListener('input', () => render());
+    });
+    document.getElementById('authMethod').addEventListener('change', () => {
+        state.authMethod = document.getElementById('authMethod').value;
+        document.getElementById('authMethodHint').textContent = AUTH_METHOD_HINTS[state.authMethod] || '';
+        render();
+    });
 
     loadClient();
 })();
