@@ -65,16 +65,13 @@ func NewAuthorizationRequestFromHttp(r *http.Request) (*AuthorizationRequest, er
 		Request:             r,
 	}
 
-	if maxAge := r.FormValue("max_age"); maxAge != "" {
-		ma, err := strconv.ParseUint(maxAge, 10, 64)
-		if err != nil {
-			return nil, autherrors.InvalidRequestError().
-				WithDescription("\"max_age\" must be a non-negative integer").
-				WithState(authReq.State)
+	maxAge := types.NewMaxAge(0)
+	if v := r.FormValue("max_age"); v != "" {
+		if ma, err := strconv.ParseUint(v, 10, 64); err == nil {
+			maxAge = types.NewMaxAge(uint(ma))
 		}
-
-		authReq.MaxAge = types.NewMaxAge(uint(ma))
 	}
+	authReq.MaxAge = maxAge
 
 	return authReq, nil
 }
