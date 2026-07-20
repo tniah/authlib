@@ -113,51 +113,12 @@ func (r *AuthorizationRequest) ValidateRedirectURI(required ...bool) error {
 	return nil
 }
 
-// ValidateNonce returns an error if nonce is missing. Required by default;
+// CheckNonce returns an error if nonce is missing. Required by default;
 // pass false to treat it as optional.
-func (r *AuthorizationRequest) ValidateNonce(required ...bool) error {
+func (r *AuthorizationRequest) CheckNonce(required ...bool) error {
 	if isRequired(true, required...) && r.Nonce == "" {
 		return autherrors.InvalidRequestError().
 			WithDescription("missing \"nonce\" in request").
-			WithState(r.State).
-			WithRedirectURI(r.RedirectURI)
-	}
-
-	return nil
-}
-
-// ValidateResponseMode returns an error if response_mode is missing. Not
-// required by default; pass true to enforce it.
-func (r *AuthorizationRequest) ValidateResponseMode(required ...bool) error {
-	if isRequired(false, required...) && r.ResponseMode.IsEmpty() {
-		return autherrors.InvalidRequestError().
-			WithDescription("missing \"response_mode\" in request").
-			WithState(r.State).
-			WithRedirectURI(r.RedirectURI)
-	}
-
-	return nil
-}
-
-// ValidateDisplay returns an error if display is missing. Not required by
-// default; pass true to enforce it.
-func (r *AuthorizationRequest) ValidateDisplay(required ...bool) error {
-	if isRequired(false, required...) && r.Display.IsEmpty() {
-		return autherrors.InvalidRequestError().
-			WithDescription("missing \"display\" in request").
-			WithState(r.State).
-			WithRedirectURI(r.RedirectURI)
-	}
-
-	return nil
-}
-
-// ValidatePrompts returns an error if prompt is missing. Not required by
-// default; pass true to enforce it.
-func (r *AuthorizationRequest) ValidatePrompts(required ...bool) error {
-	if isRequired(false, required...) && len(r.Prompts) == 0 {
-		return autherrors.InvalidRequestError().
-			WithDescription("missing \"prompt\" in request").
 			WithState(r.State).
 			WithRedirectURI(r.RedirectURI)
 	}

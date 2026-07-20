@@ -42,32 +42,29 @@ func Must(cfg *Config) (*Flow, error) {
 }
 
 // ValidateAuthorizationRequest validates OIDC-specific parameters in the
-// authorization request. It is a no-op when the openid scope is absent.
+// /authorize request. It is a no-op when the openid scope is absent.
 func (f *Flow) ValidateAuthorizationRequest(r *requests.AuthorizationRequest) error {
 	if isOIDCReq := r.Scopes.ContainOpenID(); !isOIDCReq {
 		return nil
-	}
-
-	if err := r.ValidateDisplay(false); err != nil {
-		return err
 	}
 
 	if err := f.validateNonce(r); err != nil {
 		return err
 	}
 
-	if err := f.validatePrompt(r); err != nil {
-		return err
-	}
-
 	return nil
 }
 
-// ValidateConsentRequest re-runs authorization request validation then enforces
-// prompt and user-presence rules. When prompt is absent and user is nil, it
-// defaults to prompt=login so the handler can redirect to the login page.
+// ValidateConsentRequest validates OIDC prompt rules at the consent step.
+// It is a no-op when the openid scope is absent. When prompt is absent and
+// user is nil, defaults to prompt=login so the handler can redirect to the
+// login page.
 func (f *Flow) ValidateConsentRequest(r *requests.AuthorizationRequest) error {
-	if err := f.ValidateAuthorizationRequest(r); err != nil {
+	if isOIDCReq := r.Scopes.ContainOpenID(); !isOIDCReq {
+		return nil
+	}
+
+	if err := f.validatePrompt(r); err != nil {
 		return err
 	}
 
@@ -129,7 +126,7 @@ func (f *Flow) ProcessToken(r *requests.TokenRequest, _ models.Token, data map[s
 // validateNonce checks that nonce is present (when required) and has not been
 // used before (when ExistNonce is configured).
 func (f *Flow) validateNonce(r *requests.AuthorizationRequest) error {
-	if err := r.ValidateNonce(f.requireNonce); err != nil {
+	if err := r.CheckNonce(f.requireNonce); err != nil {
 		return err
 	}
 

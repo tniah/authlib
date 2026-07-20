@@ -131,31 +131,6 @@ func TestFlow_ValidateAuthorizationRequest(t *testing.T) {
 		assert.NoError(t, f2.ValidateAuthorizationRequest(r))
 	})
 
-	t.Run("prompt_none_combined_with_other_returns_error", func(t *testing.T) {
-		r := authReq("openid")
-		r.Nonce = "nonce-1"
-		r.Prompts = types.NewPrompts([]string{"none", "login"})
-		err := f.ValidateAuthorizationRequest(r)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "none")
-	})
-
-	t.Run("prompt_none_alone_ok", func(t *testing.T) {
-		f2 := New(validConfig().SetRequireNonce(false))
-		r := authReq("openid")
-		r.Prompts = types.NewPrompts([]string{"none"})
-		assert.NoError(t, f2.ValidateAuthorizationRequest(r))
-	})
-
-	t.Run("prompt_login_resets_max_age_to_zero", func(t *testing.T) {
-		r := authReq("openid")
-		r.Nonce = "nonce-1"
-		r.Prompts = types.NewPrompts([]string{"login"})
-		require.NoError(t, f.ValidateAuthorizationRequest(r))
-		require.NotNil(t, r.MaxAge)
-		assert.Equal(t, uint(0), *r.MaxAge)
-	})
-
 	t.Run("valid_request_with_nonce", func(t *testing.T) {
 		r := authReq("openid", "profile")
 		r.Nonce = "nonce-1"
@@ -225,13 +200,23 @@ func TestFlow_ValidateConsentRequest(t *testing.T) {
 		assert.NoError(t, f.ValidateConsentRequest(r))
 	})
 
-	t.Run("validation_error_from_auth_request_propagates", func(t *testing.T) {
-		// requireNonce=true (default): missing nonce must bubble up.
-		f := New(validConfig())
+	t.Run("prompt_none_combined_with_other_returns_error", func(t *testing.T) {
+		f := New(cfg)
 		r := authReq("openid")
+		r.Prompts = types.NewPrompts([]string{"none", "login"})
 		err := f.ValidateConsentRequest(r)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "nonce")
+		assert.Contains(t, err.Error(), "none")
+	})
+
+	t.Run("prompt_login_resets_max_age_to_zero", func(t *testing.T) {
+		f := New(cfg)
+		r := authReq("openid")
+		r.User = &sql.User{UserID: "user-1"}
+		r.Prompts = types.NewPrompts([]string{"login"})
+		require.NoError(t, f.ValidateConsentRequest(r))
+		require.NotNil(t, r.MaxAge)
+		assert.Equal(t, uint(0), *r.MaxAge)
 	})
 }
 
