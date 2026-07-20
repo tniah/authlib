@@ -41,10 +41,12 @@ type AuthorizationRequest struct {
 	Request *http.Request
 }
 
-// NewAuthorizationRequestFromHttp parses an authorization request from an
-// HTTP request. It reads all standard OAuth 2.0 and OIDC parameters from the
-// URL query string. Returns an error only if max_age is present but cannot be
-// parsed as a non-negative integer.
+// NewAuthorizationRequestFromHttp parses an OAuth 2.0 / OIDC authorization
+// request from r. Parameters are read from the URL query string (or form
+// body after r.ParseForm). Invalid or missing parameters are not validated
+// here — that is left to the grant flow. The only exception is max_age: if
+// present but not a valid non-negative integer, it is silently ignored and
+// defaults to 0.
 func NewAuthorizationRequestFromHttp(r *http.Request) (*AuthorizationRequest, error) {
 	authReq := &AuthorizationRequest{
 		ResponseType:        types.NewResponseType(r.FormValue("response_type")),
