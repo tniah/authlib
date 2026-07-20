@@ -229,7 +229,7 @@ func (f *Flow) checkTokenEndpointHttpMethod(r *requests.TokenRequest) error {
 
 // checkClient validates client_id and loads the client record into r.Client.
 func (f *Flow) checkClient(r *requests.AuthorizationRequest) error {
-	if err := r.ValidateClientID(true); err != nil {
+	if err := r.CheckClientID(true); err != nil {
 		return err
 	}
 
@@ -274,7 +274,7 @@ func (f *Flow) validateRedirectURI(r *requests.AuthorizationRequest) error {
 // validateResponseType verifies response_type=code and that the client is
 // permitted to use this response type.
 func (f *Flow) validateResponseType(r *requests.AuthorizationRequest) error {
-	if err := r.ValidateResponseType(true); err != nil {
+	if err := r.CheckResponseType(true); err != nil {
 		return err
 	}
 
@@ -336,7 +336,7 @@ func (f *Flow) genAuthCode(r *requests.AuthorizationRequest) (models.Authorizati
 
 // validateGrantType checks that grant_type is present and equals authorization_code.
 func (f *Flow) validateGrantType(r *requests.TokenRequest) error {
-	if err := r.ValidateGrantType(); err != nil {
+	if err := r.CheckGrantType(); err != nil {
 		return err
 	}
 
@@ -367,7 +367,7 @@ func (f *Flow) authenticateClient(r *requests.TokenRequest) error {
 // validateAuthCode verifies the authorization code: existence, client binding,
 // expiry, and redirect_uri match (RFC 6749 §4.1.3). Populates r.AuthCode on success.
 func (f *Flow) validateAuthCode(r *requests.TokenRequest) error {
-	if err := r.ValidateCode(); err != nil {
+	if err := r.CheckCode(); err != nil {
 		return err
 	}
 

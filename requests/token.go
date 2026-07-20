@@ -48,8 +48,8 @@ func NewTokenRequestFromHttp(r *http.Request) *TokenRequest {
 	}
 }
 
-// ValidateGrantType returns an error if grant_type is missing or empty.
-func (r *TokenRequest) ValidateGrantType() error {
+// CheckGrantType returns an error if grant_type is missing or empty.
+func (r *TokenRequest) CheckGrantType() error {
 	if r.GrantType.IsEmpty() {
 		return autherrors.InvalidRequestError().WithDescription("missing \"grant_type\" in request")
 	}
@@ -57,9 +57,9 @@ func (r *TokenRequest) ValidateGrantType() error {
 	return nil
 }
 
-// ValidateCode returns an error if code is missing. Required by default;
+// CheckCode returns an error if code is missing. Required by default;
 // pass false to treat it as optional.
-func (r *TokenRequest) ValidateCode(required ...bool) error {
+func (r *TokenRequest) CheckCode(required ...bool) error {
 	if isRequired(true, required...) && r.Code == "" {
 		return autherrors.InvalidRequestError().WithDescription("missing \"code\" in request")
 	}
@@ -67,18 +67,8 @@ func (r *TokenRequest) ValidateCode(required ...bool) error {
 	return nil
 }
 
-// ValidateRedirectURI returns an error if redirect_uri is missing. Required
-// by default; pass false to treat it as optional.
-func (r *TokenRequest) ValidateRedirectURI(required ...bool) error {
-	if isRequired(true, required...) && r.RedirectURI == "" {
-		return autherrors.InvalidRequestError().WithDescription("missing \"redirect_uri\" in request")
-	}
-
-	return nil
-}
-
-// ValidateUsername returns an error if username is missing or empty.
-func (r *TokenRequest) ValidateUsername() error {
+// CheckUsername returns an error if username is missing or empty.
+func (r *TokenRequest) CheckUsername() error {
 	if r.Username == "" {
 		return autherrors.InvalidRequestError().WithDescription("missing \"username\" in request")
 	}
@@ -86,8 +76,8 @@ func (r *TokenRequest) ValidateUsername() error {
 	return nil
 }
 
-// ValidatePassword returns an error if password is missing or empty.
-func (r *TokenRequest) ValidatePassword() error {
+// CheckPassword returns an error if password is missing or empty.
+func (r *TokenRequest) CheckPassword() error {
 	if r.Password == "" {
 		return autherrors.InvalidRequestError().WithDescription("missing \"password\" in request")
 	}

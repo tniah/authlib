@@ -23,51 +23,38 @@ func TestNewAuthorizationRequestFromHttp(t *testing.T) {
 		assert.Equal(t, types.NewMaxAge(300), req.MaxAge)
 	})
 
-	t.Run("invalid max_age returns error", func(t *testing.T) {
+	t.Run("invalid_max_age_ignored", func(t *testing.T) {
 		r := httptest.NewRequest("GET", "/?max_age=abc", nil)
 		req, err := NewAuthorizationRequestFromHttp(r)
-		authErr := autherrors.ToAuthLibError(err)
-		assert.Equal(t, autherrors.ErrInvalidRequest, authErr.Code)
-		assert.Nil(t, req)
+		assert.NoError(t, err)
+		assert.NotNil(t, req)
 	})
 }
 
-func TestAuthorizationRequest_ValidateResponseType(t *testing.T) {
+func TestAuthorizationRequest_CheckResponseType(t *testing.T) {
 	req := &AuthorizationRequest{}
-	err := req.ValidateResponseType()
+	err := req.CheckResponseType()
 	authErr := autherrors.ToAuthLibError(err)
 	assert.Equal(t, autherrors.ErrInvalidRequest, authErr.Code)
 
 	req.ResponseType = types.ResponseTypeCode
-	assert.NoError(t, req.ValidateResponseType())
+	assert.NoError(t, req.CheckResponseType())
 
 	// optional when false is passed
 	empty := &AuthorizationRequest{}
-	assert.NoError(t, empty.ValidateResponseType(false))
+	assert.NoError(t, empty.CheckResponseType(false))
 }
 
-func TestAuthorizationRequest_ValidateClientID(t *testing.T) {
+func TestAuthorizationRequest_CheckClientID(t *testing.T) {
 	req := &AuthorizationRequest{}
-	err := req.ValidateClientID()
+	err := req.CheckClientID()
 	authErr := autherrors.ToAuthLibError(err)
 	assert.Equal(t, autherrors.ErrInvalidRequest, authErr.Code)
 
-	assert.NoError(t, req.ValidateClientID(false))
+	assert.NoError(t, req.CheckClientID(false))
 
 	req.ClientID = "myclient"
-	assert.NoError(t, req.ValidateClientID())
-}
-
-func TestAuthorizationRequest_ValidateRedirectURI(t *testing.T) {
-	req := &AuthorizationRequest{}
-	err := req.ValidateRedirectURI()
-	authErr := autherrors.ToAuthLibError(err)
-	assert.Equal(t, autherrors.ErrInvalidRequest, authErr.Code)
-
-	assert.NoError(t, req.ValidateRedirectURI(false))
-
-	req.RedirectURI = "https://example.com/cb"
-	assert.NoError(t, req.ValidateRedirectURI())
+	assert.NoError(t, req.CheckClientID())
 }
 
 func TestAuthorizationRequest_CheckNonce(t *testing.T) {

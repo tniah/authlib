@@ -115,7 +115,7 @@ func (f *Flow) checkTokenEndpointHttpMethod(r *requests.TokenRequest) error {
 
 // validateGrantType checks that grant_type is present and equals "client_credentials".
 func (f *Flow) validateGrantType(r *requests.TokenRequest) error {
-	if err := r.ValidateGrantType(); err != nil {
+	if err := r.CheckGrantType(); err != nil {
 		return err
 	}
 

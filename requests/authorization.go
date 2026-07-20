@@ -76,9 +76,9 @@ func NewAuthorizationRequestFromHttp(r *http.Request) (*AuthorizationRequest, er
 	return authReq, nil
 }
 
-// ValidateResponseType returns an error if response_type is missing. Required
+// CheckResponseType returns an error if response_type is missing. Required
 // by default; pass false to treat it as optional.
-func (r *AuthorizationRequest) ValidateResponseType(required ...bool) error {
+func (r *AuthorizationRequest) CheckResponseType(required ...bool) error {
 	if isRequired(true, required...) && r.ResponseType.IsEmpty() {
 		return autherrors.InvalidRequestError().WithDescription("missing \"response_type\" in request").WithState(r.State)
 	}
@@ -86,24 +86,12 @@ func (r *AuthorizationRequest) ValidateResponseType(required ...bool) error {
 	return nil
 }
 
-// ValidateClientID returns an error if client_id is missing. Required by
+// CheckClientID returns an error if client_id is missing. Required by
 // default; pass false to treat it as optional.
-func (r *AuthorizationRequest) ValidateClientID(required ...bool) error {
+func (r *AuthorizationRequest) CheckClientID(required ...bool) error {
 	if isRequired(true, required...) && r.ClientID == "" {
 		return autherrors.InvalidRequestError().
 			WithDescription("missing \"client_id\" in request").
-			WithState(r.State)
-	}
-
-	return nil
-}
-
-// ValidateRedirectURI returns an error if redirect_uri is missing. Required
-// by default; pass false to treat it as optional.
-func (r *AuthorizationRequest) ValidateRedirectURI(required ...bool) error {
-	if isRequired(true, required...) && r.RedirectURI == "" {
-		return autherrors.InvalidRequestError().
-			WithDescription("missing \"redirect_uri\" in request").
 			WithState(r.State)
 	}
 
