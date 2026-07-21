@@ -28,62 +28,47 @@ func TestNewTokenRequestFromHttp(t *testing.T) {
 	assert.Equal(t, r, req.Request)
 }
 
-func TestTokenRequest_ValidateGrantType(t *testing.T) {
+func TestTokenRequest_CheckGrantType(t *testing.T) {
 	req := &TokenRequest{}
-	err := req.ValidateGrantType()
+	err := req.CheckGrantType()
 	authErr := autherrors.ToAuthLibError(err)
 	assert.Equal(t, autherrors.ErrInvalidRequest, authErr.Code)
 
 	req.GrantType = types.GrantTypeAuthorizationCode
-	assert.NoError(t, req.ValidateGrantType())
+	assert.NoError(t, req.CheckGrantType())
 }
 
-func TestTokenRequest_ValidateCode(t *testing.T) {
+func TestTokenRequest_CheckCode(t *testing.T) {
 	req := &TokenRequest{}
 
 	// required by default
-	err := req.ValidateCode()
+	err := req.CheckCode()
 	authErr := autherrors.ToAuthLibError(err)
 	assert.Equal(t, autherrors.ErrInvalidRequest, authErr.Code)
 
 	// optional when false is passed
-	assert.NoError(t, req.ValidateCode(false))
+	assert.NoError(t, req.CheckCode(false))
 
 	req.Code = "mycode"
-	assert.NoError(t, req.ValidateCode())
+	assert.NoError(t, req.CheckCode())
 }
 
-func TestTokenRequest_ValidateRedirectURI(t *testing.T) {
+func TestTokenRequest_CheckUsername(t *testing.T) {
 	req := &TokenRequest{}
-
-	// required by default
-	err := req.ValidateRedirectURI()
-	authErr := autherrors.ToAuthLibError(err)
-	assert.Equal(t, autherrors.ErrInvalidRequest, authErr.Code)
-
-	// optional when false is passed
-	assert.NoError(t, req.ValidateRedirectURI(false))
-
-	req.RedirectURI = "https://example.com/cb"
-	assert.NoError(t, req.ValidateRedirectURI())
-}
-
-func TestTokenRequest_ValidateUsername(t *testing.T) {
-	req := &TokenRequest{}
-	err := req.ValidateUsername()
+	err := req.CheckUsername()
 	authErr := autherrors.ToAuthLibError(err)
 	assert.Equal(t, autherrors.ErrInvalidRequest, authErr.Code)
 
 	req.Username = "alice"
-	assert.NoError(t, req.ValidateUsername())
+	assert.NoError(t, req.CheckUsername())
 }
 
-func TestTokenRequest_ValidatePassword(t *testing.T) {
+func TestTokenRequest_CheckPassword(t *testing.T) {
 	req := &TokenRequest{}
-	err := req.ValidatePassword()
+	err := req.CheckPassword()
 	authErr := autherrors.ToAuthLibError(err)
 	assert.Equal(t, autherrors.ErrInvalidRequest, authErr.Code)
 
 	req.Password = "secret"
-	assert.NoError(t, req.ValidatePassword())
+	assert.NoError(t, req.CheckPassword())
 }

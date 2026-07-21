@@ -106,11 +106,11 @@ func (f *Flow) checkParams(r *requests.TokenRequest) error {
 		return err
 	}
 
-	if err := r.ValidateUsername(); err != nil {
+	if err := r.CheckUsername(); err != nil {
 		return err
 	}
 
-	if err := r.ValidatePassword(); err != nil {
+	if err := r.CheckPassword(); err != nil {
 		return err
 	}
 
@@ -131,7 +131,7 @@ func (f *Flow) checkTokenEndpointHttpMethod(r *requests.TokenRequest) error {
 
 // validateGrantType checks that grant_type is present and equals "password".
 func (f *Flow) validateGrantType(r *requests.TokenRequest) error {
-	if err := r.ValidateGrantType(); err != nil {
+	if err := r.CheckGrantType(); err != nil {
 		return err
 	}
 
